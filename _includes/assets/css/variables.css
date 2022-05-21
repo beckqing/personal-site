@@ -1,15 +1,15 @@
 :root {
   /* Brand Colors */
   --color-primary: #080B24;
-  --color-secondary: #0C3559;
+  --color-secondary: #305789;
 
   /* Background Colors */
   --color-bg: #CFD2CE;
-  --color-bg-secondary: #A79F99;
+  --color-bg-secondary: #C0CACA;
   --color-bg-accent: #0C3559;
 
   /* Text and Border Colors */
-  --color-text: #0C3559;
+  --color-text: #080B24;
   --color-text-alt: #ffffff;
   --color-border: #A79F99;
 

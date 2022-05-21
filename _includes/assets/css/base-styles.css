@@ -144,7 +144,7 @@ code {
 pre > code {
   padding: 0;
   background-color: transparent;
-  white-space: pre; }
+  white-space: pre-wrap; }
 
 /* Tables */
 table {
