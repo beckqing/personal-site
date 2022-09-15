@@ -4,9 +4,11 @@
  * Project: https://github.com/oxalorg/sakura/
  */
 /* Body */
+
 html {
   font-size: 62.5%;
-  font-family: var(--font-family-base); }
+  font-family: var(--font-family-base);
+  font-variation-settings: 'CASL' 1 }
 
 body {
   display: flex;
@@ -43,7 +45,7 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.1;
   font-family: var(--font-family-heading);
   font-weight: 700;
-  margin-top: 3rem;
+  margin-top: 1.5rem;
   margin-bottom: 1.5rem;
   overflow-wrap: break-word;
   word-wrap: break-word;
@@ -51,10 +53,14 @@ h1, h2, h3, h4, h5, h6 {
   word-break: break-word; }
 
 h1 {
-  font-size: 2.35em; }
+  font-size: 2.35em;
+  margin-top: 3rem;
+ }
 
 h2 {
-  font-size: 2.00em; }
+  font-size: 2.00em;
+  margin-top: 2rem;  
+}
 
 h3 {
   font-size: 1.75em; }
@@ -206,3 +212,12 @@ label, legend, fieldset {
   display: block;
   margin-bottom: .5rem;
   font-weight: 600; }
+
+.mono {
+  font-family: 'Recursive', monospace;
+  font-variation-settings: 'CASL' 1, 'MONO' 1;
+}
+
+.emoji {
+  font-family: 'Noto Emoji', sans-serif;
+}

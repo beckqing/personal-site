@@ -1,0 +1,139 @@
+* {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+  }
+
+.ui-tabgroup {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    height: 100%;
+}
+.ui-tabgroup:after {
+    visibility: hidden;
+    display: block;
+    font-size: 0;
+    content: " ";
+    clear: both;
+    height: 0;
+}
+.ui-tabgroup > .ui-tabs {
+    float: left;
+    width: 100%;
+}
+.ui-tabgroup > .ui-tabs > [class^="ui-tab"] {
+    position: relative;
+    float: left;
+    display: block;
+    background-color: var(--color-border);
+    color: var(--color-bg);
+    margin: 0 0 -1px 0;
+    text-align: center;
+    cursor: pointer;
+    width: 25%;
+    height: 100%;
+    border-width: 1px 1px 0 1px;
+    border-radius: 14px 14px 0 0;
+    border-style: solid;
+    border-color: var(--color-bg);
+    font-size: 2.5em;
+    -webkit-transition: all 0.15s ease-in;
+        -moz-transition: all 0.15s ease-in;
+        -o-transition: all 0.15s ease-in;
+        transition: all 0.15s ease-in;
+}
+
+.ui-tabgroup > input[class^="ui-tab"] {
+    -webkit-appearance: none;
+    -moz-appearance: none !important;
+    position: relative;
+    float: left;
+    left: -99999px;
+    padding: 0;
+    margin: 0 0 0 -5px; /* FireFox hack */
+    height: 0;
+    width: 0;
+    z-index: -100;
+    overflow: hidden;
+    outline: 0;
+    float: left;
+}
+
+.ui-tabgroup > input.ui-tab1:hover ~ .ui-tabs > .ui-tab1,
+.ui-tabgroup > input.ui-tab2:hover ~ .ui-tabs > .ui-tab2,
+.ui-tabgroup > input.ui-tab3:hover ~ .ui-tabs > .ui-tab3,
+.ui-tabgroup > input.ui-tab4:hover ~ .ui-tabs > .ui-tab4 {
+    color: var(--color-secondary);
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-secondary);
+}
+
+.ui-tabgroup > input.ui-tab1:checked ~ .ui-tabs > .ui-tab1,
+.ui-tabgroup > input.ui-tab2:checked ~ .ui-tabs > .ui-tab2,
+.ui-tabgroup > input.ui-tab3:checked ~ .ui-tabs > .ui-tab3,
+.ui-tabgroup > input.ui-tab4:checked ~ .ui-tabs > .ui-tab4 {
+    background-color: var(--color-bg);
+    color: var(--color-primary);
+    border-color: var(--color-border);
+}
+
+.ui-tabgroup > .ui-panels > [class^="ui-tab"] {
+    background-color: var(--color-bg);
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--color-border);
+    padding: 15px 25px;
+    display: none;
+    float: left;
+    width: 100%;
+    height: 100%;
+}
+
+.ui-tabgroup > input.ui-tab1:checked ~ .ui-panels > .ui-tab1,
+.ui-tabgroup > input.ui-tab2:checked ~ .ui-panels > .ui-tab2,
+.ui-tabgroup > input.ui-tab3:checked ~ .ui-panels > .ui-tab3,
+.ui-tabgroup > input.ui-tab4:checked ~ .ui-panels > .ui-tab4 {
+    display: block;
+}
+.ui-tabs:not(.left-side) > .ui-panels > [class^="ui-tab"] {
+width: 100%;
+}
+
+@media screen and (min-width: 639px) {
+.ui-tabgroup.left-side > .ui-tabs {
+    width: 100px;
+    float: left;
+}
+.ui-tabgroup.left-side > .ui-panels {
+    margin-left: 100px;
+    height: 100%;
+}
+.ui-tabs:not(.left-side) > .ui-panels {
+    float: left;
+    width: 24%;
+}
+.ui-tabgroup > .ui-tabs > [class^="ui-tab"]:first-child {
+    margin: 1px 0 0 5px;
+}
+.ui-tabgroup > .ui-tabs > [class^="ui-tab"] {
+    margin: 1px 0 0 1px;
+    min-width: 50px;
+}
+
+.ui-tabgroup.left-side > .ui-panels > [class^="ui-tab"] {
+    border-width: 1px 1px 1px 0;
+    height: 100%;
+    position: absolute;
+}
+
+.ui-tabgroup.left-side > .ui-tabs > .ui-tab:first-child {
+    margin: 5px 0 0 0;
+}
+.ui-tabgroup.left-side > .ui-tabs > [class^="ui-tab"] {
+    border-width: 1px 0 1px 1px;
+    border-radius: 14px 0 0 14px;
+    margin: 0 -1px 0 0;
+    width: 100%;
+}
+}

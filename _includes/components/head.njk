@@ -7,6 +7,7 @@
   <script async src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Emoji&family=Noto+Sans&family=Recursive:slnt,CASL,MONO@-15,1,1;0,0,0;0,1,0&display=swap" rel="stylesheet">
 
   {% set css %}
     {% include "assets/css/normalize.css" %}
@@ -22,7 +23,9 @@
     {% if page.url == '/' %}
       {% include "assets/css/home-page.css" %}
     {% endif %}
-
+    {% if page.url == '/about/' %}
+      {% include "assets/css/about.css" %}
+    {% endif %}
     {% if page.url == '/contact/' %}
       {% include "assets/css/contact.css" %}
     {% endif %}

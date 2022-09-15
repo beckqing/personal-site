@@ -17,9 +17,9 @@
   --color-danger: #8C3623;
 
   /* Typography */
-  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-  --font-family-heading: var(--font-family-base);
+  --font-family-base: 'Noto Sans', Helvetica, sans-serif;
+  --font-family-heading: 'Recursive', Helvetica, sans-serif;
+  --font-family-emoji: 'Noto Emoji', sans-serif;
 
   /* Sizes */
   --site-width: 850px;

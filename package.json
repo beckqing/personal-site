@@ -25,5 +25,8 @@
     "markdown-it": "^13.0.1",
     "markdown-it-anchor": "^8.6.4",
     "uglify-es": "^3.3.9"
+  },
+  "dependencies": {
+    "lightgallery": "^2.6.0"
   }
 }
