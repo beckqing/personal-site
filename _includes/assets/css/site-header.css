@@ -5,6 +5,8 @@
   justify-content: space-between;
   padding: 15px;
   border-top: 3px solid var(--color-secondary);
+  font-family: var(--font-family-heading);
+  
 }
 
 @media (min-width: 1024px) {

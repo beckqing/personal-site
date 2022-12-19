@@ -1,11 +1,11 @@
 ---
-title: About
+title: about
 subtitle: ""
 metaDescription: This page is all about me
 date: 2022-05-20T23:25:40.926Z
 permalink: /about/index.html
 eleventyNavigation:
-  key: About
+  key: about
   order: 1
 ---
 
