@@ -31,8 +31,13 @@
     {% endif %}
   {% endset %}
   <style>{{ css | cssmin | safe }}</style>
+
   {% set js %}
     {% include "assets/js/inline.js" %}
+
+    {% if page.url == '/' %}
+      
+    {% endif %}
   {% endset %}
   <script>{{ js | jsmin | safe }}</script>
 </head>

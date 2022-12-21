@@ -10,6 +10,9 @@
   }
 }
 
+#me {
+  text-align: center;
+}
 
 #span-art:hover {
   color: var(--color-art);
@@ -21,4 +24,38 @@
 
 #span-hu:hover {
   color: var(--color-hu);
+}
+
+#icon_container {
+  display: flex;
+  flex-flow: column wrap-reverse;
+  align-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -10;
+  text-align: center;
+
+}
+
+#icon_container > svg {
+  transform: scale(0.6);
+  margin: 0 -1em;
+  fill: var(--color-bg-secondary);
+  transition: fill .5s;
+}
+
+#icon_container > svg.art--hover {
+  fill: var(--color-art-alt);
+}
+
+#icon_container > svg.hu--hover {
+  fill: var(--color-hu-alt);
+}
+
+#icon_container > svg.sci--hover {
+  fill: var(--color-sci-alt);
 }

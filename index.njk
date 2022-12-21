@@ -3,7 +3,9 @@ layout: layouts/base.njk
 section: home
 ---
 <div class="home-page">
-	<p class="mono">forever a student of <span id="span-art">art</span>, <span id="span-sci">science</span>, and <span id="span-hu">humanity</span><br>currently gaining experience in programming, rock climbing, and DNA isolation<br>open to collaboration on design and science communication projects
+	<p id="me" class="mono">forever a student of <span id="span-art" >art</span>, <span id="span-sci">science</span>, and <span id="span-hu">humanity</span><br>
+  currently gaining experience in programming, rock climbing, and DNA isolation<br>
+  open to collaboration on design and science communication projects
 </p>
   <hr>
   <h2>projects</h2>
@@ -17,4 +19,19 @@ section: home
   {% set show_postslist_tags = false %}
   {% set limit = 3 %}
   {% include "components/postslist.njk" %}
-</div>
+<div id="icon_container">
+
+  {% for name, icon in icons %}
+    
+    <svg xmlns="http://www.w3.org/2000/svg" class="{% filter replace (","," ") %}{{ icon.category }}{% endfilter %}" width={{ icon.width }} height={{ icon.height }} viewBox="{{ icon.viewbox }}">
+      <title>{% filter replace("_", " ") %}
+      {{ name }}
+      {% endfilter %}</title>
+        <path d="{{ icon.path }}" />
+    </svg>
+    
+  {% endfor %}
+  
+</div></div>
+
+<script>{% include "assets/js/home-page.js" %}</script>
