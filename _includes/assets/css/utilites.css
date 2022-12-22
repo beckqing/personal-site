@@ -25,7 +25,7 @@
 
 .btn {
   padding: 10px 15px;
-  border: none;
+  border: 1px solid var(--color-text-alt);
   border-radius: var(--border-radius-sm);
   background-color: var(--color-secondary);
   color: var(--color-text-alt);
@@ -40,14 +40,14 @@
 }
 
 .btn--danger {
-  background-color: var(--color-danger);
-  color: var(--color-text-alt);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background-color: #00000000;
 }
 
 .btn--danger:hover,
 .btn--danger:focus {
-  border: none;
   background-color: var(--color-danger);
-  color: var(--color-text-alt);
-  filter: brightness(90%);
+  color: var(--color-bg);
+  filter: brightness(90%);  
 }
