@@ -32,8 +32,8 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.1;
   font-family: var(--font-family-heading);
   font-weight: 700;
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-top: 1rem;
+  margin-bottom: .5rem;
   overflow-wrap: break-word;
   word-wrap: break-word;
   -ms-word-break: break-all;
@@ -41,25 +41,25 @@ h1, h2, h3, h4, h5, h6 {
 
 h1 {
   font-size: 2.35em;
-  margin-top: 3rem;
+  margin-top: 2rem;
  }
 
 h2 {
-  font-size: 2.00em;
-  margin-top: 2rem;  
+  font-size: 1.75em;
+  margin-top: 1.5rem;  
 }
 
 h3 {
-  font-size: 1.75em; }
-
-h4 {
   font-size: 1.5em; }
 
-h5 {
+h4 {
   font-size: 1.25em; }
 
-h6 {
+h5 {
   font-size: 1em; }
+
+h6 {
+  font-size: .75em; }
 
 p {
   margin-top: 0px;
@@ -85,6 +85,13 @@ ul {
   padding-left: 1.4em;
   margin-top: 0px;
   margin-bottom: 2.5rem; }
+
+/* emoji/symbol bullet in li */
+ul.emoji-bullet > li {
+  padding-left: .6em;
+  text-indent: -2em;
+  list-style-type: none;
+}
 
 li {
   margin-bottom: 0.4em; }
