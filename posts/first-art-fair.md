@@ -15,17 +15,37 @@ Reflections on my first few times selling at art markets — all different venue
 I always thought it’d be cool to sell my work at a street fair, and I imagined doing this my senior year of college in Worcester. I lived pretty close to Elm Park, which is adjacent to the annual art festival [StART on the Street](https://www.startonthestreet.org/), and I imagined rolling my wares out by hand truck from my apartment. Unfortunately, my senior year was 2021. No StART on the Street. (I did apply to [StART at the Station](https://www.startonthestreet.org/start-station) in 2019 and was rejected!)
 
 So I applied in 2022 on a whim. No high hopes, wasn’t even living in Worcester anymore.
-
-[ when a woman ] [ mother earth ] [ fire protection ]
+<div class="flex-centered">
+<div class="cssbox">
+    <a id="01_swift" href="#01_swift"><img class="cssbox_thumb" src="/static/img/collections/first-art-fair/beauvoir.jpg" />
+        <span class="cssbox_full"><img src="/static/img/collections/first-art-fair/beauvoir.jpg" /></span>
+    </a>
+    <a class="cssbox_close" href="#void"></a>
+    <a class="cssbox_prev" href="#31_mask">⬅</a>
+    <a class="cssbox_next" href="#02_divided">➡</a></div>
+<div class="cssbox">
+    <a id="02_divided" href="#02_divided"><img class="cssbox_thumb" src="/static/img/collections/first-art-fair/mother_earth.png" />
+        <span class="cssbox_full"><img src="/static/img/collections/first-art-fair/mother_earth.png" /></span>
+    </a>
+    <a class="cssbox_close" href="#void"></a>
+    <a class="cssbox_prev" href="#01_swift">&lt;</a>
+    <a class="cssbox_next" href="#03_poison">&gt;</a></div>
+<div class="cssbox">
+    <a id="03_poison" href="#03_poison"><img class="cssbox_thumb" src="/static/img/collections/first-art-fair/fire_protection.jpg" />
+        <span class="cssbox_full"><img src="/static/img/collections/first-art-fair/fire_protection.jpg" /></span>
+    </a>
+    <a class="cssbox_close" href="#void"></a>
+    <a class="cssbox_prev" href="#02_divided">&lt;</a>
+    <a class="cssbox_next" href="#04_underwater">&gt;</a></div>
+</div>
 <small>The three works I submitted with my application.</small>
-
 I opened the acceptance email a couple weeks late — I was pretty excited, but also concerned. No experience, and this market was outdoors, no tents provided. I volunteered in 2019, so I figured I'd at least have some help for setup. I did practice putting up the tent alone (once) and hanging up my walls, but I definitely wasn't prepared as I could have been despite spending many hours on tent design, thinking about furniture, pricing, and inventory.
 
 [ photos of setup sketch and practice ]
 
 stART on the Street
 11-6 Sunday 18 September 2022
-[ photos of actual setup ]
+![Alt text](/static/img/collections/first-art-fair/1_back_table.jpg)
 #### + things that went well
 
 <ul class="emoji-bullet">
