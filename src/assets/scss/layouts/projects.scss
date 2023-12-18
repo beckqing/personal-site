@@ -39,11 +39,11 @@
 }
 
 .project-card__tag {
-  background-color: var(--color-secondary);
+  background-color: var(--color-bg-secondary);
   color: var(--color-text-alt);
 
   :root[data-theme="dark"] & {
-    background-color: var(--color-secondary-dark);
+    background-color: var(--color-bg-secondary-dark);
     color: var(--color-text-alt);
   }
 

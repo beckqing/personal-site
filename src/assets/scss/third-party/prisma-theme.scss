@@ -15,9 +15,10 @@ pre[class*="language-"] {
 	white-space: pre;
 	white-space: pre-wrap;
 	word-wrap: normal;
-	font-family: Menlo, Monaco, "Courier New", monospace;
+	font-family: var(--font-family-mono);
+	font-variation-settings: 'CASL' 1, 'MONO' 1;
 	font-size: 16px;
-	color: #76d9e6;
+	color: var(--color-blue-light);
 	text-shadow: none;
 }
 
@@ -27,13 +28,13 @@ pre > code[class*="language-"] {
 
 pre[class*="language-"],
 :not(pre) > code[class*="language-"] {
-	background: #2a2a2a;
+	background: var(--color-blue-darker);
 }
 
 pre[class*="language-"] {
 	padding: 15px;
 	border-radius: var(--border-radius);
-	border: 1px solid #e1e1e8;
+	border: 1px solid var(--color-secondary);
 	overflow: auto;
 	position: relative;
 }

@@ -1,26 +1,43 @@
 :root {
-  /* Brand Colors */
-  --color-primary: #222;
-  --color-secondary: #2f5bc2;
+/* Brand Colors */
+--color-blue-darkest: #080B24;
+--color-blue-darker: #0d1631; // darkest + shadow
+--color-blue-dark: #0C3559;
+--color-blue-mid: #305789;
+--color-blue-light: #68BFED;
+--color-grey-mid: #69635E;
+--color-grey-light: #A79F99;
+--color-grey-lightest: #CED2CD;
+--color-accent-terracotta: #8C3623;
+--color-accent-pumpkin: #BF712C;
+--color-accent-goldenrod: #D9AA52;
+--color-accent-spring: #AADB6C;
+--color-accent-emerald: #4BA661;
 
-  /* Background Colors */
-  --color-bg: #fff;
-  --color-bg-secondary: #f7f7f7;
-  --color-bg-accent: rgb(174, 182, 225);
-  --color-bg-hover: #f3f4f6cc;
-
-  /* Text and Border Colors */
-  --color-text: #222;
-  --color-text-alt: #fff;
-  --color-text-gray: #6b7280;
-  --color-border: rgb(0 0 0 / 6%);
-
-  /* Status Colors */
-  --color-danger: #e03e3e;
+/* Site Colors */
+--color-primary: var(--color-blue-darkest);
+--color-secondary: var(--color-blue-mid);
+--color-shadow: #30578922;
+--color-dark-shadow: #080B2422;
+--color-dark-shadow-opaque: ;
+/* Background Colors */
+--color-bg: var(--color-grey-lightest);
+--color-bg-secondary: var(--color-shadow);
+--color-bg-accent: var(--color-blue-dark);
+--color-bg-hover: var(--color-bg-secondary);
+/* Text and Border Colors */
+--color-text: var(--color-blue-darkest);
+--color-text-alt: var(--color-blue-mid);
+--color-text-gray: var(--color-grey-mid);
+--color-border: var(--color-grey-light);
+/* Status Colors */
+--color-danger: var(--color-accent-terracotta);
 
   /* Typography */
-  --font-family-base: InterVariable, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-  --font-family-heading: var(--font-family-base);
+  --font-family-base: 'Noto Sans', Helvetica, sans-serif;
+  --font-family-heading: 'Recursive', Helvetica, sans-serif;
+  --font-family-mono: 'Recursive', "Courier New", monospace;
+
 
   /* Sizes */
   --site-width: 850px;
@@ -33,21 +50,21 @@
   /* Other */
   --border-radius: 12px;
   --border-radius-sm: 5px;
-  --shadow: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -2px rgb(0 0 0 / 5%);
+  --shadow: 0 10px 15px -3px var(--color-shadow), 0 4px 6px -2px var(--color-shadow);
 
   // Dark mode colors
-  --color-secondary-dark: rgb(22, 78, 99);
+  --color-secondary-dark: var(--color-blue-dark);
 
-  --color-link-dark: rgb(8, 145, 178);
+  --color-link-dark: var(--color-blue-light);
 
-  --color-bg-dark: #000;
-  --color-bg-wrapper-bg-dark: rgb(24 24 27);
-  --color-bg-secondary-dark: rgb(42 42 43);
-  --color-bg-accent-dark: rgb(8, 51, 68);
+  --color-bg-dark: var(--color-blue-darkest);
+  --color-bg-wrapper-bg-dark: var(--color-blue-darkest);
+  --color-bg-secondary-dark: var(--color-blue-darker);
+  --color-bg-accent-dark: var(--color-blue-dark);
 
-  --color-title-dark: rgb(244 244 245);
-  --color-text-dark: rgb(161 161 170);
+  --color-title-dark: var(--color-grey-lightest);
+  --color-text-dark: var(--color-grey-lightest);
 
-  --color-border-dark: rgb(39, 39, 42);
+  --color-border-dark: var(--color-blue-dark);
 
 }

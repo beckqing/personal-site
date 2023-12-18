@@ -27,7 +27,7 @@
   padding: 10px 15px;
   border: none;
   border-radius: var(--border-radius-sm);
-  background-color: var(--color-secondary);
+  background-color: var(--color-bg-secondary);
   color: var(--color-text-alt);
   font-size: 14px;
   white-space: nowrap;
@@ -69,12 +69,11 @@
 }
 
 .btn--danger {
-  background-color: var(--color-danger);
-  color: var(--color-text-alt);
+  color: var(--color-danger);
+  border: var(--color-danger);
 
   :root[data-theme="dark"] & {
-    background-color: var(--color-danger);
-    color: var(--color-text-alt);
+    color: var(--color-danger);
   }
 }
 

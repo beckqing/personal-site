@@ -65,7 +65,7 @@
   overflow: auto;
   transition: transform 0.3s;
   will-change: transform;
-  background-color: #fff;
+  background-color: var(--color-bg);
   display: flex;
   flex-direction: column;
   transform: translate3d(103%, 0, 0); /* extra 3% because of box-shadow */
