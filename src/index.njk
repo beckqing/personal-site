@@ -3,28 +3,12 @@ layout: base.njk
 section: home
 ---
 <div class="home-page">
-	<div class="home-page__bg-square"></div>
-
-  {# Hero #}
-  <div class="hero">
-    <div class="hero__col">
-      <h1 class="hero__title gradient-text">{{ home.title }}</h1>
-      {% if home.body %}
-        <div class="hero__body">{{ home.body | markdown | safe }}</div>
-      {% endif %}
-    </div>
-    <div class="hero__col">
-      {% image
-        home.image,
-        home.image_alt,
-        "(min-width: 1024px) 50vw, 100vw",
-        "hero__image shadow",
-        "eager"
-      %}
-    </div>
-  </div>
-
-  {# Projects #}
+	<p id="me" class="mono">forever a student of <a href="/tags/art/" id="a-art" >art</a>, <a href="/tags/science/" id="a-sci">science</a>, and <a href="/tags/humanities" id="a-hu">humanity</a><br>
+  currently gaining experience in programming, rock climbing, and DNA isolation<br>
+  open to collaboration on design and science communication projects
+</p>
+  <hr>
+ {# Projects #}
   <div class="list-header">
     <h2 class="list-header__title">Projects</h2>
     <a class="btn btn--outline btn--sm" href="/projects">View All</a>
@@ -43,4 +27,19 @@ section: home
     show_tags = false,
     limit = 3
   ) }}
-</div>
+<div id="icon_container">
+
+  {% for name, icon in icons %}
+    
+    <svg xmlns="http://www.w3.org/2000/svg" class="{% filter replace (","," ") %}{{ icon.category }}{% endfilter %}" width={{ icon.width }} height={{ icon.height }} viewBox="{{ icon.viewbox }}">
+      <title>{% filter replace("_", " ") %}
+      {{ name }}
+      {% endfilter %}</title>
+        <path d="{{ icon.path }}" />
+    </svg>
+    
+  {% endfor %}
+  
+</div></div>
+
+<script>{% include "src/assets/js/home-page.js" %}</script>

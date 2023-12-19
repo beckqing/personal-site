@@ -30,8 +30,15 @@
 --color-text-alt: var(--color-blue-mid);
 --color-text-gray: var(--color-grey-mid);
 --color-border: var(--color-grey-light);
-/* Status Colors */
+/* Semantic Colors */
 --color-danger: var(--color-accent-terracotta);
+--color-art: var(--color-blue-mid);
+--color-sci: var(--color-accent-emerald);
+--color-hu: var(--color-accent-pumpkin);
+--color-art-alt: var(--color-blue-light);
+--color-sci-alt: var(--color-accent-spring);
+--color-hu-alt: var(--color-accent-goldenrod);
+
 
   /* Typography */
   --font-family-base: 'Noto Sans', Helvetica, sans-serif;
@@ -52,7 +59,7 @@
   --border-radius-sm: 5px;
   --shadow: 0 10px 15px -3px var(--color-shadow), 0 4px 6px -2px var(--color-shadow);
 
-  // Dark mode colors
+  // Dark mode colors... code to be cleaned later x_x
   --color-secondary-dark: var(--color-blue-dark);
 
   --color-link-dark: var(--color-blue-light);
@@ -67,4 +74,17 @@
 
   --color-border-dark: var(--color-blue-dark);
 
+}
+
+:root[data-theme="dark"] {
+
+--color-text: var(--color-grey-lightest);
+
+  /* Semantic Colors */
+--color-art: var(--color-blue-light);
+--color-sci: var(--color-accent-spring);
+--color-hu: var(--color-accent-goldenrod);
+--color-art-alt: var(--color-blue-mid);
+--color-sci-alt: var(--color-accent-emerald);
+--color-hu-alt: var(--color-accent-pumpkin);
 }
