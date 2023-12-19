@@ -1,0 +1,37 @@
+---
+layout: layouts/base.njk
+section: home
+---
+<div class="home-page">
+	<p id="me" class="mono">forever a student of <a href="/tags/art/" id="a-art" >art</a>, <a href="/tags/science/" id="a-sci">science</a>, and <a href="/tags/humanities" id="a-hu">humanity</a><br>
+  currently gaining experience in programming, rock climbing, and DNA isolation<br>
+  open to collaboration on design and science communication projects
+</p>
+  <hr>
+  <h2>projects</h2>
+  {% set projectlist = collections.project %}
+  {% include "components/projectlist.njk" %}
+
+
+  <hr>
+  <h2>articles</h2>
+  {% set postslist = collections.post %}
+  {% set show_postslist_tags = false %}
+  {% set limit = 3 %}
+  {% include "components/postslist.njk" %}
+<div id="icon_container">
+
+  {% for name, icon in icons %}
+    
+    <svg xmlns="http://www.w3.org/2000/svg" class="{% filter replace (","," ") %}{{ icon.category }}{% endfilter %}" width={{ icon.width }} height={{ icon.height }} viewBox="{{ icon.viewbox }}">
+      <title>{% filter replace("_", " ") %}
+      {{ name }}
+      {% endfilter %}</title>
+        <path d="{{ icon.path }}" />
+    </svg>
+    
+  {% endfor %}
+  
+</div></div>
+
+<script>{% include "assets/js/home-page.js" %}</script>

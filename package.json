@@ -1,7 +1,8 @@
 {
-  "name": "fernfolio-11ty-template",
+  "name": "personal-site",
   "version": "1.0.0",
-  "description": "The super simple portfolio template built with Eleventy and Netlify CMS",
+  "description": "The start of a personal site that will function as portfolio, workspace, and playground.",
+  "main": ".eleventy.js",
   "scripts": {
     "start": "cross-env npm-run-all build:sass --parallel watch:*",
     "build": "cross-env npm-run-all build:sass build:scripts build:eleventy",
@@ -16,18 +17,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tylerMRoderick/fernfolio-11ty-template"
+    "url": "git+https://github.com/beckqing/personal-site.git"
   },
-  "author": {
-    "name": "Tyler M. Roderick",
-    "email": "troderick@protonmail.com",
-    "url": "https://www.tylerroderick.com/"
-  },
-  "license": "MIT",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "bugs": {
-    "url": "https://github.com/tylerMRoderick/fernfolio-11ty-template/issues"
+    "url": "https://github.com/beckqing/personal-site/issues"
   },
-  "homepage": "https://github.com/tylerMRoderick/fernfolio-11ty-template",
+  "homepage": "https://github.com/beckqing/personal-site#readme",
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1",
     "@11ty/eleventy-img": "^3.1.8",
@@ -49,5 +47,8 @@
     "rimraf": "^3.0.2",
     "sass": "^1.54.3",
     "turbolinks": "^5.2.0"
+  },
+  "dependencies": {
+    "lightgallery": "^2.6.0"
   }
 }

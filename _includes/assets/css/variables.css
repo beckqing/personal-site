@@ -1,0 +1,63 @@
+:root {
+  /* Brand Colors */
+  --color-primary: #080B24;
+  --color-secondary: #305789;
+
+  /* Background Colors */
+  --color-bg: #CED2CD;
+  --color-bg-secondary: #30578922;
+  --color-bg-accent: #0C3559;
+
+  /* Text and Border Colors */
+  --color-text: #080B24;
+  --color-text-alt: #305789;
+  --color-border: #A79F99;
+
+  /* Semantic Colors */
+  --color-danger: #8C3623;
+  --color-art: #305789;
+  --color-sci: #4BA661;
+  --color-hu: #BF712C;
+  --color-art-alt: #68BFED;
+  --color-sci-alt: #AADB6C;
+  --color-hu-alt: #D9AA52;
+
+  /* Typography */
+  --font-family-base: 'Noto Sans', Helvetica, sans-serif;
+  --font-family-heading: 'Recursive', Helvetica, sans-serif;
+  --font-family-emoji: 'Noto Emoji', sans-serif;
+
+  /* Sizes */
+  --site-width: 850px;
+
+  /* Other */
+  --border-radius: 12px;
+  --border-radius-sm: 5px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+  /* Brand Colors */
+  --color-primary: #CED2CD;
+  --color-secondary: #305789;
+
+  /* Background Colors */
+  --color-bg: #080B24;
+  --color-bg-secondary: #0c355981;
+  --color-bg-accent: #0C3559;
+
+  /* Text and Border Colors */
+  --color-text: #CED2CD;
+  --color-text-alt: #68BFED;
+  --color-border: #0C3559;
+
+  /* Semantic Colors*/
+  --color-art-alt: #305789;
+  --color-sci-alt: #4BA661;
+  --color-hu-alt: #BF712C;
+  --color-art: #68BFED;
+  --color-sci: #AADB6C;
+  --color-hu: #D9AA52;
+
+}
+}
