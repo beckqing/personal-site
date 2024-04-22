@@ -4,17 +4,10 @@ section: home
 ---
 <div class="home-page">
 	<p id="me" class="mono">forever a student of <a href="/tags/art/" id="a-art" >art</a>, <a href="/tags/science/" id="a-sci">science</a>, and <a href="/tags/humanities" id="a-hu">humanity</a><br>
-  currently gaining experience in programming, rock climbing, and DNA isolation<br>
+  currently gaining experience in food science, partner acrobatics, and cultivating community<br>
   open to collaboration on design and science communication projects
 </p>
-  <hr>
- {# Projects #}
-  <div class="list-header">
-    <h2 class="list-header__title">Projects</h2>
-    <a class="btn btn--outline btn--sm" href="/projects">View All</a>
-  </div>
-  {% from "macros/projectlist.njk" import projectlist %}
-  {{ projectlist(projects = collections.project | reverse) }}
+
 
   {# Articles #}
   <div class="list-header">

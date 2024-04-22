@@ -1,31 +1,39 @@
 ---
-title: About Me
+title: about beck
 subtitle: ""
 metaDescription: This page is all about me
 date: 2017-01-01T00:00:00.000Z
 permalink: /about/index.html
 eleventyNavigation:
-  key: About
+  key: about
   order: 1
 ---
 
-### What is Fernfolio?
-An [Eleventy](https://www.11ty.io/) theme designed to simplify the process of creating a beautiful portfolio and blog. Tightly integrated with [Netlify CMS](https://www.netlifycms.org/) for flexible, Git-powered content management.
+ <div class="ui-tabgroup left-side">
+    <input class="ui-tab1" type="radio" id="tgroup_e_tab1" name="tgroup_e" checked />
+    <input class="ui-tab2" type="radio" id="tgroup_e_tab2" name="tgroup_e" />
+    <input class="ui-tab3" type="radio" id="tgroup_e_tab3" name="tgroup_e" />
+    <input class="ui-tab4" type="radio" id="tgroup_e_tab4" name="tgroup_e" />
+    <div class="ui-tabs emoji">
+      <label class="ui-tab1" for="tgroup_e_tab1">🌐</label>
+      <label class="ui-tab2" for="tgroup_e_tab2">🎨</label>
+      <label class="ui-tab3" for="tgroup_e_tab3">🧪</label>
+      <label class="ui-tab4" for="tgroup_e_tab4">🍰</label>
+    </div>
+    <div class="ui-panels">
+      <div id="general" class="ui-tab1"><h3>/ general</h3>
+        <p>Hi there! I am an interdisciplinary designer perpetually trying to figure out how stuff works, whether it’s color theory or croissants. At present, I’m in Cambridge, MA working as an automation scientist, captivated by the idea of engineering biology.</p>
+      </div>
+      <div id="art" class="ui-tab2"><h3>/ art</h3>
+        <p>As an artist, I enjoy exploring new mediums and techniques. My primary background is in illustration and fine art, but I also have experience with character art and graphic design. Soon I will be publishing my portfolio on this site.</p>
+      </div>
+      <div class="ui-tab3"><h3>/ tech</h3>
+        <p>I've been making my way around the world of web development and programming more generally, with a few classes, hackathons, and professional projects here and there. I'm particularly interested in new ways to share science and visualize information.</p>
+      </div>
+      <div class="ui-tab4"><h3>/ food</h3>
+        <p>Several years ago, I found allergy-friendly baking to be an exciting challenge, akin to painting with a limited palette. My kitchen pursuits have nurtured a love of material science and a passion for kinder food systems. I write a <a href="https://floursandfungi.tumblr.com/">vegan food blog</a> with recipes and restaurant reviews.</p>
+      </div>
+  </div>
+</div>
 
-### Why create this?
-
-**Reason #1:** I wanted a portfolio that was simple, fast, accessible, and integrated with a git-powered cms. Existing templates didn't perfectly fit my needs, so I decided to build my own template.
-
-**Reason #2:** I wanted to learn more about [Eleventy](https://www.11ty.dev/) and static site generators in general. Building Fernfolio was a good excuse to dive deeper on that topic.
-
-### How do I edit content?
-Once your site is deployed and configured, add `/admin` to the end of the url (not using localhost) and hit refresh. From there, you should be able to login and see see the content management dashboard. You should be able to change most content here (e.g. page text, images, logo, articles, projects, etc.).
-
-### Further customizations
-If you want to take your customizations further, you will need to modify the project source code. Some customizations, like changing theme colors and fonts, are straightforward (those can be modified in the `variables.scss` file). Other customizations will require more in-depth solutions.
-
-If you get stuck or just have a question, feel free to create a [Github issue](https://github.com/TylerMRoderick/fernfolio-11ty-template/issues) and I will try to point you in the right direction.
-
-Thanks for checking out Fernfolio 👋 - [Tyler M. Roderick](https://www.tylerroderick.com/)
-
-![Fern in Hand](/src/assets/img/fern-forest.jpeg "Fern in Hand")
+<!-- Thanks to https://codepen.io/poppe1219/pen/JjMeBR for the basis of the tab structure.-->

@@ -10,7 +10,6 @@
 }
 
 footer > a > svg {
-  height: 1.5em;
   fill: var(--color-text-alt);
   padding: .5em;
 }
@@ -19,17 +18,17 @@ a:hover {
   border-bottom: 0;
 }
 
-a:hover > svg {
+footer > a:hover > svg {
   fill: var(--color-text);
 }
 
-details {
+footer > details {
 
   width: fit-content;
   margin: 0 auto;
 }
 
-details > summary {
+footer > details > summary {
   list-style-type: none;
   cursor: pointer;
   color: var(--color-border);

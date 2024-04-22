@@ -14,8 +14,8 @@ body {
   flex-direction: column;
   min-height: 100vh;
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.618;
+  font-size: 1.3rem;
+  line-height: 1;
   color: var(--color-text);
   background-color: var(--color-bg);
 }

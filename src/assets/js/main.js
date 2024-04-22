@@ -5,9 +5,6 @@ const darkMode = require('./dark-mode');
 // Initialize Turbolinks
 Turbolinks.start();
 
-// Initialize mobile nav drawer
-drawer();
-
 // Initialize dark mode toggle
 const { enableThemeSwitch } = document.documentElement.dataset;
 

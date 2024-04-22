@@ -3,6 +3,7 @@
   width: 100%;
   border-top: 3px solid var(--color-secondary);
   z-index: var(--z-header);
+  font-family: var(--font-family-heading);
 
   :root[data-theme="dark"] & {
     border-color: var(--color-bg-accent-dark);
@@ -39,15 +40,15 @@
 .site-header__logo {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 30px;
+  justify-content: space-evenly;
+  width: calc(30px + 6em);
   height: 30px;
   padding: 6px 8px;
   border-radius: var(--border-radius-sm);
   color: var(--color-text);
 
   @media (min-width: 1024px) {
-    width: 40px;
+    width: calc(30px + 6em);
     height: 40px;
   }
 
@@ -107,7 +108,10 @@
 }
 
 .site-header__mobile-nav-label {
-  margin-right: 12px;
+  position: absolute;
+  font-size: xx-small;
+  color: var(--color-bg);
+  z-index: -1;
 }
 
 .site-header__items {
@@ -142,6 +146,7 @@
     border-bottom: none;
     background-color: var(--color-bg-secondary);
     color: var(--color-secondary);
+    fill: #00000000;
 
     :root[data-theme="dark"] & {
       background-color: var(--color-bg-wrapper-bg-dark);

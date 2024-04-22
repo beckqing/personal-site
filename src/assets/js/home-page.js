@@ -11,9 +11,11 @@ function hover(aId, elementList, className){
     })
 }
 
-let artIcons = document.getElementsByClassName('art')
-let huIcons = document.getElementsByClassName('hu')
-let sciIcons = document.getElementsByClassName('sci')
+if (typeof artIcons === 'undefined'){
+    var artIcons = document.getElementsByClassName('art')
+    var huIcons = document.getElementsByClassName('hu')
+    var sciIcons = document.getElementsByClassName('sci')
+}
 
 hover("a-art", artIcons, "art--hover")
 hover("a-hu", huIcons, "hu--hover")
