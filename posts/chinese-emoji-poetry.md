@@ -1,9 +1,10 @@
 ---
-title: "🖋 Emoji Poetry, translated from Chinese"
+title: "Emoji Poetry, translated from Chinese"
 metaDescription: An exploration in poetry and a reflection on language
 date: 2022-05-23T00:15:00.000Z
 author: Beck Qing
 summary: An exploration in poetry and a reflection on language
+emoji: 🖋
 tags:
   - humanities
   - poetry

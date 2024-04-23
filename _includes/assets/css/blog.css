@@ -4,10 +4,11 @@
 
 .article-card__title {
   color: var(--color-text);
+  margin-bottom: 0;
 }
 
 .article-card__summary {
-  margin-bottom: 15px;
+  margin-bottom: 0.25em;
 }
 
 .tag-list {
@@ -44,14 +45,14 @@
 }
 
 .tag {
-  margin: 10px 10px 0 0;
-  padding: 6px 8px;
+  padding: 1px 6px;
   background-color: var(--color-bg-secondary);
   border-radius: var(--border-radius-sm);
   color: var(--color-secondary);
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 0.8rem;
   font-weight: 500;
+  margin: auto 0.5em
 }
 
 .tag:hover {

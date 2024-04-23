@@ -1,9 +1,10 @@
 ---
-title: "🎪 notes from my first art fair season"
+title: "notes from my first art fair season"
 metaDescription: Reflecting on what went well and what I would do differently
 date: 2023-01-22
 author: Beck Qing
 summary: Reflecting on what went well and what I would do differently
+emoji: 🎪
 tags:
   - art
   - art business
