@@ -15,11 +15,11 @@
           </a>
         </h4>
         {% if post.data.summary %}
-          <p>
+          <p class="project-card__summary">
             {{ post.data.summary }}
           </p>
         {% endif %}
-        {% if post.data.tags %}
+        {% if post.data.tags and show_projectlist_tags %}
           <p class="tag-list">
             {% for tag in post.data.tags %}
               {%- if tag != "project" -%}

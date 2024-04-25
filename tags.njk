@@ -12,12 +12,12 @@ permalink: /tags/{{ tag }}/
 layout: layouts/base.njk
 renderData:
   title: "Tagged “{{ tag }}”"
-  metaDescription: "All posts from the Blog tagged with “{{ tag }}”"
+  metaDescription: "All posts from notes tagged with “{{ tag }}”"
 ---
 <div class="page-container">
   <div class="tag-list tag-list--no-wrap">
     <h3 class="tag-list__title">articles tagged: "{{ tag }}"</h3>
-    <!--<a class="btn btn--danger" href="/blog">Remove Tag</a>-->
+    <!--<a class="btn btn--danger" href="/notes">Remove Tag</a>-->
   </div>
 
   {% set postslist = collections[tag] %}
@@ -25,6 +25,6 @@ renderData:
   {% include "components/postslist.njk" %}
 
   <nav>
-    <a href="{{ '/blog/' | url }}">← View All Articles</a>
+    <a href="{{ '/notes/' | url }}">← View All Articles</a>
   </nav>
 </div>

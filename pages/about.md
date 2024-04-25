@@ -31,7 +31,7 @@ eleventyNavigation:
         <p>I've been making my way around the world of web development and programming more generally, with a few classes, hackathons, and professional projects here and there. I'm particularly interested in new ways to share science and visualize information.</p>
       </div>
       <div class="ui-tab4"><h3>/ food</h3>
-        <p>Several years ago, I found allergy-friendly baking to be an exciting challenge, akin to painting with a limited palette. My kitchen pursuits have nurtured a love of material science and a passion for kinder food systems. I write a <a href="https://floursandfungi.tumblr.com/">vegan food blog</a> with recipes and restaurant reviews.</p>
+        <p>Several years ago, I found allergy-friendly baking to be an exciting challenge, akin to painting with a limited palette. My kitchen pursuits have nurtured a love of material science and a passion for kinder food systems. I write a <a href="https://floursandfungi.tumblr.com/">vegan food notes</a> with recipes and restaurant reviews.</p>
       </div>
   </div>
 </div>

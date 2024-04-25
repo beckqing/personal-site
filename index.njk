@@ -10,11 +10,12 @@ section: home
   <hr>
   <h2>projects</h2>
   {% set projectlist = collections.project %}
+  {% set show_projectlist_tags = false %}
   {% include "components/projectlist.njk" %}
 
 
   <hr>
-  <h2>articles</h2>
+  <h2>notes</h2>
   {% set postslist = collections.post %}
   {% set show_postslist_tags = false %}
   {% set limit = 3 %}

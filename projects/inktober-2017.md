@@ -1,8 +1,8 @@
 ---
 title: "Inktober 2017"
+emoji: 🖊
 metaDescription: Ballpoint pen on index cards, attempted daily drawing, and an exercise in certainty
 date: 2018-06-19T00:15:00.000Z
-author: Beck Qing
 summary: Ballpoint pen on index cards, attempted daily drawing, and an exercise in certainty
 tags:
   - art
