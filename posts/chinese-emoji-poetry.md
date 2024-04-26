@@ -1,5 +1,5 @@
 ---
-title: "emoji Poetry, translated from chinese"
+title: "emoji poetry, translated from chinese"
 metaDescription: An exploration in poetry and a reflection on language
 date: 2022-05-23T00:15:00.000Z
 author: Beck Qing

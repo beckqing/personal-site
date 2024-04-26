@@ -18,6 +18,7 @@
   justify-content: center;
   padding: 15px 30px;
   border: 2px solid var(--color-border);
+  background-color: var(--color-bg);
 }
 
 .project-card__title {

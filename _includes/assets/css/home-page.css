@@ -12,14 +12,17 @@
 
 #me {
   text-align: center;
+  font-style: italic;
+  text-wrap: balance;
+  margin-bottom: 2.5rem;
 }
 
-#me > a {
+#me > p > a {
   border-bottom: 2px dotted;
   color: var(--color-text)
 }
 
-p > #a-art {
+#me > p > #a-art {
   border-color: var(--color-art);
 }
 
@@ -27,7 +30,7 @@ p > #a-art {
   color: var(--color-art)
 }
 
-p > #a-sci {
+#me > p > #a-sci {
   border-color: var(--color-sci);
 }
 
@@ -35,7 +38,7 @@ p > #a-sci {
   color: var(--color-sci);
 }
 
-p > #a-hu {
+#me > p > #a-hu {
   border-color: var(--color-hu);
 }
 

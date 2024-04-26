@@ -12,9 +12,9 @@
 }
 
 footer > a > svg {
-  height: 1.5em;
+  height: 1.5rem;
   fill: var(--color-text-alt);
-  padding: .5em;
+  margin: .5rem;
 }
 
 a:hover {
