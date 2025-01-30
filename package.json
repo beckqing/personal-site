@@ -27,6 +27,9 @@
     "uglify-es": "^3.3.9"
   },
   "dependencies": {
-    "lightgallery": "^2.6.0"
+    "@11ty/eleventy-img": "^6.0.1",
+    "lightgallery": "^2.6.0",
+    "photoswipe": "^5.4.4",
+    "sharp": "^0.33.5"
   }
 }

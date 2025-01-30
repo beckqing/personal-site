@@ -9,7 +9,7 @@
   display: flex;
   width: 100%;
   max-width: 700px;
-  margin: 4rem auto;
+  margin: 0 auto;
 }
 
 .shadow {
@@ -50,4 +50,26 @@
   background-color: var(--color-danger);
   color: var(--color-bg);
   filter: brightness(90%);  
+}
+
+.gallery {
+  margin: 32px 0;
+  column-gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.gallery a {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  margin-bottom: 8px;
+  break-inside: avoid;
+  text-decoration: none;
+}
+
+.gallery img {
+  max-width: 100%;
+  display: block;
+  grid-row: 1 / -1;
+  grid-column: 1;
 }
