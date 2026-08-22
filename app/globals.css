@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is([data-theme='dark'] *));
 
 @theme inline {
   --font-sans: var(--font-noto), ui-sans-serif, system-ui, sans-serif;
@@ -81,7 +81,7 @@
   --moon: #305789;
 }
 
-.dark {
+[data-theme='dark'] {
   color-scheme: dark;
 
   /* core night-owl palette */
@@ -125,6 +125,23 @@
   }
 }
 
+/* Dark/light toggle cross-fade, via the View Transitions API (triggered in
+   components/theme-transition.tsx). A plain CSS transition-property rule on
+   every element was tried first and reliably worked in isolation — but
+   Chromium has a bug where ANY other React re-render happening near an
+   active CSS color transition (even one producing zero visible DOM change,
+   e.g. an unrelated sibling's state update) makes the transition repeatedly
+   cancel and restart for hundreds of ms. That's unavoidable in a real app —
+   the theme toggle's own icon swap alone re-renders during the flip — so
+   View Transitions is used instead: it snapshots the before/after DOM as
+   images and cross-fades those, entirely outside the CSS transition system,
+   which sidesteps the bug rather than racing it. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 600ms;
+  animation-timing-function: ease;
+}
+
 @layer components {
   /* Recursive Mono Casual — headings and expressive mono text */
   .font-brand {
@@ -151,7 +168,7 @@
       radial-gradient(120% 90% at 80% 0%, rgba(48, 87, 137, 0.14), transparent 60%),
       radial-gradient(90% 80% at 0% 100%, rgba(217, 170, 82, 0.14), transparent 55%);
   }
-  .dark .night-vignette {
+  [data-theme='dark'] .night-vignette {
     background:
       radial-gradient(120% 90% at 80% 0%, rgba(48, 87, 137, 0.28), transparent 60%),
       radial-gradient(90% 80% at 0% 100%, rgba(12, 53, 89, 0.4), transparent 55%);

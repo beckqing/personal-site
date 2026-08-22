@@ -4,6 +4,7 @@ import { Recursive, Noto_Sans } from 'next/font/google'
 import { SiteNav } from '@/components/site-nav'
 import { SiteFooter } from '@/components/site-footer'
 import { ThemeProvider } from '@/components/theme-provider'
+import { ThemeTransitionProvider } from '@/components/theme-transition'
 import './globals.css'
 
 const recursive = Recursive({
@@ -46,15 +47,25 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="antialiased">
+        {/* attribute="data-theme" applies the swap via a single setAttribute()
+            call instead of class mode's classList.remove()+add(). The actual
+            toggle animation runs on the View Transitions API now (see
+            ThemeTransitionProvider), not CSS transitions, so this isn't
+            load-bearing for that anymore — kept as the cleaner of the two.
+            enableColorScheme={false}: color-scheme is set declaratively per
+            theme in globals.css instead, so next-themes doesn't need to set
+            it via JS on every toggle. */}
         <ThemeProvider
-          attribute="class"
+          attribute="data-theme"
           defaultTheme="dark"
           enableSystem={false}
-          disableTransitionOnChange
+          enableColorScheme={false}
         >
-          <SiteNav />
-          <div className="min-h-[70vh]">{children}</div>
-          <SiteFooter />
+          <ThemeTransitionProvider>
+            <SiteNav />
+            <div className="min-h-[70vh]">{children}</div>
+            <SiteFooter />
+          </ThemeTransitionProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

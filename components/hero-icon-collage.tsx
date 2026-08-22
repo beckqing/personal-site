@@ -69,7 +69,36 @@ type PlacedIcon = {
 // blue-noise-style rejection sampling — each candidate spot is checked against
 // already-placed icons and re-rolled if it's too close — so spacing stays
 // generous and even while still reading as a loose, hand-scattered cloud.
-const MIN_GAP_PERCENT = 8.5
+const MIN_GAP_PERCENT = 7
+
+// The hero is much wider than it is tall (roughly 1280x660 on a typical
+// laptop, and wider still on bigger monitors), but icon positions are stored
+// as top/left percentages of the container. A "7% gap" is far more physical
+// pixels horizontally than vertically at that aspect, so comparing raw
+// percentage distance under-spaces icons vertically (reads as clustered/
+// overlapping) and over-spaces them horizontally (reads as gappy). Scaling
+// the vertical delta by this reference aspect before measuring distance
+// corrects for that skew.
+const REFERENCE_ASPECT = 1.5
+
+// Bigger icons need more clearance than the flat per-pair gap allows for, or
+// two large icons placed right at the minimum distance visibly touch. This
+// converts an icon's pixel size into roughly the same percent units as the
+// gap check (assuming a ~1200px-wide hero, in line with the page's max-w-6xl
+// content column), so each icon contributes its own radius to the required
+// spacing.
+function sizeToPercent(size: number) {
+  return size / 24
+}
+
+function spacingDistance(
+  a: { top: number; left: number },
+  b: { top: number; left: number },
+) {
+  const dTop = (a.top - b.top) / REFERENCE_ASPECT
+  const dLeft = a.left - b.left
+  return Math.hypot(dTop, dLeft)
+}
 
 const PLACED_ICONS: PlacedIcon[] = (() => {
   const rand = mulberry32(20240817)
@@ -79,7 +108,7 @@ const PLACED_ICONS: PlacedIcon[] = (() => {
     ;[icons[i], icons[j]] = [icons[j], icons[i]]
   }
 
-  const placed: { top: number; left: number }[] = []
+  const placed: { top: number; left: number; size: number }[] = []
 
   return icons.map((icon, i) => {
     // Spread base angles evenly around the ring, then let each icon wander
@@ -90,7 +119,10 @@ const PLACED_ICONS: PlacedIcon[] = (() => {
 
     let top = 50
     let left = 50
-    const maxAttempts = 24
+    let bestTop = 50
+    let bestLeft = 50
+    let bestSlack = -Infinity
+    const maxAttempts = 40
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const angle = baseAngle + (rand() - 0.5) * ((Math.PI * 2) / icons.length) * 1.3
       const radiusT = rand() // 0 = inner edge of band, 1 = outer edge
@@ -98,29 +130,58 @@ const PLACED_ICONS: PlacedIcon[] = (() => {
       const ry = DONUT_RADIUS_Y_INNER + radiusT * (DONUT_RADIUS_Y_OUTER - DONUT_RADIUS_Y_INNER)
       const candidateTop = DONUT_CENTER_Y + Math.sin(angle) * ry
       const candidateLeft = DONUT_CENTER_X + Math.cos(angle) * rx
+      const candidate = { top: candidateTop, left: candidateLeft }
 
-      const tooClose = placed.some(
-        (p) => Math.hypot(p.top - candidateTop, p.left - candidateLeft) < MIN_GAP_PERCENT,
-      )
+      // Slack = how much spare room this spot has over the minimum required
+      // gap to its closest already-placed neighbor (negative = overlapping).
+      const slack =
+        placed.length === 0
+          ? Infinity
+          : Math.min(
+              ...placed.map(
+                (p) =>
+                  spacingDistance(candidate, p) -
+                  (MIN_GAP_PERCENT + sizeToPercent(size) + sizeToPercent(p.size)),
+              ),
+            )
 
-      if (!tooClose || attempt === maxAttempts - 1) {
+      if (slack > bestSlack) {
+        bestSlack = slack
+        bestTop = candidateTop
+        bestLeft = candidateLeft
+      }
+
+      if (slack >= 0) {
         top = candidateTop
         left = candidateLeft
         break
       }
+
+      if (attempt === maxAttempts - 1) {
+        // Nothing cleared the minimum gap — use the least-bad candidate seen
+        // rather than whatever the final random roll happened to be.
+        top = bestTop
+        left = bestLeft
+      }
     }
 
-    placed.push({ top, left })
+    placed.push({ top, left, size })
+
+    // Rounded to a few decimals so the value the browser stores after
+    // parsing the server-rendered style attribute (which itself rounds)
+    // matches what the client recomputes on hydration — full float precision
+    // here caused a benign but noisy hydration mismatch warning.
+    const round = (n: number) => Math.round(n * 1000) / 1000
 
     return {
       slug: icon.slug,
       path: icon.path,
       viewBox: icon.viewBox,
       categories: icon.categories,
-      top,
-      left,
-      size,
-      rotate,
+      top: round(top),
+      left: round(left),
+      size: round(size),
+      rotate: round(rotate),
     }
   })
 })()
