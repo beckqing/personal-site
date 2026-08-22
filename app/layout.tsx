@@ -46,7 +46,7 @@ export default function RootLayout({
       className={`${recursive.variable} ${notoSans.variable} bg-background`}
       suppressHydrationWarning
     >
-      <body className="antialiased">
+      <body className="night-vignette antialiased">
         {/* attribute="data-theme" applies the swap via a single setAttribute()
             call instead of class mode's classList.remove()+add(). The actual
             toggle animation runs on the View Transitions API now (see

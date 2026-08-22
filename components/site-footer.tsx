@@ -1,9 +1,16 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Mail } from 'lucide-react'
 import { MoonLogo } from '@/components/moon-logo'
 import { InstagramIcon } from '@/components/instagram-icon'
 
 export function SiteFooter() {
+  const pathname = usePathname()
+  // The homepage ends on its own "see the full gallery" beat instead.
+  if (pathname === '/') return null
+
   return (
     <footer className="mt-24 border-t border-border/70 bg-card/40">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-12 sm:px-8 md:flex-row md:items-start md:justify-between">

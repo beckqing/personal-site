@@ -162,25 +162,33 @@
   .text-pretty {
     text-wrap: pretty;
   }
-  /* subtle grain-free vignette used on hero sections */
+  /* subtle grain-free vignette, pinned to the viewport (not the element's own
+     box) so it reads as one continuous backdrop behind the whole page
+     instead of cutting off at the bottom of whichever section wears it. */
   .night-vignette {
     background:
       radial-gradient(120% 90% at 80% 0%, rgba(48, 87, 137, 0.14), transparent 60%),
       radial-gradient(90% 80% at 0% 100%, rgba(217, 170, 82, 0.14), transparent 55%);
+    background-attachment: fixed;
   }
   [data-theme='dark'] .night-vignette {
     background:
       radial-gradient(120% 90% at 80% 0%, rgba(48, 87, 137, 0.28), transparent 60%),
       radial-gradient(90% 80% at 0% 100%, rgba(12, 53, 89, 0.4), transparent 55%);
+    background-attachment: fixed;
   }
 
-  /* corkboard collage — tilted panels that settle flat on hover/focus */
+  /* corkboard collage — tilted panels that settle flat on hover/focus, or
+     when .tilt-card-active is toggled by JS (hovering the matching word in
+     the hero copy above settles the panel the same way, even though the
+     mouse is nowhere near it). */
   .tilt-card {
     transform: rotate(var(--tilt, 0deg));
     transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms ease;
   }
   .tilt-card:hover,
-  .tilt-card:focus-visible {
+  .tilt-card:focus-visible,
+  .tilt-card.tilt-card-active {
     transform: rotate(0deg) translateY(-0.4rem) scale(1.025);
   }
 

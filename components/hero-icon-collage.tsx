@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { BRAND_ICONS, type IconCategory } from '@/lib/brand-icons'
 import { cn } from '@/lib/utils'
@@ -11,7 +12,10 @@ type CollageContextValue = {
 
 const CollageContext = createContext<CollageContextValue | null>(null)
 
-function useCollage() {
+/** Shared hover state between the hero copy, the icon field, and (via the
+ *  panels below the hero) any other element that wants to react to the same
+ *  discipline being hovered. Must be used inside a HeroWordScatter. */
+export function useCollage() {
   const ctx = useContext(CollageContext)
   if (!ctx) {
     throw new Error('CategoryWord/IconScatterField must be used inside HeroWordScatter')
@@ -30,6 +34,13 @@ const CATEGORY_VAR: Record<IconCategory, string> = {
   art: 'var(--art)',
   hu: 'var(--writing)',
   sci: 'var(--science)',
+}
+
+// Matches the discipline tag each work item is filtered by on /work.
+const CATEGORY_WORK_TAG: Record<IconCategory, string> = {
+  art: 'art',
+  hu: 'writing',
+  sci: 'science',
 }
 
 // Deterministic PRNG so the "random" scatter renders identically on server and client.
@@ -232,19 +243,19 @@ export function CategoryWord({
   const active = hovered === category
 
   return (
-    <span
+    <Link
+      href={`/work?tags=${CATEGORY_WORK_TAG[category]}`}
       onMouseEnter={() => setHovered(category)}
       onMouseLeave={() => setHovered(null)}
       onFocus={() => setHovered(category)}
       onBlur={() => setHovered(null)}
-      tabIndex={0}
-      className="cursor-default underline decoration-dotted decoration-2 underline-offset-4 outline-none transition-colors duration-300"
+      className="underline decoration-dotted decoration-2 underline-offset-4 outline-none transition-colors duration-300"
       style={{
         textDecorationColor: CATEGORY_VAR[category],
         color: active ? CATEGORY_VAR[category] : undefined,
       }}
     >
       {children}
-    </span>
+    </Link>
   )
 }
