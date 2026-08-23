@@ -26,11 +26,6 @@ export function aspectFor(slug: string) {
   return ASPECTS[hashSlug(slug) % ASPECTS.length]
 }
 
-/** Deterministic left/right lean so a collection's fan doesn't always tip the same way. */
-function leanFor(slug: string) {
-  return hashSlug(slug) % 2 === 0 ? 1 : -1
-}
-
 /**
  * The most specific category tag an item carries (medium/form/field), used as
  * the big watermark on placeholder art. Falls back to the discipline itself.
@@ -116,38 +111,35 @@ export function WorkPlaceholder({
 }
 
 /**
- * A collection's placeholder as a clean fan of three cards: all three pivot
- * from the same point at the bottom, evenly spread left/center/right, and
- * open a little wider on hover — like a hand of cards, not a scattered pile.
+ * A collection's placeholder as a fanned hand of three cards, the way you'd
+ * actually fan cards in your hand: all three pivot from the same base point
+ * and lean the same direction, with each card further back rotated a little
+ * more than the one in front of it. On hover the top card noses subtly the
+ * other way, as if being drawn out of the fan.
  */
 export function CollectionStack({ item, className }: { item: WorkItem; className?: string }) {
   const tone = toneFor(item)
-  const lean = leanFor(item.slug)
   return (
     <div className={cn('relative px-4 pt-2', className)}>
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70 transition-transform duration-300 ease-out group-hover:rotate-[var(--fan-hover)]"
-        style={
-          {
-            background: `color-mix(in srgb, ${tone} 10%, var(--card))`,
-            transform: `rotate(${8 * lean}deg)`,
-            '--fan-hover': `${11 * lean}deg`,
-          } as CSSProperties
-        }
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70"
+        style={{
+          background: `color-mix(in srgb, ${tone} 9%, var(--card))`,
+          transform: 'rotate(11deg)',
+        }}
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70 transition-transform duration-300 ease-out group-hover:rotate-[var(--fan-hover)]"
-        style={
-          {
-            background: `color-mix(in srgb, ${tone} 10%, var(--card))`,
-            transform: `rotate(${-8 * lean}deg)`,
-            '--fan-hover': `${-11 * lean}deg`,
-          } as CSSProperties
-        }
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70"
+        style={{
+          background: `color-mix(in srgb, ${tone} 11%, var(--card))`,
+          transform: 'rotate(6deg)',
+        }}
       />
-      <div className="relative aspect-[4/3] origin-bottom overflow-hidden rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out group-hover:-translate-y-1">
+      <div
+        className="relative aspect-[4/3] origin-bottom overflow-hidden rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out rotate-[1deg] group-hover:-translate-x-0.5 group-hover:rotate-[-3deg]"
+      >
         <WorkPlaceholder item={item} />
       </div>
     </div>
