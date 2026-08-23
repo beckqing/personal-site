@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { FileText, ImageOff, Layers } from 'lucide-react'
 import {
@@ -14,11 +15,15 @@ import { cn } from '@/lib/utils'
 
 const ASPECTS = ['aspect-square', 'aspect-[4/5]', 'aspect-[5/4]', 'aspect-[3/4]']
 
-/** Deterministic pseudo-random aspect ratio so masonry grids feel varied but stable. */
-export function aspectFor(slug: string) {
+function hashSlug(slug: string) {
   let h = 0
   for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0
-  return ASPECTS[h % ASPECTS.length]
+  return h
+}
+
+/** Deterministic pseudo-random aspect ratio so masonry grids feel varied but stable. */
+export function aspectFor(slug: string) {
+  return ASPECTS[hashSlug(slug) % ASPECTS.length]
 }
 
 /**
@@ -106,27 +111,36 @@ export function WorkPlaceholder({
 }
 
 /**
- * A collection's placeholder with two tilted panels peeking out behind it,
- * so a stack reads as a stack before you read the badge.
+ * A collection's placeholder as a fanned hand of three cards, the way you'd
+ * actually fan cards in your hand: all three pivot from the same base point
+ * and lean the same direction, with each card further back rotated a little
+ * more than the one in front of it. On hover the top card noses subtly the
+ * other way, as if being drawn out of the fan.
  */
 export function CollectionStack({ item, className }: { item: WorkItem; className?: string }) {
   const tone = toneFor(item)
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative px-4 pt-2', className)}>
       <div
         aria-hidden="true"
-        className="absolute inset-x-3 -top-2 h-4 rounded-t-xl border border-b-0 border-border"
-        style={{ background: `color-mix(in srgb, ${tone} 10%, var(--card))` }}
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70"
+        style={{
+          background: `color-mix(in srgb, ${tone} 9%, var(--card))`,
+          transform: 'rotate(11deg)',
+        }}
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-1.5 -top-1 h-3 rounded-t-xl border border-b-0 border-border"
-        style={{ background: `color-mix(in srgb, ${tone} 13%, var(--card))` }}
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70"
+        style={{
+          background: `color-mix(in srgb, ${tone} 11%, var(--card))`,
+          transform: 'rotate(6deg)',
+        }}
       />
-      <div className="relative overflow-hidden rounded-xl border border-border">
-        <div className="aspect-[4/3]">
-          <WorkPlaceholder item={item} />
-        </div>
+      <div
+        className="relative aspect-[4/3] origin-bottom overflow-hidden rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out rotate-[1deg] group-hover:-translate-x-0.5 group-hover:rotate-[-3deg]"
+      >
+        <WorkPlaceholder item={item} />
       </div>
     </div>
   )
