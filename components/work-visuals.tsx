@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { FileText, ImageOff, Layers } from 'lucide-react'
 import {
@@ -25,11 +26,9 @@ export function aspectFor(slug: string) {
   return ASPECTS[hashSlug(slug) % ASPECTS.length]
 }
 
-const FRONT_TILTS = [-4, -3, 3, 4]
-
-/** Small deterministic tilt so a collection's photo-stack looks scattered but stable. */
-function tiltFor(slug: string) {
-  return FRONT_TILTS[hashSlug(slug) % FRONT_TILTS.length]
+/** Deterministic left/right lean so a collection's fan doesn't always tip the same way. */
+function leanFor(slug: string) {
+  return hashSlug(slug) % 2 === 0 ? 1 : -1
 }
 
 /**
@@ -117,36 +116,38 @@ export function WorkPlaceholder({
 }
 
 /**
- * A collection's placeholder as a small scattered photo stack: two tinted
- * panels peek out from behind at their own tilt, and the front piece — tilted
- * a few degrees itself — spills past the card's edges and straightens on
- * hover, so a collection reads as playful before you've read the badge.
+ * A collection's placeholder as a clean fan of three cards: all three pivot
+ * from the same point at the bottom, evenly spread left/center/right, and
+ * open a little wider on hover — like a hand of cards, not a scattered pile.
  */
 export function CollectionStack({ item, className }: { item: WorkItem; className?: string }) {
   const tone = toneFor(item)
-  const tilt = tiltFor(item.slug)
+  const lean = leanFor(item.slug)
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative px-4 pt-2', className)}>
       <div
         aria-hidden="true"
-        className="absolute -left-3 top-2 z-0 aspect-[4/3] w-[92%] rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out group-hover:-translate-x-1 group-hover:-translate-y-0.5"
-        style={{
-          background: `color-mix(in srgb, ${tone} 12%, var(--card))`,
-          transform: `rotate(${tilt - 7}deg)`,
-        }}
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70 transition-transform duration-300 ease-out group-hover:rotate-[var(--fan-hover)]"
+        style={
+          {
+            background: `color-mix(in srgb, ${tone} 10%, var(--card))`,
+            transform: `rotate(${8 * lean}deg)`,
+            '--fan-hover': `${11 * lean}deg`,
+          } as CSSProperties
+        }
       />
       <div
         aria-hidden="true"
-        className="absolute -right-3 top-3 z-0 aspect-[4/3] w-[92%] rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out group-hover:translate-x-1 group-hover:-translate-y-0.5"
-        style={{
-          background: `color-mix(in srgb, ${tone} 15%, var(--card))`,
-          transform: `rotate(${tilt + 6}deg)`,
-        }}
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70 transition-transform duration-300 ease-out group-hover:rotate-[var(--fan-hover)]"
+        style={
+          {
+            background: `color-mix(in srgb, ${tone} 10%, var(--card))`,
+            transform: `rotate(${-8 * lean}deg)`,
+            '--fan-hover': `${-11 * lean}deg`,
+          } as CSSProperties
+        }
       />
-      <div
-        className="relative z-10 aspect-[4/3] overflow-hidden rounded-xl border border-border shadow-md transition-transform duration-300 ease-out group-hover:-translate-y-1 group-hover:rotate-0"
-        style={{ transform: `rotate(${tilt}deg)` }}
-      >
+      <div className="relative aspect-[4/3] origin-bottom overflow-hidden rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out group-hover:-translate-y-1">
         <WorkPlaceholder item={item} />
       </div>
     </div>
