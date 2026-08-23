@@ -236,8 +236,8 @@ function ImageCard({
     <article
       className={cn(
         'group flex flex-col rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg',
-        // Collections need the stack's peeking panels to escape the card.
-        collection ? 'mt-3 p-3' : 'overflow-hidden',
+        // Collections need extra room for the tilted stack to spill past the card.
+        collection ? 'mt-4 p-4' : 'overflow-hidden',
       )}
     >
       <Link
@@ -255,12 +255,12 @@ function ImageCard({
           )}
 
           {collection && (
-            <div className="absolute left-3 top-3">
+            <div className="absolute left-3 top-3 z-20">
               <CollectionMark count={item.pieces.length} />
             </div>
           )}
           {hasWriteup(item) && (
-            <div className="absolute bottom-3 left-3">
+            <div className="absolute bottom-3 left-3 z-20">
               <WriteupMark />
             </div>
           )}
