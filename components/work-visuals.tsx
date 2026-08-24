@@ -111,35 +111,30 @@ export function WorkPlaceholder({
 }
 
 /**
- * A collection's placeholder as a fanned hand of three cards, the way you'd
- * actually fan cards in your hand: all three pivot from the same base point
- * and lean the same direction, with each card further back rotated a little
- * more than the one in front of it. On hover the top card noses subtly the
- * other way, as if being drawn out of the fan.
+ * A collection's placeholder as a fanned hand of three cards, pivoting from
+ * a shared point at the bottom-left corner — the way you'd actually hold and
+ * fan a hand of cards pinched at one edge. The front card leans a few
+ * degrees left of that pivot, and each card behind it rotates the same
+ * step further clockwise, so the whole fan reads as one consistent sweep
+ * with equal spacing. On hover the fan opens further: the front card tilts
+ * a couple more degrees left, the back card a couple more degrees right,
+ * like the hand is being spread.
  */
 export function CollectionStack({ item, className }: { item: WorkItem; className?: string }) {
   const tone = toneFor(item)
   return (
-    <div className={cn('relative px-4 pt-2', className)}>
+    <div className={cn('relative px-4 pt-3', className)}>
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70"
-        style={{
-          background: `color-mix(in srgb, ${tone} 9%, var(--card))`,
-          transform: 'rotate(11deg)',
-        }}
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom-left rotate-[7deg] rounded-xl border border-border/70 transition-transform duration-300 ease-out group-hover:rotate-[9deg]"
+        style={{ background: `color-mix(in srgb, ${tone} 9%, var(--card))` }}
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom rounded-xl border border-border/70"
-        style={{
-          background: `color-mix(in srgb, ${tone} 11%, var(--card))`,
-          transform: 'rotate(6deg)',
-        }}
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom-left rotate-[2deg] rounded-xl border border-border/70"
+        style={{ background: `color-mix(in srgb, ${tone} 11%, var(--card))` }}
       />
-      <div
-        className="relative aspect-[4/3] origin-bottom overflow-hidden rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out rotate-[1deg] group-hover:-translate-x-0.5 group-hover:rotate-[-3deg]"
-      >
+      <div className="relative aspect-[4/3] origin-bottom-left -rotate-3 overflow-hidden rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out group-hover:-rotate-[5deg]">
         <WorkPlaceholder item={item} />
       </div>
     </div>
