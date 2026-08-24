@@ -116,8 +116,9 @@ export function WorkPlaceholder({
  * fan a hand of cards pinched at one edge. The front card leans a few
  * degrees left of that pivot, and each card behind it rotates the same
  * step further clockwise, so the whole fan reads as one consistent sweep
- * with equal spacing. On hover the whole hand shifts together by the same
- * amount, rather than the top card alone peeling away.
+ * with equal spacing. On hover the fan opens further: the front card tilts
+ * a couple more degrees left, the back card a couple more degrees right,
+ * like the hand is being spread.
  */
 export function CollectionStack({ item, className }: { item: WorkItem; className?: string }) {
   const tone = toneFor(item)
@@ -125,15 +126,15 @@ export function CollectionStack({ item, className }: { item: WorkItem; className
     <div className={cn('relative px-4 pt-3', className)}>
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom-left rotate-[9deg] rounded-xl border border-border/70 transition-transform duration-300 ease-out group-hover:-translate-x-1"
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom-left rotate-[7deg] rounded-xl border border-border/70 transition-transform duration-300 ease-out group-hover:rotate-[9deg]"
         style={{ background: `color-mix(in srgb, ${tone} 9%, var(--card))` }}
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom-left rotate-[3deg] rounded-xl border border-border/70 transition-transform duration-300 ease-out group-hover:-translate-x-1"
+        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom-left rotate-[2deg] rounded-xl border border-border/70"
         style={{ background: `color-mix(in srgb, ${tone} 11%, var(--card))` }}
       />
-      <div className="relative aspect-[4/3] origin-bottom-left -rotate-3 overflow-hidden rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out group-hover:-translate-x-1">
+      <div className="relative aspect-[4/3] origin-bottom-left -rotate-3 overflow-hidden rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out group-hover:-rotate-[5deg]">
         <WorkPlaceholder item={item} />
       </div>
     </div>
