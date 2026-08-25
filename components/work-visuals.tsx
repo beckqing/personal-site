@@ -73,15 +73,7 @@ export function CollectionMark({ count, className }: { count: number; className?
  * A tinted placeholder standing in for real artwork — no fabricated images,
  * just the item's category as a watermark over its discipline tone.
  */
-export function WorkPlaceholder({
-  item,
-  className,
-  showYear = true,
-}: {
-  item: WorkItem
-  className?: string
-  showYear?: boolean
-}) {
+export function WorkPlaceholder({ item, className }: { item: WorkItem; className?: string }) {
   const tone = toneFor(item)
   return (
     <div
@@ -101,11 +93,6 @@ export function WorkPlaceholder({
       >
         {categoryLabel(item)}
       </span>
-      {showYear && (
-        <span className="font-brand absolute right-3 top-3 rounded-full bg-background/70 px-2 py-0.5 text-xs text-foreground backdrop-blur-sm">
-          {item.year}
-        </span>
-      )}
     </div>
   )
 }
@@ -113,28 +100,35 @@ export function WorkPlaceholder({
 /**
  * A collection's placeholder as a fanned hand of three cards, pivoting from
  * a shared point at the bottom-left corner — the way you'd actually hold and
- * fan a hand of cards pinched at one edge. The front card leans a few
- * degrees left of that pivot, and each card behind it rotates the same
- * step further clockwise, so the whole fan reads as one consistent sweep
- * with equal spacing. On hover the fan opens further: the front card tilts
- * a couple more degrees left, the back card a couple more degrees right,
- * like the hand is being spread.
+ * fan a hand of cards pinched at one edge. Every card in the fan is the same
+ * size as a standalone piece's image (no card chrome wrapping the group —
+ * it sits directly on the page background), so the stack reads as loose
+ * photos rather than a bordered tile. The tilt and offsets are kept very
+ * small on purpose — full-size cards fan out fast, and each degree of
+ * rotation swings the back cards' lower corner further down as well as
+ * right, so a wide fan would spill into both the column gutter and the
+ * card sitting below it in the same masonry column. The front card leans
+ * slightly left of that pivot, and the back card mirrors it slightly right,
+ * so the whole fan reads as one consistent, centered sweep. On hover the
+ * fan opens a little further, like the hand is being spread. The middle and
+ * back cards sit a touch lower and further right than the front one, so all
+ * three edges stay visible instead of hinging from the exact same point.
  */
 export function CollectionStack({ item, className }: { item: WorkItem; className?: string }) {
   const tone = toneFor(item)
   return (
-    <div className={cn('relative px-4 pt-3', className)}>
+    <div className={cn('relative', className)}>
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom-left rotate-[7deg] rounded-xl border border-border/70 transition-transform duration-300 ease-out group-hover:rotate-[9deg]"
+        className="absolute inset-x-0 top-0 aspect-[5/4] origin-bottom-left translate-x-1 translate-y-1 rotate-[1deg] rounded-xl border border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))] shadow-sm transition-transform duration-300 ease-out group-hover:rotate-[1.5deg]"
         style={{ background: `color-mix(in srgb, ${tone} 9%, var(--card))` }}
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 top-0 aspect-[4/3] origin-bottom-left rotate-[2deg] rounded-xl border border-border/70"
+        className="absolute inset-x-0 top-0 aspect-[5/4] origin-bottom-left translate-x-0.5 translate-y-0.5 rotate-0 rounded-xl border border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))] shadow-sm"
         style={{ background: `color-mix(in srgb, ${tone} 11%, var(--card))` }}
       />
-      <div className="relative aspect-[4/3] origin-bottom-left -rotate-3 overflow-hidden rounded-xl border border-border shadow-sm transition-transform duration-300 ease-out group-hover:-rotate-[5deg]">
+      <div className="relative aspect-[5/4] origin-bottom-left -rotate-1 overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--foreground)_14%,var(--card))] shadow-sm transition-transform duration-300 ease-out group-hover:-rotate-[1.5deg]">
         <WorkPlaceholder item={item} />
       </div>
     </div>

@@ -103,7 +103,7 @@ export default async function CollectionPiecePage({
       >
         {!textForward && (
           <div className="aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border">
-            <WorkPlaceholder item={piece} showYear={false} />
+            <WorkPlaceholder item={piece} />
           </div>
         )}
         <div>

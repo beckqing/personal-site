@@ -17,6 +17,13 @@ export type WorkPiece = {
   excerpt?: string
   /** A longer write-up, shown only on the item's own page. Flagged with an icon. */
   writeup?: string
+  /**
+   * Marks a piece as genuinely both — text-forward work that was written
+   * around a specific image and still wants it shown, rather than being
+   * purely a quote-only piece or a purely visual one. Opt-in per piece
+   * (mostly science essays so far); doesn't follow automatically from tags.
+   */
+  hasImage?: boolean
 }
 
 /** A piece that holds other pieces. Rendered with a tilted deck behind it. */
@@ -49,6 +56,15 @@ export function piecePath(collection: WorkCollection, piece: WorkPiece): string 
 export function isTextForward(item: WorkItem): boolean {
   if (isCollection(item)) return false
   return item.tags.includes('poem') || item.tags.includes('essay')
+}
+
+/**
+ * A piece flagged with `hasImage`, checked ahead of isTextForward — a
+ * text-forward piece that also carries an image renders as the hybrid
+ * card, not the quote-only one.
+ */
+export function isHybrid(item: WorkItem): boolean {
+  return !isCollection(item) && Boolean(item.hasImage)
 }
 
 /** There are exactly three disciplines. They overlap freely — nothing is exclusive. */
@@ -95,6 +111,11 @@ export function isDiscipline(tag: string): tag is Discipline {
 /** The first discipline tag an item carries — drives its accent tone. */
 export function primaryDiscipline(item: WorkItem): Discipline | undefined {
   return DISCIPLINES.find((d) => item.tags.includes(d))
+}
+
+/** An art piece's medium (oil, ink, watercolor, digital), if it has one. */
+export function mediumFor(item: WorkItem): string | undefined {
+  return DISCIPLINE_FACETS.art.tags.find((tag) => item.tags.includes(tag))
 }
 
 /** The accent tone (CSS value) for an item, based on its primary discipline. */
@@ -346,6 +367,7 @@ export const WORK: WorkItem[] = [
     description:
       'A cross-linguistic review of how the words a culture has for color shape the way its speakers see and remember it.',
     tags: ['science', 'neuroscience', 'writing', 'essay', 'language', 'color'],
+    hasImage: true,
     excerpt:
       'Give a culture a word for a color, and its speakers will start to see that color everywhere — including in memory.',
     writeup:
@@ -421,6 +443,7 @@ export const WORK: WorkItem[] = [
     description:
       'Curiosity is not a childish thing to grow out of. It might be the most serious commitment an adult can make.',
     tags: ['writing', 'essay', 'science'],
+    hasImage: true,
     excerpt:
       'Curiosity is not a childish thing to grow out of. It may be the most serious commitment an adult can make.',
     writeup:
