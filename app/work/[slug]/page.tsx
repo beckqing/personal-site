@@ -24,6 +24,7 @@ import {
   WorkPlaceholder,
   WriteupMark,
 } from '@/components/work-visuals'
+import { ImageLightbox } from '@/components/image-lightbox'
 
 export function generateStaticParams() {
   return WORK.map((item) => ({ slug: item.slug }))
@@ -91,29 +92,33 @@ function CollectionView({ item }: { item: WorkCollection }) {
       </h2>
 
       <div className="mt-6 columns-1 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5">
-        {item.pieces.map((p) => (
-          <Link
+        {item.pieces.map((p, i) => (
+          <div
             key={p.slug}
-            href={piecePath(item, p)}
-            className="group relative block w-full break-inside-avoid overflow-hidden rounded-xl border border-border text-left transition-transform hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-ring"
+            className="relative w-full break-inside-avoid overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1"
           >
-            <div className={aspectFor(p.slug)}>
-              <WorkPlaceholder item={p} />
-            </div>
-            <div className="p-4">
+            <ImageLightbox items={item.pieces} initialIndex={i} className="rounded-none border-none">
+              <div className={aspectFor(p.slug)}>
+                <WorkPlaceholder item={p} />
+              </div>
+            </ImageLightbox>
+            <Link
+              href={piecePath(item, p)}
+              className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
               <p className="font-brand text-base font-bold lowercase leading-tight text-foreground text-balance">
                 {p.title}
               </p>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                 {p.description}
               </p>
-            </div>
+            </Link>
             {hasWriteup(p) && (
               <div className="absolute left-3 top-3">
                 <WriteupMark />
               </div>
             )}
-          </Link>
+          </div>
         ))}
       </div>
     </>
@@ -155,11 +160,13 @@ function PieceView({ piece }: { piece: WorkPiece }) {
   }
 
   return (
-    <article className="mt-6 grid gap-8 sm:grid-cols-[minmax(0,22rem)_1fr] sm:items-start">
-      <div className="aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border">
-        <WorkPlaceholder item={piece} />
-      </div>
-      <div>
+    <article className="mt-6">
+      <ImageLightbox items={[piece]} className="mx-auto max-w-3xl shadow-sm">
+        <div className="aspect-[16/10] w-full overflow-hidden">
+          <WorkPlaceholder item={piece} />
+        </div>
+      </ImageLightbox>
+      <div className="mx-auto mt-8 max-w-2xl">
         <h1 className="font-brand text-4xl font-bold lowercase text-foreground text-balance sm:text-5xl">
           {piece.title}
         </h1>
