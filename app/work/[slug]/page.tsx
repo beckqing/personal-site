@@ -108,7 +108,6 @@ function CollectionView({ item }: { item: WorkCollection }) {
                 {p.description}
               </p>
             </div>
-            {/* Bottom-left, matching the gallery — the year badge owns top-right. */}
             {hasWriteup(p) && (
               <div className="absolute left-3 top-3">
                 <WriteupMark />
@@ -158,7 +157,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
   return (
     <article className="mt-6 grid gap-8 sm:grid-cols-[minmax(0,22rem)_1fr] sm:items-start">
       <div className="aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border">
-        <WorkPlaceholder item={piece} showYear={false} />
+        <WorkPlaceholder item={piece} />
       </div>
       <div>
         <h1 className="font-brand text-4xl font-bold lowercase text-foreground text-balance sm:text-5xl">

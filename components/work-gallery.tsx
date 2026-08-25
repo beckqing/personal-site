@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Quote, RotateCcw, Search, X } from 'lucide-react'
@@ -11,11 +11,11 @@ import {
   DISCIPLINES,
   FILTER_MODES,
   filterWork,
-  hasWriteup,
   isCollection,
   isDiscipline,
+  isHybrid,
   isTextForward,
-  itemTags,
+  mediumFor,
   MODE_LABEL,
   nextMode,
   tagTone,
@@ -25,14 +25,10 @@ import {
   workHref,
   type Discipline,
   type FilterMode,
+  type WorkCollection,
   type WorkItem,
 } from '@/lib/work'
-import {
-  CollectionMark,
-  CollectionStack,
-  WorkPlaceholder,
-  WriteupMark,
-} from '@/components/work-visuals'
+import { CollectionStack, WorkPlaceholder } from '@/components/work-visuals'
 import { cn } from '@/lib/utils'
 
 /** Where each discipline's glow sits, so blends read as distinct light sources. */
@@ -140,45 +136,27 @@ function VennMode({ mode, onCycle }: { mode: FilterMode; onCycle: () => void }) 
   )
 }
 
-/**
- * Shared footer of tag chips, used by both card variants. These stay outside
- * the card's link so they can remain real filter buttons — a button nested in
- * an anchor is invalid, and would swallow the click either way.
- */
-function CardTags({
-  item,
-  activeTags,
-  onToggleTag,
-}: {
-  item: WorkItem
-  activeTags: Set<string>
-  onToggleTag: (tag: string) => void
-}) {
+/** A small static pill labeling a piece — not a filter control, just a tag-styled caption. */
+function TagPill({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className="mt-4 flex flex-wrap gap-1.5">
-      {Array.from(itemTags(item)).map((tag) => (
-        <TagChip
-          key={tag}
-          tag={tag}
-          size="sm"
-          active={activeTags.has(tag)}
-          onClick={() => onToggleTag(tag)}
-        />
-      ))}
-    </div>
+    <span
+      className={cn(
+        'font-brand inline-flex shrink-0 items-center rounded-full border border-border px-2 py-0.5 text-[0.7rem] lowercase text-muted-foreground',
+        className,
+      )}
+    >
+      {children}
+    </span>
   )
 }
 
-/** Text-forward pieces (poems, essays) — a quote-style preview, no image. */
-function TextCard({
-  item,
-  activeTags,
-  onToggleTag,
-}: {
-  item: WorkItem
-  activeTags: Set<string>
-  onToggleTag: (tag: string) => void
-}) {
+/**
+ * Text-forward pieces (poems, essays) — a quote-style preview, no image.
+ * The form (poem/essay) reads as a small tag up top rather than folded
+ * into the attribution line, so the title at the bottom can stay a plain
+ * "— 'x'" instead of "— from the poem/essay 'x'".
+ */
+function TextCard({ item }: { item: WorkItem }) {
   const tone = toneFor(item)
   const isPoem = item.tags.includes('poem')
   const excerpt = item.excerpt ?? item.description
@@ -188,17 +166,14 @@ function TextCard({
       style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}
     >
       <Link href={workHref(item)} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-3">
           <Quote
-            className="h-7 w-7 -scale-x-100"
+            className="h-7 w-7 shrink-0 -scale-x-100"
             style={{ color: `color-mix(in srgb, ${tone} 70%, transparent)` }}
             strokeWidth={1.5}
             aria-hidden="true"
           />
-          <span className="font-brand flex items-center gap-2 text-xs lowercase text-muted-foreground">
-            {isPoem ? 'poem' : 'essay'} · {item.year}
-            {hasWriteup(item) && <WriteupMark />}
-          </span>
+          <TagPill>{isPoem ? 'poem' : 'essay'}</TagPill>
         </div>
 
         <p
@@ -210,102 +185,156 @@ function TextCard({
           {excerpt}
         </p>
 
-        <p className="font-brand mt-4 flex items-center gap-1.5 text-sm lowercase tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
-          — from &ldquo;{item.title}&rdquo;
-          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-        </p>
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="font-brand text-sm lowercase tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
+            {item.title}
+          </span>
+          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-foreground" />
+        </div>
       </Link>
-
-      <CardTags item={item} activeTags={activeTags} onToggleTag={onToggleTag} />
     </article>
   )
 }
 
 /**
- * Visual/other pieces — a tinted blank placeholder panel above the metadata.
- * Standalone pieces split into two treatments so it's clear at a glance
- * which discipline is driving the piece: a piece with no "writing" tag is
- * primarily visual, so its image gets the space and the description drops
- * out entirely; a piece tagged "writing" that still carries an image (e.g.
- * an illustrated blog post, as opposed to the quote-only TextCard used for
- * poems/essays) stays text-led, with a shorter image strip and its full
- * description kept.
- *
- * The caption block borrows TextCard's sense of hierarchy: the image is the
- * content, so the title reads like a small gray attribution line (à la
- * TextCard's "— from ...") rather than competing with the image as a bold
- * headline, set apart by space alone rather than a rule.
+ * A piece that's genuinely both — text-forward work (an essay, typically)
+ * written around a specific image, so it keeps TextCard's excerpt-led
+ * caption pattern but leads with a short image strip instead of going
+ * without one. Opt-in via a piece's `hasImage` flag (see lib/work.ts),
+ * not inferred from tags.
  */
-function ImageCard({
-  item,
-  activeTags,
-  onToggleTag,
-}: {
-  item: WorkItem
-  activeTags: Set<string>
-  onToggleTag: (tag: string) => void
-}) {
-  const collection = isCollection(item)
-  const writingWithImage = !collection && item.tags.includes('writing')
+function HybridCard({ item }: { item: WorkItem }) {
+  const tone = toneFor(item)
+  const isPoem = item.tags.includes('poem')
+  const excerpt = item.excerpt ?? item.description
   return (
-    <article
-      className={cn(
-        'group flex flex-col rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg',
-        // Collections need extra room for the tilted stack to spill past the card.
-        collection ? 'mt-4 p-4' : 'overflow-hidden',
-      )}
-    >
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border transition-all hover:-translate-y-0.5 hover:shadow-lg">
+      <Link href={workHref(item)} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <div className="aspect-[16/9] overflow-hidden">
+          <WorkPlaceholder item={item} />
+        </div>
+
+        <div className="p-6" style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}>
+          <div className="flex items-start justify-between gap-3">
+            <Quote
+              className="h-7 w-7 shrink-0 -scale-x-100"
+              style={{ color: `color-mix(in srgb, ${tone} 70%, transparent)` }}
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <TagPill>{isPoem ? 'poem' : 'essay'}</TagPill>
+          </div>
+
+          <p
+            className={cn(
+              'font-brand-italic mt-3 text-pretty text-lg leading-relaxed text-foreground',
+              isPoem && 'whitespace-pre-line',
+            )}
+          >
+            {excerpt}
+          </p>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <span className="font-brand text-sm lowercase tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
+              {item.title}
+            </span>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-foreground" />
+          </div>
+        </div>
+      </Link>
+    </article>
+  )
+}
+
+/**
+ * A collection's card: the fanned image stack (see CollectionStack) sits
+ * directly on the page background with no card chrome of its own — each
+ * image in the fan is the same size as a standalone piece's image. The
+ * title lives in a separate, smaller card that hovers, centered, above the
+ * bottom of the stack and only reveals on hover/focus, so the images stay
+ * the thing you actually look at.
+ */
+function CollectionTile({ item }: { item: WorkCollection }) {
+  return (
+    <div className="group relative">
+      <Link
+        href={workHref(item)}
+        className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <CollectionStack item={item} />
+      </Link>
+
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-x-4 bottom-6 z-30 mx-auto -translate-x-1 translate-y-2 max-w-[min(85%,20rem)] rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out',
+          'group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100',
+        )}
+      >
+        <Link
+          href={workHref(item)}
+          className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-foreground text-balance">
+            {item.title}
+          </h3>
+          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+            {item.description}
+          </p>
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Visual/other standalone pieces — a tinted blank placeholder panel above
+ * the metadata. Title disappears entirely at rest, leaving just the image,
+ * and surfaces as a scrim overlay on hover/focus — an experiment in
+ * treating the image itself as the card. An art piece's medium (oil, ink,
+ * etc.) rides along in the same overlay, pinned to the bottom-right corner.
+ */
+function ImageCard({ item }: { item: WorkItem }) {
+  if (isCollection(item)) {
+    return <CollectionTile item={item} />
+  }
+
+  const medium = mediumFor(item)
+
+  return (
+    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg">
       <Link
         href={workHref(item)}
         className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <div className="relative">
-          {collection ? (
-            <CollectionStack item={item} />
-          ) : (
-            /* Blank placeholder image — no fabricated artwork, just a tinted panel. */
-            <div
-              className={cn('overflow-hidden', writingWithImage ? 'aspect-[16/9]' : 'aspect-[5/4]')}
-            >
-              <WorkPlaceholder item={item} />
-            </div>
-          )}
-
-          {collection && (
-            <div className="absolute left-3 top-3 z-20">
-              <CollectionMark count={item.pieces.length} />
-            </div>
-          )}
-          {hasWriteup(item) && (
-            <div className="absolute bottom-3 left-3 z-20">
-              <WriteupMark />
-            </div>
-          )}
-        </div>
-
-        <div className={cn('relative z-10 mt-5 flex flex-col', collection ? 'px-2' : 'px-5')}>
-          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground transition-colors text-balance group-hover:text-foreground">
-            {item.title}
-          </h3>
-          {(collection || writingWithImage) && (
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground/90">{item.description}</p>
-          )}
+        {/* Blank placeholder image — no fabricated artwork, just a tinted panel. */}
+        <div className="aspect-[5/4] overflow-hidden">
+          <WorkPlaceholder item={item} />
         </div>
       </Link>
 
-      <div className={cn(collection ? 'px-2 pb-1' : 'px-5 pb-5')}>
-        <CardTags item={item} activeTags={activeTags} onToggleTag={onToggleTag} />
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-x-0 bottom-0 z-30 flex translate-y-1 items-end justify-between gap-3 rounded-b-[inherit] bg-gradient-to-t from-card via-card/85 to-transparent px-4 pb-4 pt-10 opacity-0 transition-all duration-300 ease-out',
+          'group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100',
+        )}
+      >
+        <Link
+          href={workHref(item)}
+          className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-foreground text-balance">
+            {item.title}
+          </h3>
+        </Link>
+        {medium && <TagPill className="pointer-events-auto">{medium}</TagPill>}
       </div>
     </article>
   )
 }
 
-function WorkCard(props: {
-  item: WorkItem
-  activeTags: Set<string>
-  onToggleTag: (tag: string) => void
-}) {
-  return isTextForward(props.item) ? <TextCard {...props} /> : <ImageCard {...props} />
+function WorkCard({ item }: { item: WorkItem }) {
+  if (isHybrid(item)) return <HybridCard item={item} />
+  return isTextForward(item) ? <TextCard item={item} /> : <ImageCard item={item} />
 }
 
 /** One labeled row of chips in the filter panel. */
@@ -561,8 +590,17 @@ export function WorkGallery() {
       {results.length > 0 ? (
         <div className="mt-6 gap-5 [column-fill:_balance] sm:columns-2 lg:columns-3">
           {results.map((item) => (
-            <div key={item.slug} className="mb-5 break-inside-avoid">
-              <WorkCard item={item} activeTags={selectedTags} onToggleTag={toggleTag} />
+            <div
+              key={item.slug}
+              className={cn(
+                'break-inside-avoid',
+                // The fanned stack's back/middle cards spill a little past its
+                // own flow height, so collections get a touch more breathing
+                // room below than a flat card needs.
+                isCollection(item) ? 'mb-8' : 'mb-5',
+              )}
+            >
+              <WorkCard item={item} />
             </div>
           ))}
         </div>
