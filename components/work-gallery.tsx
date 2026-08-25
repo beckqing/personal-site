@@ -221,7 +221,21 @@ function TextCard({
   )
 }
 
-/** Visual/other pieces — a tinted blank placeholder panel above the metadata. */
+/**
+ * Visual/other pieces — a tinted blank placeholder panel above the metadata.
+ * Standalone pieces split into two treatments so it's clear at a glance
+ * which discipline is driving the piece: a piece with no "writing" tag is
+ * primarily visual, so its image gets the space and the description drops
+ * out entirely; a piece tagged "writing" that still carries an image (e.g.
+ * an illustrated blog post, as opposed to the quote-only TextCard used for
+ * poems/essays) stays text-led, with a shorter image strip and its full
+ * description kept.
+ *
+ * The caption block borrows TextCard's sense of hierarchy: the image is the
+ * content, so the title reads like a small gray attribution line (à la
+ * TextCard's "— from ...") rather than competing with the image as a bold
+ * headline, set apart by space alone rather than a rule.
+ */
 function ImageCard({
   item,
   activeTags,
@@ -232,6 +246,7 @@ function ImageCard({
   onToggleTag: (tag: string) => void
 }) {
   const collection = isCollection(item)
+  const writingWithImage = !collection && item.tags.includes('writing')
   return (
     <article
       className={cn(
@@ -249,7 +264,9 @@ function ImageCard({
             <CollectionStack item={item} />
           ) : (
             /* Blank placeholder image — no fabricated artwork, just a tinted panel. */
-            <div className="aspect-[4/3] overflow-hidden">
+            <div
+              className={cn('overflow-hidden', writingWithImage ? 'aspect-[16/9]' : 'aspect-[5/4]')}
+            >
               <WorkPlaceholder item={item} />
             </div>
           )}
@@ -266,11 +283,13 @@ function ImageCard({
           )}
         </div>
 
-        <div className={cn('flex flex-col', collection ? 'px-2 pt-4' : 'p-5 pb-0')}>
-          <h3 className="font-brand text-lg font-bold lowercase leading-tight text-foreground text-balance">
+        <div className={cn('relative z-10 mt-5 flex flex-col', collection ? 'px-2' : 'px-5')}>
+          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground transition-colors text-balance group-hover:text-foreground">
             {item.title}
           </h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
+          {(collection || writingWithImage) && (
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground/90">{item.description}</p>
+          )}
         </div>
       </Link>
 
