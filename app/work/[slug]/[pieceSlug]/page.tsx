@@ -18,6 +18,8 @@ import {
   TagLinks,
   WorkPlaceholder,
 } from '@/components/work-visuals'
+import { ImageLightbox } from '@/components/image-lightbox'
+import { cn } from '@/lib/utils'
 
 export function generateStaticParams() {
   return WORK.filter(isCollection).flatMap((item) =>
@@ -94,19 +96,15 @@ export default async function CollectionPiecePage({
         )}
       </div>
 
-      <article
-        className={
-          textForward
-            ? 'mt-8'
-            : 'mt-8 grid gap-8 sm:grid-cols-[minmax(0,22rem)_1fr] sm:items-start'
-        }
-      >
+      <article className="mt-8">
         {!textForward && (
-          <div className="aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border">
-            <WorkPlaceholder item={piece} />
-          </div>
+          <ImageLightbox items={collection.pieces} initialIndex={index} className="mx-auto max-w-3xl shadow-sm">
+            <div className="aspect-[16/10] w-full overflow-hidden">
+              <WorkPlaceholder item={piece} />
+            </div>
+          </ImageLightbox>
         )}
-        <div>
+        <div className={cn(!textForward && 'mx-auto mt-8 max-w-2xl')}>
           <h1 className="font-brand text-4xl font-bold lowercase text-foreground text-balance sm:text-5xl">
             {piece.title}
           </h1>
