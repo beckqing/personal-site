@@ -88,6 +88,16 @@ export function isHybrid(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.hasImage)
 }
 
+/**
+ * A collection made entirely of poems/essays — a chapbook. These read like
+ * a little book rather than an image gallery: the collection page becomes a
+ * table of contents, and each piece opens as a single page you page through,
+ * instead of the usual image-grid treatment.
+ */
+export function isChapbook(item: WorkItem): boolean {
+  return isCollection(item) && isTextOnly(item)
+}
+
 /** There are exactly three disciplines. They overlap freely — nothing is exclusive. */
 export const DISCIPLINES = ['art', 'writing', 'science'] as const
 export type Discipline = (typeof DISCIPLINES)[number]

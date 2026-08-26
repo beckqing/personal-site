@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Layers, Quote } from 'lucide-react'
+import { ArrowLeft, BookOpen, Layers, Quote } from 'lucide-react'
 import {
   getWorkItem,
   hasWriteup,
+  isChapbook,
   isCollection,
   isTextForward,
   itemTags,
@@ -19,6 +20,7 @@ import {
   aspectFor,
   aspectStyleFor,
   categoryLabel,
+  ChapbookContents,
   ExcerptBlock,
   Prose,
   TagLinks,
@@ -68,12 +70,19 @@ export default async function WorkItemPage({ params }: { params: Promise<{ slug:
 
 function CollectionView({ item }: { item: WorkCollection }) {
   const tone = toneFor(item)
+  const chapbook = isChapbook(item)
   return (
     <>
       <header className="mt-6">
         <div className="flex items-center gap-2" style={{ color: tone }}>
-          <Layers className="h-4 w-4" aria-hidden="true" />
-          <span className="font-brand text-xs uppercase tracking-[0.3em]">collection</span>
+          {chapbook ? (
+            <BookOpen className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <Layers className="h-4 w-4" aria-hidden="true" />
+          )}
+          <span className="font-brand text-xs uppercase tracking-[0.3em]">
+            {chapbook ? 'chapbook' : 'collection'}
+          </span>
         </div>
         <h1 className="font-brand mt-2 text-4xl font-bold lowercase text-foreground text-balance sm:text-5xl">
           {item.title}
@@ -85,15 +94,28 @@ function CollectionView({ item }: { item: WorkCollection }) {
           {item.pieces.length} pieces · {item.year}
         </p>
         <TagLinks tags={Array.from(itemTags(item))} className="mt-5" />
+        {chapbook && item.pieces.length > 0 && (
+          <Link
+            href={piecePath(item, item.pieces[0])}
+            className="font-brand mt-6 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm lowercase transition-opacity hover:opacity-80"
+            style={{ backgroundColor: tone, color: 'var(--background)' }}
+          >
+            start reading
+            <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
+          </Link>
+        )}
       </header>
 
       {item.writeup && <Prose text={item.writeup} className="mt-8" />}
 
       <h2 className="font-brand mt-12 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-        in this collection
+        {chapbook ? 'table of contents' : 'in this collection'}
       </h2>
 
-      <div className="mt-6 columns-1 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5">
+      {chapbook ? (
+        <ChapbookContents collection={item} />
+      ) : (
+        <div className="mt-6 columns-1 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5">
         {item.pieces.map((p, i) => {
           const textForward = isTextForward(p)
           return (
@@ -152,7 +174,8 @@ function CollectionView({ item }: { item: WorkCollection }) {
             </div>
           )
         })}
-      </div>
+        </div>
+      )}
     </>
   )
 }
