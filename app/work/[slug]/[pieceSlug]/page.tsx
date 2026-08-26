@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, ChevronLeft, ChevronRight, Layers } from 'lucide-react'
+import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Layers } from 'lucide-react'
 import {
   getCollectionPiece,
+  isChapbook,
   isCollection,
   isTextForward,
   piecePath,
@@ -13,6 +14,7 @@ import {
 } from '@/lib/work'
 import {
   aspectStyleFor,
+  BookFolio,
   categoryLabel,
   ExcerptBlock,
   Prose,
@@ -20,6 +22,7 @@ import {
   WorkPlaceholder,
 } from '@/components/work-visuals'
 import { ImageLightbox } from '@/components/image-lightbox'
+import { BookPageNav } from '@/components/book-page-nav'
 import { cn } from '@/lib/utils'
 
 export function generateStaticParams() {
@@ -56,6 +59,77 @@ export default async function CollectionPiecePage({
   const next = collection.pieces[(index + 1) % collection.pieces.length]
   const tone = toneFor(piece)
   const textForward = isTextForward(piece)
+  const chapbook = isChapbook(collection)
+
+  if (chapbook) {
+    return (
+      <main className="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-20">
+        <BookPageNav prevHref={piecePath(collection, prev)} nextHref={piecePath(collection, next)} />
+
+        <Link
+          href={`/work/${collection.slug}`}
+          className="font-brand inline-flex items-center gap-1.5 text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <BookOpen className="h-4 w-4" aria-hidden="true" />
+          {collection.title}
+          <span className="text-muted-foreground/50">·</span>
+          contents
+        </Link>
+
+        <article className="mt-6 rounded-2xl border border-border bg-card px-6 py-10 shadow-sm sm:px-14 sm:py-14">
+          <p
+            className="font-brand text-center text-xs uppercase tracking-[0.3em]"
+            style={{ color: tone }}
+          >
+            {collection.title}
+          </p>
+          <h1 className="font-brand mt-3 text-center text-2xl font-bold lowercase text-foreground text-balance sm:text-3xl">
+            {piece.title}
+          </h1>
+          <p className="font-brand mt-2 text-center text-xs lowercase text-muted-foreground">
+            {categoryLabel(piece)} · {piece.year}
+          </p>
+
+          <div className="mx-auto mt-6 h-px w-12" style={{ backgroundColor: `color-mix(in srgb, ${tone} 45%, transparent)` }} />
+
+          <div className="mx-auto mt-8 max-w-md">
+            {piece.excerpt ? (
+              <ExcerptBlock item={piece} />
+            ) : (
+              <p className="font-brand-italic text-pretty text-lg leading-relaxed text-muted-foreground">
+                {piece.description}
+              </p>
+            )}
+          </div>
+
+          {piece.writeup && <Prose text={piece.writeup} className="mx-auto mt-8 max-w-md" />}
+
+          <TagLinks tags={piece.tags} className="mt-10 justify-center" />
+        </article>
+
+        <BookFolio index={index} total={collection.pieces.length} />
+
+        {collection.pieces.length > 1 && (
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <Link
+              href={piecePath(collection, prev)}
+              className="font-brand group flex min-w-0 items-center gap-1.5 text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4 shrink-0 transition-transform group-hover:-translate-x-0.5" />
+              <span className="truncate">{prev.title}</span>
+            </Link>
+            <Link
+              href={piecePath(collection, next)}
+              className="font-brand group flex min-w-0 items-center justify-end gap-1.5 text-right text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <span className="truncate">{next.title}</span>
+              <ChevronRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        )}
+      </main>
+    )
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-20">

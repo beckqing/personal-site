@@ -7,6 +7,7 @@ import {
   DISCIPLINES,
   isCollection,
   isTextOnly,
+  piecePath,
   primaryDiscipline,
   tagTone,
   toneFor,
@@ -278,6 +279,57 @@ export function ExcerptBlock({ item, className }: { item: WorkPiece; className?:
       style={{ borderColor: `color-mix(in srgb, ${tone} 45%, transparent)` }}
     >
       {item.excerpt ?? item.description}
+    </p>
+  )
+}
+
+/**
+ * A chapbook's table of contents: each poem/essay as a numbered row with a
+ * dotted leader running out to its folio number, the way a printed book's
+ * contents page works. Replaces the usual image-grid treatment, since a
+ * chapbook has no images to show.
+ */
+export function ChapbookContents({ collection }: { collection: WorkCollection }) {
+  const tone = toneFor(collection)
+  return (
+    <ol className="mt-6 divide-y divide-border rounded-2xl border border-border bg-card">
+      {collection.pieces.map((piece, i) => (
+        <li key={piece.slug}>
+          <Link
+            href={piecePath(collection, piece)}
+            className="group flex items-baseline gap-3 px-5 py-3.5 transition-colors hover:bg-accent/40 sm:px-6"
+          >
+            <span
+              className="font-brand shrink-0 text-xs tabular-nums text-muted-foreground transition-colors group-hover:text-foreground"
+              style={{ color: `color-mix(in srgb, ${tone} 55%, var(--muted-foreground))` }}
+            >
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <span className="font-brand truncate text-base font-bold lowercase text-foreground text-balance transition-colors group-hover:text-foreground">
+              {piece.title}
+            </span>
+            <span
+              aria-hidden="true"
+              className="flex-1 border-b border-dotted border-border/70 translate-y-[-0.35em]"
+            />
+            <span className="font-brand shrink-0 text-xs tabular-nums text-muted-foreground">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+/**
+ * The page-number footer under a chapbook's reading page — a folio, in
+ * printer's terms. Small and centered, like the bottom of a real book page.
+ */
+export function BookFolio({ index, total }: { index: number; total: number }) {
+  return (
+    <p className="font-brand mt-8 text-center text-xs tabular-nums text-muted-foreground">
+      {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
     </p>
   )
 }
