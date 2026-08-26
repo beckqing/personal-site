@@ -75,34 +75,40 @@ export function ImageLightbox({
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
 
-          <div className="relative flex w-full max-w-4xl flex-1 items-center justify-center">
-            {hasMultiple && (
-              <button
-                type="button"
-                onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)}
-                aria-label={`Previous: ${items[(index - 1 + items.length) % items.length].title}`}
-                className="absolute left-0 z-10 -translate-x-1 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card sm:-translate-x-14"
-              >
-                <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
-              </button>
-            )}
+          <div className="flex w-full max-w-4xl flex-1 items-center justify-center">
+            {/* Sized to the image itself (not the max-w-4xl row), so the
+                arrows sit against its actual rendered edges — a portrait
+                piece renders much narrower than the row, and arrows pinned
+                to the row's edges would end up far from the image. */}
+            <div className="relative inline-flex max-w-full items-center justify-center">
+              {hasMultiple && (
+                <button
+                  type="button"
+                  onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)}
+                  aria-label={`Previous: ${items[(index - 1 + items.length) % items.length].title}`}
+                  className="absolute left-0 z-10 -translate-x-12 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card sm:-translate-x-14"
+                >
+                  <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              )}
 
-            <WorkPlaceholder
-              item={piece}
-              fit="contain"
-              className="max-h-[65vh] max-w-full drop-shadow-2xl"
-            />
+              <WorkPlaceholder
+                item={piece}
+                fit="contain"
+                className="max-h-[65vh] max-w-full drop-shadow-2xl"
+              />
 
-            {hasMultiple && (
-              <button
-                type="button"
-                onClick={() => setIndex((i) => (i + 1) % items.length)}
-                aria-label={`Next: ${items[(index + 1) % items.length].title}`}
-                className="absolute right-0 z-10 translate-x-1 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card sm:translate-x-14"
-              >
-                <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
-              </button>
-            )}
+              {hasMultiple && (
+                <button
+                  type="button"
+                  onClick={() => setIndex((i) => (i + 1) % items.length)}
+                  aria-label={`Next: ${items[(index + 1) % items.length].title}`}
+                  className="absolute right-0 z-10 translate-x-12 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card sm:translate-x-14"
+                >
+                  <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col items-center gap-1 text-center">
