@@ -29,6 +29,7 @@ import {
   type WorkItem,
 } from '@/lib/work'
 import { aspectStyleFor, CollectionStack, WorkPlaceholder } from '@/components/work-visuals'
+import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
 
 /** Where each discipline's glow sits, so blends read as distinct light sources. */
@@ -292,7 +293,7 @@ function CollectionTile({ item }: { item: WorkCollection }) {
           href={workHref(item)}
           className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-foreground text-balance">
+          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
             {item.title}
           </h3>
           <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
@@ -340,7 +341,7 @@ function ImageCard({ item }: { item: WorkItem }) {
           href={workHref(item)}
           className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-foreground text-balance">
+          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
             {item.title}
           </h3>
         </Link>
@@ -620,24 +621,13 @@ export function WorkGallery() {
         </div>
       </div>
 
-      {/* Masonry (CSS columns) or empty state */}
+      {/* Masonry (reads left-to-right, top-to-bottom) or empty state */}
       {results.length > 0 ? (
-        <div className="mt-6 gap-5 [column-fill:_balance] sm:columns-2 lg:columns-3">
+        <MasonryGrid className="mt-6">
           {results.map((item) => (
-            <div
-              key={item.slug}
-              className={cn(
-                'break-inside-avoid',
-                // The fanned stack's back/middle cards spill a little past its
-                // own flow height, so collections get a touch more breathing
-                // room below than a flat card needs.
-                isCollection(item) ? 'mb-8' : 'mb-5',
-              )}
-            >
-              <WorkCard item={item} />
-            </div>
+            <WorkCard key={item.slug} item={item} />
           ))}
-        </div>
+        </MasonryGrid>
       ) : (
         <div className="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-border px-6 py-16 text-center">
           <div

@@ -28,6 +28,7 @@ import {
   WriteupMark,
 } from '@/components/work-visuals'
 import { ImageLightbox } from '@/components/image-lightbox'
+import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
 
 export function generateStaticParams() {
@@ -84,7 +85,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
             {chapbook ? 'chapbook' : 'collection'}
           </span>
         </div>
-        <h1 className="font-brand mt-2 text-4xl font-bold lowercase text-foreground text-balance sm:text-5xl">
+        <h1 className="font-brand mt-2 text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
           {item.title}
         </h1>
         <p className="font-brand-italic mt-3 max-w-xl text-pretty text-lg text-muted-foreground">
@@ -115,13 +116,13 @@ function CollectionView({ item }: { item: WorkCollection }) {
       {chapbook ? (
         <ChapbookContents collection={item} />
       ) : (
-        <div className="mt-6 columns-1 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5">
+        <MasonryGrid className="mt-6">
         {item.pieces.map((p, i) => {
           const textForward = isTextForward(p)
           return (
             <div
               key={p.slug}
-              className="relative w-full break-inside-avoid overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1"
+              className="relative w-full overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1"
             >
               {textForward ? (
                 <Link
@@ -157,7 +158,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
                     href={piecePath(item, p)}
                     className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <p className="font-brand text-base font-bold lowercase leading-tight text-foreground text-balance">
+                    <p className="font-brand text-sm font-bold lowercase leading-tight text-foreground/80 text-balance">
                       {p.title}
                     </p>
                     <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
@@ -174,7 +175,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
             </div>
           )
         })}
-        </div>
+        </MasonryGrid>
       )}
     </>
   )
@@ -198,7 +199,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
   if (textForward) {
     return (
       <article className="mt-6">
-        <h1 className="font-brand text-4xl font-bold lowercase text-foreground text-balance sm:text-5xl">
+        <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
           {piece.title}
         </h1>
         {meta}
@@ -222,7 +223,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         </div>
       </ImageLightbox>
       <div className="mx-auto mt-8 max-w-2xl">
-        <h1 className="font-brand text-4xl font-bold lowercase text-foreground text-balance sm:text-5xl">
+        <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
           {piece.title}
         </h1>
         {meta}

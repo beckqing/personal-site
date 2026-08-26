@@ -83,7 +83,7 @@ export default async function CollectionPiecePage({
           >
             {collection.title}
           </p>
-          <h1 className="font-brand mt-3 text-center text-2xl font-bold lowercase text-foreground text-balance sm:text-3xl">
+          <h1 className="font-brand mt-3 text-center text-lg font-bold lowercase text-foreground/80 text-balance sm:text-xl">
             {piece.title}
           </h1>
           <p className="font-brand mt-2 text-center text-xs lowercase text-muted-foreground">
@@ -94,15 +94,15 @@ export default async function CollectionPiecePage({
 
           <div className="mx-auto mt-8 max-w-md">
             {piece.excerpt ? (
-              <ExcerptBlock item={piece} />
+              <ExcerptBlock item={piece} className="text-base" />
             ) : (
-              <p className="font-brand-italic text-pretty text-lg leading-relaxed text-muted-foreground">
+              <p className="font-brand-italic text-pretty text-base leading-relaxed text-muted-foreground">
                 {piece.description}
               </p>
             )}
           </div>
 
-          {piece.writeup && <Prose text={piece.writeup} className="mx-auto mt-8 max-w-md" />}
+          {piece.writeup && <Prose text={piece.writeup} className="mx-auto mt-8 max-w-md text-sm" />}
 
           <TagLinks tags={piece.tags} className="mt-10 justify-center" />
         </article>
@@ -180,7 +180,7 @@ export default async function CollectionPiecePage({
           </ImageLightbox>
         )}
         <div className={cn(!textForward && 'mx-auto mt-8 max-w-2xl')}>
-          <h1 className="font-brand text-4xl font-bold lowercase text-foreground text-balance sm:text-5xl">
+          <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
             {piece.title}
           </h1>
           <p

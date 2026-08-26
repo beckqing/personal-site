@@ -174,49 +174,106 @@ export function WorkPlaceholder({
 }
 
 /**
- * A collection's placeholder as a fanned hand of three cards, pivoting from
- * a shared point at the bottom-left corner — the way you'd actually hold and
- * fan a hand of cards pinched at one edge. Every card in the fan is the same
- * size as a standalone piece's image (no card chrome wrapping the group —
- * it sits directly on the page background), so the stack reads as loose
- * photos rather than a bordered tile. The tilt and offsets are kept very
- * small on purpose — full-size cards fan out fast, and each degree of
- * rotation swings the back cards' lower corner further down as well as
- * right, so a wide fan would spill into both the column gutter and the
- * card sitting below it in the same masonry column. The front card leans
- * At rest the three sit unrotated, offset only down and to the right, like
- * a squared-off stack of photos. On hover they fan open from that shared
- * pivot — the front card leans slightly left, the back card mirrors it
- * slightly right, the middle stays put — like the hand is being spread.
- * The middle and back cards sit a touch lower and further right than the
- * front one even at rest, so all three edges stay visible instead of
- * hinging from the exact same point.
+ * A collection's placeholder as a tapered stack of cards, full column width
+ * like a standalone piece's image (no shrinking to fit diagonal spill — the
+ * cards only spread downward, not sideways, so they never bleed into the
+ * next column). The cover sits flat on top, fully visible; each card behind
+ * it peeks out from lower down by a shrinking amount. The 4th and lowest
+ * card is permanently blank and neutral — never a real piece, since with
+ * only two real backing pieces there's nothing else to show there — and
+ * carries a small pill at its own bottom-right corner with the collection's
+ * real total, so it reads as an honest "and N more" rather than an
+ * open-ended tease. At rest the stack tapers inward (each card's peek and
+ * tilt smaller than the one in front) so it reads as a slightly squeezed
+ * pile; on hover every card eases toward flatter rotation and a touch more
+ * peek — a gentle un-tapering, not a full fan-open. Rotation pivots around
+ * each card's own bottom-CENTER rather than a corner, so the tilt reads as
+ * a lean in place instead of dragging the card visibly left/right
+ * off-center. The two real pieces get low-quality thumbnails since only a
+ * thin strip of each is ever visible.
+ *
+ * The container reserves its true height via an explicit aspect-ratio
+ * computed from the cover's own aspect — the back cards are all
+ * `position: absolute` and so contribute nothing to normal document flow
+ * on their own, and this grid is CSS columns, which needs a real (not
+ * faked-with-margin) height to lay out the next item.
  */
 export function CollectionStack({ item, className }: { item: WorkCollection; className?: string }) {
   const tone = toneFor(item)
   const aspect = aspectStyleFor(item)
-  // Two other real pieces to peek out from behind the cover, at low quality
-  // since only a sliver of each is ever visible.
   const [back, mid] = item.pieces.filter((p) => p.image && p.image !== item.image)
 
+  // How far down the lowest card (card 4) sits at its deepest, plus a
+  // little extra for its own rotation: rotating around a fixed pivot makes
+  // one bottom corner dip below the un-rotated edge, by more at rest (3deg)
+  // than on hover (1deg) — so without this, rest would eat further into
+  // the gap below the stack than hover does, making the two look
+  // inconsistent even though translateY itself doesn't change on hover.
+  const maxPeek = 0.75
+  const [wRatio, hRatio] = (item.imageAspect ?? '5/4').split('/').map(Number)
+  const containerAspect = `${wRatio} / ${hRatio * (1 + maxPeek)}`
+
+  const cardBase =
+    'absolute inset-x-0 top-0 aspect-[5/4] origin-bottom overflow-hidden rounded-xl border shadow-sm transition-transform duration-300 ease-out'
+
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative', className)} style={{ aspectRatio: containerAspect }}>
+      {/* Card 4: permanently blank and neutral — never a real piece. Not
+          aria-hidden (unlike the others) since the count pill living inside
+          it carries real information; not clipped either
+          (overflow-visible), so the pill can poke past its corner instead
+          of being cut off by it. */}
       <div
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0 aspect-[5/4] origin-bottom-left translate-x-3 translate-y-3 overflow-hidden rotate-0 rounded-xl border border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))] shadow-sm transition-transform duration-300 ease-out group-hover:rotate-[1.5deg]"
-        style={{ background: `color-mix(in srgb, ${tone} 9%, var(--card))`, ...aspect }}
+        className={cn(
+          cardBase,
+          // Already flush with the container's bottom edge at rest (see
+          // maxPeek above), so it doesn't move any further on hover — only
+          // its rotation still eases flatter.
+          'overflow-visible translate-y-[71%] rotate-[3deg]',
+          'group-hover:rotate-[1deg]',
+        )}
+        style={{
+          background: item.stackAccent ?? 'color-mix(in srgb, var(--foreground) 18%, var(--card))',
+          borderColor: item.stackAccent
+            ? `color-mix(in srgb, ${item.stackAccent} 60%, var(--foreground))`
+            : 'color-mix(in srgb, var(--foreground) 16%, var(--card))',
+          ...aspect,
+        }}
       >
-        {back && <WorkPlaceholder item={back} quality="thumb" />}
+        <CollectionMark count={item.pieces.length} className="absolute -bottom-2 -right-2 z-10" />
       </div>
+      {/* Card 3 */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-0 aspect-[5/4] origin-bottom-left translate-x-1.5 translate-y-1.5 overflow-hidden rotate-0 rounded-xl border border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))] shadow-sm"
-        style={{ background: `color-mix(in srgb, ${tone} 11%, var(--card))`, ...aspect }}
+        className={cn(
+          cardBase,
+          'translate-y-[61%] rotate-[-4.5deg] border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))]',
+          'group-hover:translate-y-[68%] group-hover:rotate-[-1deg]',
+        )}
+        style={{ background: `color-mix(in srgb, ${tone} 9%, var(--card))`, ...aspect }}
       >
         {mid && <WorkPlaceholder item={mid} quality="thumb" />}
       </div>
+      {/* Card 2 */}
       <div
-        className="relative aspect-[5/4] origin-bottom-left rotate-0 overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--foreground)_14%,var(--card))] shadow-sm transition-transform duration-300 ease-out group-hover:-rotate-[1.5deg]"
+        aria-hidden="true"
+        className={cn(
+          cardBase,
+          'translate-y-[46%] rotate-[4deg] border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))]',
+          'group-hover:translate-y-[52%] group-hover:rotate-[1deg]',
+        )}
+        style={{ background: `color-mix(in srgb, ${tone} 11%, var(--card))`, ...aspect }}
+      >
+        {back && <WorkPlaceholder item={back} quality="thumb" />}
+      </div>
+      {/* Card 1: the cover — flat, 100% visible, on top. Sits nudged down
+          at rest (matching the rest of the stack shifting down to close the
+          gap at the bottom of the reserved space) and rises back to the
+          very top on hover — so the "opening up" reads as the whole stack
+          loosening symmetrically, not just the back cards sinking further
+          while the top stays put. */}
+      <div
+        className="absolute inset-x-0 top-0 aspect-[5/4] origin-bottom translate-y-[6%] overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--foreground)_14%,var(--card))] shadow-sm transition-transform duration-300 ease-out group-hover:translate-y-0"
         style={aspect}
       >
         <WorkPlaceholder item={item} />
@@ -284,20 +341,23 @@ export function ExcerptBlock({ item, className }: { item: WorkPiece; className?:
 }
 
 /**
- * A chapbook's table of contents: each poem/essay as a numbered row with a
- * dotted leader running out to its folio number, the way a printed book's
- * contents page works. Replaces the usual image-grid treatment, since a
- * chapbook has no images to show.
+ * A chapbook's table of contents: each poem/essay as a numbered row, the
+ * way a printed book's contents page works. Kept narrow rather than
+ * stretched across the page — it's a list of titles, not a grid — and
+ * folio numbers only run down the left; a book's real page numbers live on
+ * the reading page itself (see BookFolio), so a second number here would
+ * just be noise. Replaces the usual image-grid treatment, since a chapbook
+ * has no images to show.
  */
 export function ChapbookContents({ collection }: { collection: WorkCollection }) {
   const tone = toneFor(collection)
   return (
-    <ol className="mt-6 divide-y divide-border rounded-2xl border border-border bg-card">
+    <ol className="mt-6 max-w-md divide-y divide-border rounded-2xl border border-border bg-card">
       {collection.pieces.map((piece, i) => (
         <li key={piece.slug}>
           <Link
             href={piecePath(collection, piece)}
-            className="group flex items-baseline gap-3 px-5 py-3.5 transition-colors hover:bg-accent/40 sm:px-6"
+            className="group flex items-baseline gap-3 px-5 py-3"
           >
             <span
               className="font-brand shrink-0 text-xs tabular-nums text-muted-foreground transition-colors group-hover:text-foreground"
@@ -307,13 +367,6 @@ export function ChapbookContents({ collection }: { collection: WorkCollection })
             </span>
             <span className="font-brand truncate text-base font-bold lowercase text-foreground text-balance transition-colors group-hover:text-foreground">
               {piece.title}
-            </span>
-            <span
-              aria-hidden="true"
-              className="flex-1 border-b border-dotted border-border/70 translate-y-[-0.35em]"
-            />
-            <span className="font-brand shrink-0 text-xs tabular-nums text-muted-foreground">
-              {String(i + 1).padStart(2, '0')}
             </span>
           </Link>
         </li>

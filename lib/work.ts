@@ -37,7 +37,16 @@ export type WorkPiece = {
 }
 
 /** A piece that holds other pieces. Rendered with a tilted deck behind it. */
-export type WorkCollection = WorkPiece & { pieces: WorkPiece[] }
+export type WorkCollection = WorkPiece & {
+  pieces: WorkPiece[]
+  /**
+   * Override for the collection stack's blank 4th card (a CSS color) — the
+   * default neutral gray doesn't fit every collection equally well (e.g. an
+   * ink-on-paper sketchbook wants something closer to actual paper, not a
+   * generic gray). Unset falls back to the default.
+   */
+  stackAccent?: string
+}
 
 export type WorkItem = WorkPiece | WorkCollection
 
@@ -191,9 +200,38 @@ const REAL_WORK: WorkItem[] = [
     slug: 'hthtpw',
     title: 'How to Help the Planet Week',
     year: '2020',
-    description: 'A five-day series on how to help the planet. Titles and descriptions coming soon.',
+    description:
+      "A five-day series on how to help the planet, posted (very) late one at a time. Days 4 and 5 have surfaced; the rest are still buried somewhere.",
     tags: ['art'],
-    pieces: placeholderPieces(5, '2020'),
+    image: '/art/hthtpw/05.jpg',
+    imageAspect: '1/1',
+    pieces: [
+      ...placeholderPieces(3, '2020'),
+      {
+        slug: '04-many-reasons-one-goal',
+        title: 'Many Reasons, One Goal',
+        year: '2020',
+        description:
+          'Four reasons to care about the planet that don\'t hinge on believing in "global warming" specifically — for your children, for fresh water, for the plants, for the oceans.',
+        tags: ['art'],
+        writeup:
+          'While there are many reasons to care about the planet, such as a general desire for sustainable living, I thought I\'d address some that don\'t rely on a belief in the problem of "global warming", which is better termed climate change, since there are many other components.\n\nFor your children — even if you don\'t think the panic about the climate is warranted, at least think about how we are taking resources from the planet at an unsustainable rate, leaving less and less for future generations.\n\nFor fresh water — fresh water is important to most all life, and definitely all human life. While the water cycle exists and there are filtration systems (both natural and human-made), these cannot keep up with the pollution and water waste that is typical in a given US household.\n\nFor the plants — more and more trees are being cut down to make farmland (mostly pressured by animal agriculture). They are the basis of all multicellular life; we need them to live, they don\'t need us. The crops we plant in their place will never contribute to air quality as much as trees could.\n\nFor the oceans — the oceans are becoming more acidic. The CO2 in the atmosphere, along with other greenhouse gasses, directly contributes to this trend, which has been documented for years and already affects wildlife.\n\nI really don\'t know why it took me so long to post this one. It\'s been complete for a month and a half.',
+        image: '/art/hthtpw/04.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '05-stick-together',
+        title: 'Stick Together',
+        year: '2020',
+        description:
+          "On togetherness — a theme this work doesn't come by naturally, since isolation is usually what comes through instead.",
+        tags: ['art'],
+        writeup:
+          "It took me a long time to get around to completing this series. In many of my works, I convey isolation, and so I think it's difficult for me to think of togetherness. But it is true that we need each other, as seen even more starkly in this time of social distancing.\n\nWe have to remember that the influence is in our numbers — what would happen if everyone picked up five pieces of trash? Or if even half the world picked up ten? With so many people on this planet, we have the means. There's enough food and water for us as it is, but we need to work towards more efficient, sustainable, and equitable methods of distribution.\n\nThere is work to be done, and it must be done together.",
+        image: '/art/hthtpw/05.jpg',
+        imageAspect: '1/1',
+      },
+    ],
   },
   {
     slug: 'april-colors-19',
@@ -245,8 +283,11 @@ const REAL_WORK: WorkItem[] = [
     description:
       "31 ink drawings for Inktober, finished seven and a half months late — a confidence exercise as much as a daily prompt.",
     tags: ['art', 'ink'],
+    stackAccent: '#f4f1e8',
     writeup:
       "Seven and a half months late, I have completed Inktober. What an accomplishment.\n\nTruly though, it's been a good exercise, even if not as a daily drawing prompt. I have used it as a confidence exercise. If a design was drafted, it was only done in thumbnail form (with ink), and once the design was begun, it was completed completely in ink (with the exception of 4, 7, and 14, which were all redone).",
+    image: '/art/inktober-17/01.jpg',
+    imageAspect: '1/1',
     pieces: [
       { day: '01', title: 'Swift', line: 'This little chimney swift is not so swift anymore.' },
       { day: '02', title: 'Divided', line: "They didn't realize how divided their worlds were." },
@@ -318,6 +359,9 @@ const REAL_WORK: WorkItem[] = [
       year: '2017',
       description: line,
       tags: ['art', 'ink'],
+      image: `/art/inktober-17/${day}.jpg`,
+      thumb: `/art/inktober-17/thumb/${day}.jpg`,
+      imageAspect: '1/1',
     })),
   },
   {
@@ -337,19 +381,373 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'digital'],
     image: '/art/eye-studies/01.jpg',
     imageAspect: '1/1',
-    pieces: Array.from({ length: 8 }, (_, i) => {
-      const n = String(i + 1).padStart(2, '0')
-      return {
-        slug: n,
-        title: n,
-        year: '2022',
-        description: 'Subject hidden for now. Title coming soon.',
-        tags: ['art', 'digital'],
-        image: `/art/eye-studies/${n}.jpg`,
-        thumb: `/art/eye-studies/thumb/${n}.jpg`,
-        imageAspect: '1/1',
+    pieces: (() => {
+      // Process notes from the original posts, subject redacted to keep the
+      // guessing game intact — the caption text itself often named the animal.
+      // Order: turkey, pig, cow, sheep, chicken, goose, goat, fish.
+      const notes: Record<string, string> = {
+        '01': "Leaning into realism and photo studies, something I haven't done in a while. Stopping here for now — hoping to finish an eye a day this week.",
+        '03': 'The lashes on this one are so lovely.',
+        '04': "Very enjoyable to draw — the first left eye I've done for this series.",
+        '06': 'Do you know what animal this is? Thinking about recognizability and beauty.',
       }
-    }),
+      return Array.from({ length: 8 }, (_, i) => {
+        const n = String(i + 1).padStart(2, '0')
+        return {
+          slug: n,
+          title: n,
+          year: '2022',
+          description: notes[n] ?? 'Subject hidden for now. Title coming soon.',
+          tags: ['art', 'digital'],
+          image: `/art/eye-studies/${n}.jpg`,
+          thumb: `/art/eye-studies/thumb/${n}.jpg`,
+          imageAspect: '1/1',
+        }
+      })
+    })(),
+  },
+  {
+    slug: 'may-colors-20',
+    title: "May Colors '20",
+    year: '2020',
+    description:
+      "April Colors, offset a month and done in traditional media this time — markers, ink, and oil pastel, prompt list by @faunwood, done together with @books_of_ink. Only made it four days in.",
+    tags: ['art', 'color'],
+    image: '/art/may-colors-20/01.jpg',
+    imageAspect: '1/1',
+    pieces: [
+      {
+        slug: '01-your-favorite-color',
+        title: 'Your Favorite Color',
+        year: '2020',
+        description:
+          "Doing the April Colors challenge again this year, just offset by a month, and done traditionally this time — a good excuse to get away from a screen.",
+        tags: ['art', 'color'],
+        image: '/art/may-colors-20/01.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '02-complementary-colors',
+        title: 'Complementary Colors',
+        year: '2020',
+        description: 'Blood and chlorophyll — the colors of life, in a red-green pairing that always risks reading as too Christmas-y.',
+        tags: ['art', 'color'],
+        image: '/art/may-colors-20/02.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '03-20-minute-study',
+        title: '20 Minute Study',
+        year: '2020',
+        description:
+          "A quick architecture study, sketched outdoors on an empty campus quad during the pandemic closures — a good excuse to lie in the grass in the golden hour, even if architecture isn't a comfort zone.",
+        tags: ['art', 'color'],
+        image: '/art/may-colors-20/03.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '04-something-slimy',
+        title: 'Something Slimy',
+        year: '2020',
+        description: "Almost forgot to do this one — only day four in and already behind.",
+        tags: ['art', 'color'],
+        image: '/art/may-colors-20/04.jpg',
+        imageAspect: '1/1',
+      },
+    ],
+  },
+  {
+    slug: 'mindtober-21',
+    title: "Mindtober '21",
+    year: '2021',
+    description:
+      "31 days of prompts from @susitse.art, each answered with a rhyming tercet and an ink-and-colored-pencil sticky-note drawing — a companion to Inktober that leans into the diary side of a sketchbook.",
+    tags: ['art', 'ink'],
+    writeup:
+      "Happy October! I have some catching up to do, but I'm going to try to finish within the month. I love @susitse.art's work and am excited to finally make use of one of their prompt lists.\n\nFinally finished, five months late in places — happy to have generated some new ideas and little rhymes to tie it all together.",
+    image: '/art/mindtober-21/01.jpg',
+    imageAspect: '1/1',
+    pieces: [
+      {
+        slug: '01-my-own',
+        title: 'My Own',
+        year: '2021',
+        description: 'the first time in a subway car alone / acutely aware of the missing eyes / for better or worse, all on my own',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/01.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '02-friend',
+        title: 'Friend',
+        year: '2021',
+        description: 'i search for someone who can hear my cries / and i see someone who calls me a friend / but i recall our last words as goodbyes',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/02.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '03-greed',
+        title: 'Greed',
+        year: '2021',
+        description: 'impotent, lost, with pity to expend / on streets haunted by greed, skyscrapers loom / desperately seeking an out or an end',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/03.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '04-bloom',
+        title: 'Bloom',
+        year: '2021',
+        description: 'we fidget, prey trapped in a crowded room / yearning for progress or just something new / like the winter waits to see flowers bloom',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/04.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '05-for-you',
+        title: 'For You',
+        year: '2021',
+        description: "there are lists of reasons, any could be true / diversion, excuse, intention, and blame / but the truth is that it's all just for you",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/05.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '06-question',
+        title: 'Question',
+        year: '2021',
+        description: 'question and dodge, a rhetorical game / the harmonies left in songs yet unsung / the start and the finish one and the same',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/06.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '07-blissful',
+        title: 'Blissful',
+        year: '2021',
+        description: '"i love you, you\'re precious" rolls off the tongue / blissful adoration greases the jaw / fiercely optimistic, reckless, and young',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/07.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '08-haunted',
+        title: 'Haunted',
+        year: '2021',
+        description: 'whiplash from lust to aversion to awe / haunted by a lingering addiction / craving caresses that rub the skin raw',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/08.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '09-judge',
+        title: 'Judge',
+        year: '2021',
+        description: 'assess yourself and make a prediction / regardless of what the classes have said / i cannot judge what is truth or fiction',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/09.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '10-head',
+        title: 'Head',
+        year: '2021',
+        description: 'is everything i feel just in my head / intimacy, meaning, purpose, and drive / emotions to life like breath to the dead',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/10.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '11-need',
+        title: 'Need',
+        year: '2021',
+        description: 'to take is to live; to give is to thrive / how to know when need ends and desire starts / how do we flourish and not just survive',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/11.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '12-split',
+        title: 'Split',
+        year: '2021',
+        description: "i'm split into two or three dozen parts / a jumble of compartmentalized creeds / torn from ancient books and from lovers' hearts",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/12.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '13-i-know',
+        title: 'I Know',
+        year: '2021',
+        description: "i know ours are not coincident needs / but i'll imagine that life nonetheless / i'll let that be the cut that always bleeds",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/13.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '14-sleep',
+        title: 'Sleep',
+        year: '2021',
+        description: 'i sleep to be well, i sleep to shirk stress / this strange state that i both crave and despise / to love or to hate, to heal or regress',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/14.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '15-underdog',
+        title: 'Underdog',
+        year: '2021',
+        description: 'i look into pitiful, desperate eyes / as i cozy up with the underdog / the role of savior to savor and prize',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/15.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '16-yes',
+        title: 'Yes',
+        year: '2021',
+        description: 'consent, lust, and control become a fog / but, yes, please come and devour me whole / as we recite an age old dialogue',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/16.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '17-doubt',
+        title: 'Doubt',
+        year: '2021',
+        description: 'i chronically doubt my route and my role / equally dismiss the trite and unique / bypassing common turnpikes takes its toll',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/17.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '18-jaws',
+        title: 'Jaws',
+        year: '2021',
+        description: "since they've been mine, my jaws have been weak / never willing to latch onto the bit / so please forgive me when i cannot speak",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/18.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '19-damage',
+        title: 'Damage',
+        year: '2021',
+        description: 'singed bridges and broken lines of transit / alone in the bittersweet afterglow / concrete damage haunts the budding spirit',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/19.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '20-breath',
+        title: 'Breath',
+        year: '2021',
+        description: 'to center, to sense, to study, to know / eyes closed with perspective to understand / the breath a tool to witness lapse and flow',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/20.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '21-hand',
+        title: 'Hand',
+        year: '2021',
+        description: 'in spite or because of a gentle hand / i am wholly captivated, ensnared / caught in a perfect storm, swift and unplanned',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/21.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '22-machine',
+        title: 'Machine',
+        year: '2021',
+        description: 'shepherd the crowd, minds uncertain and scared / each a cog in an uncaring machine / feigned independence, unity impaired',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/22.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '23-limit',
+        title: 'Limit',
+        year: '2021',
+        description: 'what are the strata and what do they mean / we push each limit and make it a game / can we build our home in the in-between',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/23.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: "24-dont",
+        title: "Don't",
+        year: '2021',
+        description: "don't speak about me or call me by name / reference is condemned to being unfair / live only in shadow and make no claim",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/24.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '25-weight',
+        title: 'Weight',
+        year: '2021',
+        description: 'shed your skin, clean your scale, balance and tare / weight is not worth, but your weight is worthwhile / let be what truly is, honest and bare',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/25.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '26-time',
+        title: 'Time',
+        year: '2021',
+        description: 'i stole time in jest with a friendly smile / but now i think i truly am a thief / guilty beloved protected from trial',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/26.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '27-dark',
+        title: 'Dark',
+        year: '2021',
+        description: 'no sense of my own, blind, trusting belief / i am tired of sleep, eyes closed, in the dark / what is life but scripted, bitter, and brief',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/27.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '28-fire',
+        title: 'Fire',
+        year: '2021',
+        description: "fingers sift through ashes making their mark / disturbed earth and grey skin record the hands / craving fire's fervor and lacking the spark",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/28.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '29-grateful',
+        title: 'Grateful',
+        year: '2021',
+        description: 'debt, good, and payment, supply and demands / privileged and secure and grateful and glad / despite estranged culture and stolen lands',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/29.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '30-memory',
+        title: 'Memory',
+        year: '2021',
+        description: 'memory improves, edits out the bad / in love with what i remember of you / lost in the lie of what we could have had',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/30.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '31-unknown',
+        title: 'Unknown',
+        year: '2021',
+        description: "we embrace goodbye but cry at what's new / a walk turns to sprint into the unknown / running from our wrongs and chasing what's true",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/31.webp',
+        imageAspect: '1/1',
+      },
+    ],
   },
   {
     slug: 'love-worth-heartbreak',
