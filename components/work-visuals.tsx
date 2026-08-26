@@ -1,11 +1,12 @@
 import type { CSSProperties } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { FileText, ImageOff, Layers } from 'lucide-react'
+import { FileText, ImageOff, Layers, Quote } from 'lucide-react'
 import {
   DISCIPLINE_FACETS,
   DISCIPLINES,
   isCollection,
+  isTextOnly,
   primaryDiscipline,
   tagTone,
   toneFor,
@@ -145,12 +146,21 @@ export function WorkPlaceholder({
       )}
       style={{ background: `color-mix(in srgb, ${tone} 16%, var(--card))` }}
     >
-      <ImageOff
-        className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 opacity-25"
-        style={{ color: tone }}
-        strokeWidth={1.5}
-        aria-hidden="true"
-      />
+      {isTextOnly(item) ? (
+        <Quote
+          className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 -scale-x-100 opacity-25"
+          style={{ color: tone }}
+          strokeWidth={1.5}
+          aria-hidden="true"
+        />
+      ) : (
+        <ImageOff
+          className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 opacity-25"
+          style={{ color: tone }}
+          strokeWidth={1.5}
+          aria-hidden="true"
+        />
+      )}
       <span
         aria-hidden="true"
         className="font-brand pointer-events-none absolute bottom-2 right-3 max-w-[calc(100%-1.5rem)] truncate text-right text-3xl font-bold lowercase leading-none tracking-tight sm:text-4xl"

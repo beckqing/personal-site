@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Layers } from 'lucide-react'
+import { ArrowLeft, Layers, Quote } from 'lucide-react'
 import {
   getWorkItem,
   hasWriteup,
@@ -26,6 +26,7 @@ import {
   WriteupMark,
 } from '@/components/work-visuals'
 import { ImageLightbox } from '@/components/image-lightbox'
+import { cn } from '@/lib/utils'
 
 export function generateStaticParams() {
   return WORK.map((item) => ({ slug: item.slug }))
@@ -93,34 +94,64 @@ function CollectionView({ item }: { item: WorkCollection }) {
       </h2>
 
       <div className="mt-6 columns-1 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5">
-        {item.pieces.map((p, i) => (
-          <div
-            key={p.slug}
-            className="relative w-full break-inside-avoid overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1"
-          >
-            <ImageLightbox items={item.pieces} initialIndex={i} className="rounded-none border-none">
-              <div className={aspectFor(p.slug)} style={aspectStyleFor(p)}>
-                <WorkPlaceholder item={p} />
-              </div>
-            </ImageLightbox>
-            <Link
-              href={piecePath(item, p)}
-              className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        {item.pieces.map((p, i) => {
+          const textForward = isTextForward(p)
+          return (
+            <div
+              key={p.slug}
+              className="relative w-full break-inside-avoid overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1"
             >
-              <p className="font-brand text-base font-bold lowercase leading-tight text-foreground text-balance">
-                {p.title}
-              </p>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                {p.description}
-              </p>
-            </Link>
-            {hasWriteup(p) && (
-              <div className="absolute left-3 top-3">
-                <WriteupMark />
-              </div>
-            )}
-          </div>
-        ))}
+              {textForward ? (
+                <Link
+                  href={piecePath(item, p)}
+                  className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Quote
+                    className="h-6 w-6 shrink-0 -scale-x-100"
+                    style={{ color: `color-mix(in srgb, ${toneFor(p)} 70%, transparent)` }}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                  <p
+                    className={cn(
+                      'font-brand-italic mt-3 text-pretty text-base leading-relaxed text-foreground',
+                      p.tags.includes('poem') && 'whitespace-pre-line',
+                    )}
+                  >
+                    {p.preview ?? p.excerpt ?? p.description}
+                  </p>
+                  <p className="mt-3 font-brand text-sm lowercase tracking-wide text-muted-foreground">
+                    {p.title}
+                  </p>
+                </Link>
+              ) : (
+                <>
+                  <ImageLightbox items={item.pieces} initialIndex={i} className="rounded-none border-none">
+                    <div className={aspectFor(p.slug)} style={aspectStyleFor(p)}>
+                      <WorkPlaceholder item={p} />
+                    </div>
+                  </ImageLightbox>
+                  <Link
+                    href={piecePath(item, p)}
+                    className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <p className="font-brand text-base font-bold lowercase leading-tight text-foreground text-balance">
+                      {p.title}
+                    </p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                      {p.description}
+                    </p>
+                  </Link>
+                </>
+              )}
+              {hasWriteup(p) && (
+                <div className="absolute left-3 top-3">
+                  <WriteupMark />
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </>
   )
