@@ -12,6 +12,7 @@ import {
   WORK,
 } from '@/lib/work'
 import {
+  aspectStyleFor,
   categoryLabel,
   ExcerptBlock,
   Prose,
@@ -99,7 +100,7 @@ export default async function CollectionPiecePage({
       <article className="mt-8">
         {!textForward && (
           <ImageLightbox items={collection.pieces} initialIndex={index} className="mx-auto max-w-3xl shadow-sm">
-            <div className="aspect-[16/10] w-full overflow-hidden">
+            <div className="aspect-[16/10] w-full overflow-hidden" style={aspectStyleFor(piece)}>
               <WorkPlaceholder item={piece} />
             </div>
           </ImageLightbox>

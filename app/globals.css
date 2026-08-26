@@ -37,6 +37,9 @@
   --color-moon: var(--moon);
   --color-indigo: var(--indigo);
   --color-denim: var(--denim);
+  --color-sky: var(--sky);
+  --color-spring-green: var(--spring-green);
+  --color-hero-accent-art: var(--hero-accent-art);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -79,6 +82,27 @@
   --goldenrod: #97671a; /* deeper goldenrod for text */
   --terracotta: #8c3623;
   --moon: #305789;
+  --sky: #68bfed;
+  --spring-green: #aadb6c;
+
+  /* Hero icon collage, matching what this site used before the Next.js
+     rewrite (see github.com/beckqing/archived-personal-site,
+     home-page.css/home-page.js): every icon idles at the same translucent
+     brand-tinted watermark — not per-category, and not dimmed further when
+     a different category is hovered, just left alone — and only the icons
+     matching the hovered category switch to a solid color. Light mode uses
+     the brighter "-alt" hue for that solid color; dark mode swaps to it for
+     the word instead (below) and keeps the icon on the standard hue. */
+  --hero-icon-idle: #30578922; /* denim @ ~13% */
+  --hero-icon-art: var(--sky);
+  --hero-icon-science: var(--spring-green);
+  --hero-icon-writing: #d9aa52; /* goldenrod, not a lighter pumpkin */
+
+  /* The "art" word (hero copy) and tag (stamp badge below it) — the
+     standard brand hue in light mode; dark mode swaps to the brighter
+     --sky instead (below), matching the archived site's --color-art vs
+     --color-art-alt swap between light and dark. */
+  --hero-accent-art: var(--art);
 }
 
 [data-theme='dark'] {
@@ -113,6 +137,19 @@
   --goldenrod: #d9aa52;
   --terracotta: #8c3623;
   --moon: #ced2cd;
+  --sky: #68bfed;
+  --spring-green: #aadb6c;
+
+  /* Dark mode keeps the standard brand hues for the hero icon collage
+     (see the light-mode block above for the full explanation). */
+  --hero-icon-idle: #0c355981; /* indigo @ ~51% — needs more alpha than
+     light mode's denim to still read against the midnight background */
+  --hero-icon-art: var(--art);
+  --hero-icon-science: var(--science);
+  --hero-icon-writing: var(--writing);
+
+  /* The "art" word swaps to --sky in dark mode. */
+  --hero-accent-art: var(--sky);
 }
 
 @layer base {

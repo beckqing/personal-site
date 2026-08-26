@@ -28,7 +28,7 @@ import {
   type WorkCollection,
   type WorkItem,
 } from '@/lib/work'
-import { CollectionStack, WorkPlaceholder } from '@/components/work-visuals'
+import { aspectStyleFor, CollectionStack, WorkPlaceholder } from '@/components/work-visuals'
 import { cn } from '@/lib/utils'
 
 /** Where each discipline's glow sits, so blends read as distinct light sources. */
@@ -38,19 +38,37 @@ const GRADIENT_ORIGIN: Record<Discipline, string> = {
   science: '50% 100%',
 }
 
-/** A colored/neutral tag pill, used both in the filter panel and on cards. */
+// Same --hero-icon-* colors as the homepage's icon collage (sky/spring-green/
+// goldenrod in light mode, denim/emerald/pumpkin in dark — see globals.css),
+// rather than the standard --art/--writing/--science tag color, so the wash
+// reads as the same light source as the hero rather than a duller re-tinted
+// version of the tag color.
+const WASH_TONE: Record<Discipline, string> = {
+  art: 'var(--hero-icon-art)',
+  writing: 'var(--hero-icon-writing)',
+  science: 'var(--hero-icon-science)',
+}
+
+/**
+ * A colored/neutral tag pill, used both in the filter panel and on cards.
+ * `tone` overrides the tag's own color (tagTone only colors discipline tags)
+ * — used to tint a discipline's subtags with its parent's color so they
+ * still read as grouped once the row label is gone.
+ */
 function TagChip({
   tag,
   active,
   onClick,
   size = 'md',
+  tone: toneOverride,
 }: {
   tag: string
   active: boolean
   onClick: () => void
   size?: 'sm' | 'md'
+  tone?: string
 }) {
-  const tone = tagTone(tag)
+  const tone = toneOverride ?? tagTone(tag)
   return (
     <button
       type="button"
@@ -210,7 +228,7 @@ function HybridCard({ item }: { item: WorkItem }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border transition-all hover:-translate-y-0.5 hover:shadow-lg">
       <Link href={workHref(item)} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <div className="aspect-[16/9] overflow-hidden">
+        <div className="aspect-[16/9] overflow-hidden" style={aspectStyleFor(item)}>
           <WorkPlaceholder item={item} />
         </div>
 
@@ -307,7 +325,7 @@ function ImageCard({ item }: { item: WorkItem }) {
         className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {/* Blank placeholder image — no fabricated artwork, just a tinted panel. */}
-        <div className="aspect-[5/4] overflow-hidden">
+        <div className="aspect-[5/4] overflow-hidden" style={aspectStyleFor(item)}>
           <WorkPlaceholder item={item} />
         </div>
       </Link>
@@ -337,38 +355,31 @@ function WorkCard({ item }: { item: WorkItem }) {
   return isTextForward(item) ? <TextCard item={item} /> : <ImageCard item={item} />
 }
 
-/** One labeled row of chips in the filter panel. */
-function FacetRow({
-  label,
+/** An unlabeled row of chips in the filter panel. */
+function TagRow({
   tags,
   selectedTags,
   onToggleTag,
-  tint,
+  chipTone,
+  className,
 }: {
-  label: string
   tags: readonly string[]
   selectedTags: Set<string>
   onToggleTag: (tag: string) => void
-  tint?: string
+  chipTone?: (tag: string) => string | undefined
+  className?: string
 }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
-      <span
-        className="font-brand w-28 shrink-0 pt-1 text-xs uppercase tracking-[0.2em]"
-        style={{ color: tint ?? 'var(--muted-foreground)' }}
-      >
-        {label}
-      </span>
-      <div className="flex flex-wrap gap-1.5">
-        {tags.map((tag) => (
-          <TagChip
-            key={tag}
-            tag={tag}
-            active={selectedTags.has(tag)}
-            onClick={() => onToggleTag(tag)}
-          />
-        ))}
-      </div>
+    <div className={cn('flex flex-wrap gap-1.5', className)}>
+      {tags.map((tag) => (
+        <TagChip
+          key={tag}
+          tag={tag}
+          tone={chipTone?.(tag)}
+          active={selectedTags.has(tag)}
+          onClick={() => onToggleTag(tag)}
+        />
+      ))}
     </div>
   )
 }
@@ -476,16 +487,42 @@ export function WorkGallery() {
   )
   const activeCount = selectedTags.size + (queryInput.trim() ? 1 : 0)
 
-  // Blended page wash: one soft glow per selected discipline, layered together.
-  // Skipped in 'not' mode, where a discipline means "exclude" rather than "show".
-  const showWash = activeDisciplines.length > 0 && mode !== 'not'
-  const wash = activeDisciplines
-    .map(
-      (d) =>
-        `radial-gradient(58% 52% at ${GRADIENT_ORIGIN[d]}, color-mix(in srgb, ${DISCIPLINE_TONE[d]} 24%, transparent) 0%, transparent 72%)`,
-    )
-    .join(', ')
+  // Tags active disciplines' subtags with their parent's color, so they still
+  // read as grouped with no label once they're inline among everything else.
+  const subtagTone = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const d of activeDisciplines) {
+      for (const tag of DISCIPLINE_FACETS[d].tags) map.set(tag, DISCIPLINE_TONE[d])
+    }
+    return map
+  }, [activeDisciplines])
 
+  // One flat, inline chip list: each discipline immediately followed by its
+  // own subtags (if active), then the universal tags. A selected discipline's
+  // subtags slot in right where they are instead of a separate row, so the
+  // row's reserved two-line height (see className below) absorbs them
+  // without shifting anything beneath it.
+  const filterTags = useMemo(() => {
+    const tags: string[] = []
+    for (const d of DISCIPLINES) {
+      tags.push(d)
+      if (selectedTags.has(d)) tags.push(...DISCIPLINE_FACETS[d].tags)
+    }
+    tags.push(...UNIVERSAL_FACETS.flatMap((f) => f.tags))
+    return tags
+  }, [selectedTags])
+
+  // Blended page wash: one soft glow per discipline. Each gets its own
+  // always-mounted layer with a fixed background and only toggles opacity —
+  // a single div whose background string changes with the active set can't
+  // cross-fade (CSS can't interpolate between two different gradients), so
+  // switching disciplines mid-wash would snap instead of fading.
+  // Skipped in 'not' mode, where a discipline means "exclude" not "show".
+  //
+  // Sized to stay fairly contained around each origin corner rather than
+  // flooding the whole screen: with 2-3 disciplines active, letting them
+  // all reach full-screen strength left every combination reading as the
+  // same muddy blend, with no area where any one color actually won out.
   return (
     <>
       {/*
@@ -493,11 +530,26 @@ export function WorkGallery() {
         child: the opaque body background paints after negative-index children,
         which would hide the wash entirely.
       */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-700"
-        style={{ background: wash || undefined, opacity: showWash ? 1 : 0 }}
-      />
+      {DISCIPLINES.map((d) => (
+        <div
+          key={d}
+          aria-hidden="true"
+          // Screen blending only in dark mode: with 2-3 disciplines active,
+          // overlapping translucent layers otherwise average toward a muddy
+          // gray/brown (a property of mixing roughly-primary hues via normal
+          // alpha compositing, not just how much they overlap) — screen
+          // combines per-channel intensity instead, keeping overlaps
+          // brighter and each color identifiable near its own origin. Screen
+          // against light mode's already-bright page background does the
+          // opposite: it washes everything toward white instead, so light
+          // mode keeps the default (normal) blending.
+          className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-[1800ms] ease-in-out dark:mix-blend-screen"
+          style={{
+            background: `radial-gradient(90% 140% at ${GRADIENT_ORIGIN[d]}, color-mix(in srgb, ${WASH_TONE[d]} 34%, transparent) 0%, transparent 92%)`,
+            opacity: selectedTags.has(d) && mode !== 'not' ? 1 : 0,
+          }}
+        />
+      ))}
 
       <div className="relative z-10">
       {/* Search */}
@@ -526,37 +578,19 @@ export function WorkGallery() {
         )}
       </div>
 
-      {/* Filters: three disciplines, their sub-categories, then universal ones */}
-      <div className="mt-6 flex flex-col gap-4">
-        <FacetRow
-          label="discipline"
-          tags={DISCIPLINES}
-          selectedTags={selectedTags}
-          onToggleTag={toggleTag}
-        />
-
-        {/* Discipline-specific categories appear only for selected disciplines. */}
-        {activeDisciplines.map((d) => (
-          <FacetRow
-            key={d}
-            label={`${d} ${DISCIPLINE_FACETS[d].name}`}
-            tags={DISCIPLINE_FACETS[d].tags}
-            selectedTags={selectedTags}
-            onToggleTag={toggleTag}
-            tint={DISCIPLINE_TONE[d]}
-          />
-        ))}
-
-        {UNIVERSAL_FACETS.map((facet) => (
-          <FacetRow
-            key={facet.name}
-            label={facet.name}
-            tags={facet.tags}
-            selectedTags={selectedTags}
-            onToggleTag={toggleTag}
-          />
-        ))}
-      </div>
+      {/* Filters: one inline, unlabeled chip row. A selected discipline's
+          subtags slot in right after it instead of a separate row; the row
+          reserves two lines' worth of height up front (content-start keeps
+          a short row pinned to the top rather than stretching to fill it),
+          so going from one line to two never shifts the summary or results
+          below. */}
+      <TagRow
+        tags={filterTags}
+        selectedTags={selectedTags}
+        onToggleTag={toggleTag}
+        chipTone={(tag) => subtagTone.get(tag)}
+        className="mt-4 min-h-[4.75rem] content-start"
+      />
 
       {/* Summary + mode + reset */}
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-5">

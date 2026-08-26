@@ -30,11 +30,39 @@ export function HeroWordScatter({ children }: { children: ReactNode }) {
   return <CollageContext.Provider value={value}>{children}</CollageContext.Provider>
 }
 
+// Used by the hero copy's underline/hover color. 'art' swaps to --sky in
+// dark mode (--hero-accent-art, see globals.css) instead of the flat --art
+// denim, which read dark/muted against the page's midnight background —
+// matching the archived site's own --color-art/--color-art-alt swap.
+// 'hu'/'sci' stay on the standard discipline hues, matching every other
+// --writing/--science usage (tags, buttons) on the site.
 const CATEGORY_VAR: Record<IconCategory, string> = {
-  art: 'var(--art)',
+  art: 'var(--hero-accent-art)',
   hu: 'var(--writing)',
   sci: 'var(--science)',
 }
+
+// The scattered icons get their own, brighter mapping in light mode only
+// (sky/spring-green/light pumpkin; see --hero-icon-* in globals.css) so the
+// collage can read as playful without changing the discipline brand color
+// used everywhere else. Dark mode keeps the standard hues here.
+const ICON_CATEGORY_VAR: Record<IconCategory, string> = {
+  art: 'var(--hero-icon-art)',
+  hu: 'var(--hero-icon-writing)',
+  sci: 'var(--hero-icon-science)',
+}
+
+// Every icon idles at the same translucent brand-tinted watermark
+// (--hero-icon-idle, see globals.css) — not dimmed further when a
+// different category is hovered, just left alone, matching the archived
+// site this replaces (it only ever added/removed a color class on the
+// icons matching the hovered category; everything else was untouched).
+// A solid color rather than an opacity fade: opacity animated alongside a
+// fill-color change reads as a "darken" flash, since opacity ramps up
+// while fill is still mid cross-fade through the muddy in-between hues
+// color-mix produces. Baking any transparency into the fill color itself —
+// so only `fill` ever transitions — keeps hue and alpha changing together.
+const ICON_IDLE_FILL = 'var(--hero-icon-idle)'
 
 // Matches the discipline tag each work item is filtered by on /work.
 const CATEGORY_WORK_TAG: Record<IconCategory, string> = {
@@ -207,21 +235,19 @@ export function IconScatterField({ className }: { className?: string }) {
     >
       {PLACED_ICONS.map((icon) => {
         const isActive = hovered !== null && icon.categories.includes(hovered)
-        const isDimmed = hovered !== null && !isActive
 
         return (
           <svg
             key={icon.slug}
             viewBox={icon.viewBox}
-            className="absolute text-foreground/80 transition-all duration-500 ease-out"
+            className="absolute transition-colors duration-500 ease-out"
             style={{
               top: `${icon.top}%`,
               left: `${icon.left}%`,
               width: icon.size,
               height: icon.size,
               transform: `translate(-50%, -50%) rotate(${icon.rotate}deg)`,
-              opacity: isActive ? 0.95 : isDimmed ? 0.06 : 0.2,
-              fill: isActive ? CATEGORY_VAR[hovered!] : 'currentColor',
+              fill: isActive ? ICON_CATEGORY_VAR[hovered!] : ICON_IDLE_FILL,
             }}
           >
             <path d={icon.path} />
