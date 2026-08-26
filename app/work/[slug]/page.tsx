@@ -17,6 +17,7 @@ import {
 } from '@/lib/work'
 import {
   aspectFor,
+  aspectStyleFor,
   categoryLabel,
   ExcerptBlock,
   Prose,
@@ -98,7 +99,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
             className="relative w-full break-inside-avoid overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1"
           >
             <ImageLightbox items={item.pieces} initialIndex={i} className="rounded-none border-none">
-              <div className={aspectFor(p.slug)}>
+              <div className={aspectFor(p.slug)} style={aspectStyleFor(p)}>
                 <WorkPlaceholder item={p} />
               </div>
             </ImageLightbox>
@@ -162,7 +163,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
   return (
     <article className="mt-6">
       <ImageLightbox items={[piece]} className="mx-auto max-w-3xl shadow-sm">
-        <div className="aspect-[16/10] w-full overflow-hidden">
+        <div className="aspect-[16/10] w-full overflow-hidden" style={aspectStyleFor(piece)}>
           <WorkPlaceholder item={piece} />
         </div>
       </ImageLightbox>

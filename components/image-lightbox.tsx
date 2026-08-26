@@ -87,9 +87,11 @@ export function ImageLightbox({
               </button>
             )}
 
-            <div className="aspect-[16/10] w-full max-h-[65vh] overflow-hidden rounded-xl border border-border shadow-2xl">
-              <WorkPlaceholder item={piece} />
-            </div>
+            <WorkPlaceholder
+              item={piece}
+              fit="contain"
+              className="max-h-[65vh] max-w-full drop-shadow-2xl"
+            />
 
             {hasMultiple && (
               <button

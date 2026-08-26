@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function WorkPage() {
   return (
-    <main className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
+    <main className="mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14">
       <header className="max-w-2xl">
         <div className="flex items-center gap-2 text-goldenrod">
           <LayoutGrid className="h-5 w-5" strokeWidth={1.75} />
@@ -19,7 +19,7 @@ export default function WorkPage() {
         </div>
       </header>
 
-      <div className="mt-12">
+      <div className="mt-6">
         <Suspense fallback={<div className="h-32" aria-hidden="true" />}>
           <WorkGallery />
         </Suspense>

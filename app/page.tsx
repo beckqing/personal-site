@@ -14,12 +14,19 @@ const featuredArt = ARTWORKS.find((a) => a.slug === 'lamplight') ?? ARTWORKS[0]
 const featuredPoem = POEMS[0]
 const featuredProject = PROJECTS[0]
 
+// accentClass holds the full Tailwind class (not just a color name plugged
+// into a template) since Tailwind's scanner only generates classes it can
+// see literally in source — a `text-${name}` interpolation wouldn't work
+// for a class that doesn't also appear literally somewhere else.
 const PANELS = [
   {
     href: '/work?tags=art',
     label: 'art',
     Icon: Palette,
-    accent: 'art',
+    // Brighter than --art in dark mode (denim reads dark/muted against the
+    // hero's sky-colored icons and midnight background) — see
+    // --hero-accent-art in globals.css. Same as --art in light mode.
+    accentClass: 'text-hero-accent-art',
     category: 'art' as IconCategory,
     tilt: -5,
     z: 'z-10',
@@ -30,7 +37,7 @@ const PANELS = [
     href: '/work?tags=writing',
     label: 'writing',
     Icon: Feather,
-    accent: 'writing',
+    accentClass: 'text-writing',
     category: 'hu' as IconCategory,
     tilt: 3,
     z: 'z-20',
@@ -41,7 +48,7 @@ const PANELS = [
     href: '/work?tags=science',
     label: 'science',
     Icon: FlaskConical,
-    accent: 'science',
+    accentClass: 'text-science',
     category: 'sci' as IconCategory,
     tilt: -2,
     z: 'z-30',
@@ -58,7 +65,7 @@ function DisciplinePanels() {
 
   return (
     <div className="relative mt-6 flex flex-col items-center gap-10 sm:mt-8 md:flex-row md:items-stretch md:justify-center md:gap-0">
-      {PANELS.map(({ href, label, Icon, accent, category, tilt, z, kind, cta }, i) => {
+      {PANELS.map(({ href, label, Icon, accentClass, category, tilt, z, kind, cta }, i) => {
         const active = hovered === category
         return (
           <Link
@@ -71,7 +78,7 @@ function DisciplinePanels() {
             )}
             style={{ ['--tilt' as string]: `${tilt}deg` }}
           >
-            <StampBadge className={`self-start text-${accent}`} tilt={tilt}>
+            <StampBadge className={cn('self-start', accentClass)} tilt={tilt}>
               <Icon className="h-3.5 w-3.5" />
               <span>{label}</span>
             </StampBadge>

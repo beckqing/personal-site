@@ -12,7 +12,7 @@ export function SiteFooter() {
   if (pathname === '/') return null
 
   return (
-    <footer className="mt-24 border-t border-border/70 bg-card/40">
+    <footer className="relative z-10 mt-24 border-t border-border/70 bg-card/40">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-12 sm:px-8 md:flex-row md:items-start md:justify-between">
         <div className="max-w-sm">
           <Link href="/" className="flex items-center gap-2.5">
