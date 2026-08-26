@@ -76,36 +76,57 @@ export default async function CollectionPiecePage({
           contents
         </Link>
 
-        <article className="mt-6 rounded-2xl border border-border bg-card px-6 py-10 shadow-sm sm:px-14 sm:py-14">
-          <p
-            className="font-brand text-center text-xs uppercase tracking-[0.3em]"
-            style={{ color: tone }}
-          >
-            {collection.title}
-          </p>
-          <h1 className="font-brand mt-3 text-center text-lg font-bold lowercase text-foreground/80 text-balance sm:text-xl">
-            {piece.title}
-          </h1>
-          <p className="font-brand mt-2 text-center text-xs lowercase text-muted-foreground">
-            {categoryLabel(piece)} · {piece.year}
-          </p>
+        <div className="relative">
+          {collection.pieces.length > 1 && (
+            <>
+              <Link
+                href={piecePath(collection, prev)}
+                aria-label={`Previous: ${prev.title}`}
+                className="absolute left-0 top-1/2 z-10 hidden -translate-x-14 -translate-y-1/2 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card min-[900px]:inline-flex"
+              >
+                <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
+              </Link>
+              <Link
+                href={piecePath(collection, next)}
+                aria-label={`Next: ${next.title}`}
+                className="absolute right-0 top-1/2 z-10 hidden translate-x-14 -translate-y-1/2 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card min-[900px]:inline-flex"
+              >
+                <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
+              </Link>
+            </>
+          )}
 
-          <div className="mx-auto mt-6 h-px w-12" style={{ backgroundColor: `color-mix(in srgb, ${tone} 45%, transparent)` }} />
+          <article className="mt-6 rounded-2xl border border-border bg-card px-6 py-10 shadow-sm sm:px-14 sm:py-14">
+            <p
+              className="font-brand text-center text-xs uppercase tracking-[0.3em]"
+              style={{ color: tone }}
+            >
+              {collection.title}
+            </p>
+            <h1 className="font-brand mt-3 text-center text-lg font-bold lowercase text-foreground/80 text-balance sm:text-xl">
+              {piece.title}
+            </h1>
+            <p className="font-brand mt-2 text-center text-xs lowercase text-muted-foreground">
+              {categoryLabel(piece)} · {piece.year}
+            </p>
 
-          <div className="mx-auto mt-8 max-w-md">
-            {piece.excerpt ? (
-              <ExcerptBlock item={piece} className="text-base" />
-            ) : (
-              <p className="font-brand-italic text-pretty text-base leading-relaxed text-muted-foreground">
-                {piece.description}
-              </p>
-            )}
-          </div>
+            <div className="mx-auto mt-6 h-px w-12" style={{ backgroundColor: `color-mix(in srgb, ${tone} 45%, transparent)` }} />
 
-          {piece.writeup && <Prose text={piece.writeup} className="mx-auto mt-8 max-w-md text-sm" />}
+            <div className="mx-auto mt-8 max-w-md">
+              {piece.excerpt ? (
+                <ExcerptBlock item={piece} className="text-base" />
+              ) : (
+                <p className="font-brand-italic text-pretty text-base leading-relaxed text-muted-foreground">
+                  {piece.description}
+                </p>
+              )}
+            </div>
 
-          <TagLinks tags={piece.tags} className="mt-10 justify-center" />
-        </article>
+            {piece.writeup && <Prose text={piece.writeup} className="mx-auto mt-8 max-w-md text-sm" />}
+
+            <TagLinks tags={piece.tags} className="mt-10 justify-center" />
+          </article>
+        </div>
 
         <BookFolio index={index} total={collection.pieces.length} />
 
