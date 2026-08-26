@@ -46,6 +46,14 @@ export type WorkCollection = WorkPiece & {
    * generic gray). Unset falls back to the default.
    */
   stackAccent?: string
+  /**
+   * Hand-picked slugs for the stack's front/2nd/3rd cards (1-3 entries) —
+   * e.g. the three you'd actually want someone to see in a gallery preview,
+   * rather than whichever three happen to come first. Unset falls back to
+   * the collection's first three pieces (first three with a real `image`
+   * for the image-stack case).
+   */
+  stackPieces?: string[]
 }
 
 export type WorkItem = WorkPiece | WorkCollection
@@ -200,13 +208,45 @@ const REAL_WORK: WorkItem[] = [
     slug: 'hthtpw',
     title: 'How to Help the Planet Week',
     year: '2020',
-    description:
-      "A five-day series on how to help the planet, posted (very) late one at a time. Days 4 and 5 have surfaced; the rest are still buried somewhere.",
+    description: 'A five-day series on how to help the planet, posted (very) late, one at a time.',
     tags: ['art'],
-    image: '/art/hthtpw/05.jpg',
+    image: '/art/hthtpw/01.jpg',
     imageAspect: '1/1',
+    stackAccent: '#636b5b',
     pieces: [
-      ...placeholderPieces(3, '2020'),
+      {
+        slug: '01-mama-earth',
+        title: 'Mama Earth',
+        year: '2020',
+        description: 'Our Beautiful Planet.',
+        tags: ['art'],
+        writeup:
+          "While I was brainstorming what I would do for today, it occurred to me that humans anthropomorphize things to make them more relatable. And while that's expected, doesn't that show a flaw in how we decide to assign care? Not all things that are worth caring about are human, and that's ok.",
+        image: '/art/hthtpw/01.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '02-tiny-tracks',
+        title: 'Tiny Tracks',
+        year: '2020',
+        description: 'How to lessen your carbon footprint — twelve small ways to shrink it, one per toe.',
+        tags: ['art'],
+        writeup:
+          'Ways to shrink your carbon footprint:\n\n1. Adjust your thermostat to suit the temperature outside (cooler in the winter, warmer in the summer).\n2. Drive less — carpool, take public transportation, bike, or walk when able.\n3. Switch out incandescent light bulbs; LEDs are more efficient.\n4. Eat less beef, which emits almost 4x the amount of CO2 as chicken.\n5. Wash your clothes cold.\n6. Bring snacks (and lunch!) in reusable containers instead of plastic bags.\n7. Cloth towels instead of paper.\n8. Refillable water bottles instead of single use — recycle the ones you do use.\n9. Fly less; if you do fly, go economy class and offset your emissions.\n10. Eat local.\n11. Unsubscribe from junk mail and sign up for electronic bills.\n12. Buy second hand clothes, and only when you need to.',
+        image: '/art/hthtpw/02.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '03-creature-love',
+        title: 'Creature-Love',
+        year: '2020',
+        description: 'Why are all creatures valid and important?',
+        tags: ['art'],
+        writeup:
+          "Building off of the theme of our need to relate in order to qualify something as important, we come to the existence of charismatic megafauna — animals that have captured the hearts of the public, often through positive media portraying them.\n\nWhile these creatures deserve respect, they are not the only ones. Here, I have highlighted some invertebrates that go overlooked in most people's understanding of conservation.\n\nMolluscs like mussels and clams filter water. Native bees and wasps pollinate plants much better than honeybees (which are, in the USA, an invasive species). Lacewings, like ladybugs, eat aphids, which in turn eat plants, including those in your garden. Earthworms aerate the soil and restore nutrients to it.\n\nCreatures big and small are important to the biodiversity of the world, which is what keeps ecosystems healthy.",
+        image: '/art/hthtpw/03.jpg',
+        imageAspect: '1/1',
+      },
       {
         slug: '04-many-reasons-one-goal',
         title: 'Many Reasons, One Goal',
@@ -237,8 +277,12 @@ const REAL_WORK: WorkItem[] = [
     slug: 'april-colors-19',
     title: "April Colors '19",
     year: '2019',
-    description: 'A month of color-study prompts, painted one a day. Images not yet archived.',
+    description: 'A month of color-study prompts, painted one a day.',
     tags: ['art', 'color'],
+    image: '/art/april-colors-19/01.jpg',
+    imageAspect: '1/1',
+    stackAccent: '#682f29',
+    stackPieces: ['10-fire-protection', '13-grounding-hopes', '26-aphrodite'],
     pieces: [
       { day: '01', title: 'Identifying Vice', prompt: 'ghost' },
       { day: '02', title: 'Deceased Gems', prompt: 'prettiest insect' },
@@ -246,34 +290,38 @@ const REAL_WORK: WorkItem[] = [
       { day: '04', title: 'Genesis 3-14', prompt: 'not enough legs' },
       { day: '05', title: 'Mistletoe', prompt: 'houseplant' },
       { day: '06', title: 'Suffocating', prompt: 'atmosphere' },
-      { day: '08', title: '[star]dust', prompt: 'no blending' },
-      { day: '09', title: 'Fire Protection', prompt: 'earth tones' },
-      { day: '10', title: 'Poison-Wild', prompt: 'eleven of something' },
-      { day: '11', title: 'False Mercy', prompt: 'sunset colors' },
-      { day: '12', title: 'Grounding Hopes', prompt: 'mantis shrimp' },
-      { day: '13', title: 'Active Defense', prompt: 'dragon' },
-      { day: '14', title: 'C. patiens', prompt: 'invent a plant' },
-      { day: '15', title: 'Armored Intimacy', prompt: 'study an object' },
-      { day: '16', title: 'Leo Tu', prompt: 'split complementary' },
-      { day: '17', title: 'Psilocybe', prompt: 'wrong colors' },
-      { day: '18', title: 'Temper', prompt: 'too many legs' },
-      { day: '19', title: "Don't Listen", prompt: 'color pick' },
-      { day: '20', title: 'Living Stone', prompt: 'lithops' },
-      { day: '21', title: 'Slick Temptation', prompt: 'something oily' },
-      { day: '22', title: 'Fertile', prompt: 'triad' },
-      { day: '23', title: 'en d o c ate', prompt: 'geometric' },
-      { day: '24', title: 'Caduceus', prompt: 'something fuzzy' },
-      { day: '25', title: 'Aphrodite', prompt: 'a color you hate' },
-      { day: '26', title: 'The Story of Humankind', prompt: 'tell a story' },
-      { day: '27', title: 'The Minister of Red', prompt: 'mixed media' },
-      { day: '28', title: 'Landscape of Sisyphus', prompt: 'landscape' },
-      { day: '29', title: 'Ornamental Diversity', prompt: 'ornamental' },
+      { day: '07', title: 'The World Is a Beautiful Place', prompt: 'analogous colors' },
+      { day: '08', title: 'Complacency', prompt: 'a fat bird' },
+      { day: '09', title: '[star]dust', prompt: 'no blending' },
+      { day: '10', title: 'Fire Protection', prompt: 'earth tones' },
+      { day: '11', title: 'Poison-Wild', prompt: 'eleven of something' },
+      { day: '12', title: 'False Mercy', prompt: 'sunset colors' },
+      { day: '13', title: 'Grounding Hopes', prompt: 'mantis shrimp' },
+      { day: '14', title: 'Active Defense', prompt: 'dragon' },
+      { day: '15', title: 'C. patiens', prompt: 'invent a plant' },
+      { day: '16', title: 'Armored Intimacy', prompt: 'study an object' },
+      { day: '17', title: 'Leo Tu', prompt: 'split complementary' },
+      { day: '18', title: 'Psilocybe', prompt: 'wrong colors' },
+      { day: '19', title: 'Temper', prompt: 'too many legs' },
+      { day: '20', title: "Don't Listen", prompt: 'color pick' },
+      { day: '21', title: 'Living Stone', prompt: 'lithops' },
+      { day: '22', title: 'Slick Temptation', prompt: 'something oily' },
+      { day: '23', title: 'Fertile', prompt: 'triad' },
+      { day: '24', title: 'en d o c ate', prompt: 'geometric' },
+      { day: '25', title: 'Caduceus', prompt: 'something fuzzy' },
+      { day: '26', title: 'Aphrodite', prompt: 'a color you hate' },
+      { day: '27', title: 'The Story of Humankind', prompt: 'tell a story' },
+      { day: '28', title: 'The Minister of Red', prompt: 'mixed media' },
+      { day: '29', title: 'Landscape of Sisyphus', prompt: 'landscape' },
+      { day: '30', title: 'Ornamental Diversity', prompt: 'ornamental' },
     ].map(({ day, title, prompt }) => ({
       slug: `${day}-${title.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-')}`,
       title,
       year: '2019',
       description: `Day ${day} of April Colors '19 — prompt: "${prompt}."`,
       tags: ['art'],
+      image: `/art/april-colors-19/${day}.jpg`,
+      imageAspect: '1/1',
     })),
   },
   {
@@ -283,7 +331,7 @@ const REAL_WORK: WorkItem[] = [
     description:
       "31 ink drawings for Inktober, finished seven and a half months late — a confidence exercise as much as a daily prompt.",
     tags: ['art', 'ink'],
-    stackAccent: '#f4f1e8',
+    stackAccent: '#ffffff',
     writeup:
       "Seven and a half months late, I have completed Inktober. What an accomplishment.\n\nTruly though, it's been a good exercise, even if not as a daily drawing prompt. I have used it as a confidence exercise. If a design was drafted, it was only done in thumbnail form (with ink), and once the design was begun, it was completed completely in ink (with the exception of 4, 7, and 14, which were all redone).",
     image: '/art/inktober-17/01.jpg',
@@ -373,6 +421,132 @@ const REAL_WORK: WorkItem[] = [
     pieces: placeholderPieces(8, '2017'),
   },
   {
+    slug: 'i-think-that-im',
+    title: "I Think That I'm...",
+    year: '2019',
+    description: 'A three-part multi-animator project (MAP) piece on cruelty and self-recognition.',
+    tags: ['art', 'digital'],
+    image: '/art/portfolio-19/01-i-think-that-im-human.jpg',
+    imageAspect: '1/1',
+    pieces: [
+      {
+        slug: 'i-think-that-im-human',
+        title: "I Think That I'm Human",
+        year: '2019',
+        description: 'For when we are so cruel that we fail to even recognize ourselves. Part 1 of 3.',
+        tags: ['art', 'digital'],
+        writeup:
+          "The initial color planning I did for this multi-animator project (MAP) part went way too far and turned into this piece.",
+        image: '/art/portfolio-19/01-i-think-that-im-human.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: 'i-think-about-god',
+        title: 'I Think About God',
+        year: '2019',
+        description: 'I think about God. I think of the chances. Part 2 of 3 — the animation component of the same MAP part.',
+        tags: ['art', 'digital'],
+        writeup: "This piece was originally a short frame-by-frame animation rather than a still image; the frame shown here stands in for it.",
+        image: '/art/portfolio-19/02-i-think-about-god.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: 'i-think-that-im-wrong',
+        title: "I Think That I'm Wrong",
+        year: '2019',
+        description: 'How carelessly we handle the hearts of others. Part 3 of 3, the second of two individual paintings made for this project.',
+        tags: ['art', 'digital'],
+        image: '/art/portfolio-19/03-i-think-that-im-wrong.jpg',
+        imageAspect: '1/1',
+      },
+    ],
+  },
+  {
+    slug: 'one-flesh',
+    title: 'One Flesh',
+    year: '2019',
+    description: 'We are but made of the same flesh and bones as the other creatures that inhabit this planet.',
+    tags: ['art'],
+    writeup: 'A traditional collage made out of pictures of meat cut from grocery store advertisements.',
+    image: '/art/portfolio-19/one-flesh.jpg',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'rabbit-in-the-moon',
+    title: 'Rabbit in the Moon',
+    year: '2019',
+    description: 'Have you heard the story of the rabbit in the moon?',
+    tags: ['art', 'digital'],
+    writeup: 'A small icon, made to minimize nicely.',
+    image: '/art/portfolio-19/rabbit-in-the-moon.jpg',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'rex-materialistarum',
+    title: 'Rēx Māteriālistārum',
+    year: '2019',
+    description:
+      '"Your kind may see me as the demon of greed, but I never agreed to such childish things... Is it truly bad to wish for more?" — Mammon.',
+    tags: ['art', 'digital'],
+    image: '/art/portfolio-19/rex-materialistarum.jpg',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'transparent-eyeball',
+    title: 'Transparent Eyeball',
+    year: '2019',
+    description:
+      'May I not be a transparent eyeball, observer of all and influencer of none? What a shell of flesh that contains me, nay, restrains me so, keeping me chained to this world of give and take.',
+    tags: ['art', 'digital'],
+    writeup: "For #milesdrawthisinyourstyle, by @miles_art — an homage to Emerson's transparent eyeball, and to an artist whose focus on the human figure I often lack in my own pieces.",
+    image: '/art/portfolio-19/transparent-eyeball.jpg',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'philosophy-animation',
+    title: 'Philosophy Animation',
+    year: '2019',
+    description: 'Three scenes from an animation made for a philosophy class, on adoption and identity.',
+    tags: ['art', 'digital'],
+    image: '/art/portfolio-19/philosophy-animation-01.jpg',
+    imageAspect: '1/1',
+    pieces: [
+      {
+        slug: 'privilege',
+        title: 'Privilege',
+        year: '2019',
+        description: 'A scene from an animation made for a philosophy class, on being privileged with well-off adoptive parents who care for me.',
+        tags: ['art', 'digital'],
+        writeup:
+          "Not every adoptee is so lucky. Adoption can be viewed as trauma — there is no adoption without abandonment. With international adoption, there is also a loss of culture. Not all adoptees are the same; not everyone views it the same way.",
+        image: '/art/portfolio-19/philosophy-animation-01.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: 'reidentification',
+        title: 'Reidentification',
+        year: '2019',
+        description: 'Another scene from the same philosophy-class animation, on gender identity and reconciliation with one\'s sex.',
+        tags: ['art', 'digital'],
+        writeup:
+          "I have made no modifications to my flesh since the start of my disidentification and reconciliation with my sex, and I think that's also an important part of my identity. I still feel agender. But outside of sports, medicine, and statistics, everyone should be treated as a unique individual, regardless of sex or gender identity.",
+        image: '/art/portfolio-19/philosophy-animation-02.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: 'origins',
+        title: 'Origins',
+        year: '2019',
+        description: 'The last scene posted from the same animation, on not knowing why I was given up to the Social Welfare Institute.',
+        tags: ['art', 'digital'],
+        writeup:
+          "While I don't know how or why I was given up to the Social Welfare Institute, it could be that I was taken from my parents by government workers, and not that I was abandoned.",
+        image: '/art/portfolio-19/philosophy-animation-03.jpg',
+        imageAspect: '1/1',
+      },
+    ],
+  },
+  {
     slug: 'eye-studies',
     title: 'Eye Studies',
     year: '2022',
@@ -381,6 +555,7 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'digital'],
     image: '/art/eye-studies/01.jpg',
     imageAspect: '1/1',
+    stackAccent: '#bcb5ac',
     pieces: (() => {
       // Process notes from the original posts, subject redacted to keep the
       // guessing game intact — the caption text itself often named the animal.
@@ -407,56 +582,6 @@ const REAL_WORK: WorkItem[] = [
     })(),
   },
   {
-    slug: 'may-colors-20',
-    title: "May Colors '20",
-    year: '2020',
-    description:
-      "April Colors, offset a month and done in traditional media this time — markers, ink, and oil pastel, prompt list by @faunwood, done together with @books_of_ink. Only made it four days in.",
-    tags: ['art', 'color'],
-    image: '/art/may-colors-20/01.jpg',
-    imageAspect: '1/1',
-    pieces: [
-      {
-        slug: '01-your-favorite-color',
-        title: 'Your Favorite Color',
-        year: '2020',
-        description:
-          "Doing the April Colors challenge again this year, just offset by a month, and done traditionally this time — a good excuse to get away from a screen.",
-        tags: ['art', 'color'],
-        image: '/art/may-colors-20/01.jpg',
-        imageAspect: '1/1',
-      },
-      {
-        slug: '02-complementary-colors',
-        title: 'Complementary Colors',
-        year: '2020',
-        description: 'Blood and chlorophyll — the colors of life, in a red-green pairing that always risks reading as too Christmas-y.',
-        tags: ['art', 'color'],
-        image: '/art/may-colors-20/02.jpg',
-        imageAspect: '1/1',
-      },
-      {
-        slug: '03-20-minute-study',
-        title: '20 Minute Study',
-        year: '2020',
-        description:
-          "A quick architecture study, sketched outdoors on an empty campus quad during the pandemic closures — a good excuse to lie in the grass in the golden hour, even if architecture isn't a comfort zone.",
-        tags: ['art', 'color'],
-        image: '/art/may-colors-20/03.jpg',
-        imageAspect: '1/1',
-      },
-      {
-        slug: '04-something-slimy',
-        title: 'Something Slimy',
-        year: '2020',
-        description: "Almost forgot to do this one — only day four in and already behind.",
-        tags: ['art', 'color'],
-        image: '/art/may-colors-20/04.jpg',
-        imageAspect: '1/1',
-      },
-    ],
-  },
-  {
     slug: 'mindtober-21',
     title: "Mindtober '21",
     year: '2021',
@@ -467,6 +592,7 @@ const REAL_WORK: WorkItem[] = [
       "Happy October! I have some catching up to do, but I'm going to try to finish within the month. I love @susitse.art's work and am excited to finally make use of one of their prompt lists.\n\nFinally finished, five months late in places — happy to have generated some new ideas and little rhymes to tie it all together.",
     image: '/art/mindtober-21/01.jpg',
     imageAspect: '1/1',
+    stackAccent: '#281912',
     pieces: [
       {
         slug: '01-my-own',
@@ -758,7 +884,7 @@ const REAL_WORK: WorkItem[] = [
     pieces: [
       {
         title: 'metaphorical safety blanket',
-        preview: 'i am swaddled in opaque words\ni have wrapped myself up in poetry',
+        preview: 'is it possible for me to avoid metaphor?\nsuch beauty evokes words from my hand\nbut i worry that i am hiding\n\ni am swaddled in opaque words\ni have wrapped myself up in poetry\ndisguising cries as lullabies\nopen wounds as still lifes\nspasms of pain as ballet\n\nelegant and refined\n\nbeautiful',
         description:
           "On hiding in plain sight behind polished metaphors that can't help but tell the truth anyway.",
         excerpt:
@@ -766,14 +892,14 @@ const REAL_WORK: WorkItem[] = [
       },
       {
         title: 'a love poem',
-        preview: 'let me write a sonnet to reality\nin an attempt to convince myself\nthat i am\nindeed\nin love with it.',
+        preview: "let me write a sonnet to reality\nin an attempt to convince myself\nthat i am\nindeed\nin love with it.",
         description: "A sonnet trying to convince itself it's in love with the world, and almost succeeding.",
         excerpt:
           "let me write a sonnet to reality\nin an attempt to convince myself\nthat i am\nindeed\nin love with it.\n\nThe sun shines bright and warm but does not blind\nAt foot sway flowers, nature's painted field\nMy heart is light and opens up in kind\nAllowing tender thoughts to be revealed\nThis dappled meadow is gentle and still\nAnd I the largest one which walks the earth\nThe generous Euphrates guides my will\nJust as it will till death and has since birth\nThe world is beautiful; I am at ease\nI follow the river back to my nest\nCivilization greets me like a breeze\nIt fills my sails and it brings me to rest\nThough I may think that I am now relieved\nTruly there is not one who is deceived",
       },
       {
         title: 'back to nature',
-        preview: 'how the remains of ivy look like circuit boards\ntheir rootlets secured like soldering',
+        preview: 'it is truly peculiar\nhow humankind insists\non separating\nthe natural\nfrom unnatural\n\nare we not but a different geometry\ndrawn by the same hand?',
         description:
           'On ivy that looks like circuit boards, and the human insistence on separating natural from unnatural.',
         excerpt:
