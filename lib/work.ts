@@ -189,20 +189,6 @@ export function itemTags(item: WorkItem): Set<string> {
   return tags
 }
 
-/** A collection whose pieces don't have real titles/descriptions yet. */
-function placeholderPieces(count: number, year: string): WorkPiece[] {
-  return Array.from({ length: count }, (_, i) => {
-    const n = String(i + 1).padStart(2, '0')
-    return {
-      slug: n,
-      title: n,
-      year,
-      description: 'Title and description coming soon.',
-      tags: ['art'],
-    }
-  })
-}
-
 const REAL_WORK: WorkItem[] = [
   {
     slug: 'hthtpw',
@@ -413,20 +399,12 @@ const REAL_WORK: WorkItem[] = [
     })),
   },
   {
-    slug: 'portfolio-17',
-    title: "Portfolio '17",
-    year: '2017',
-    description: 'Eight pieces. Titles and descriptions coming soon.',
-    tags: ['art'],
-    pieces: placeholderPieces(8, '2017'),
-  },
-  {
     slug: 'i-think-that-im',
     title: "I Think That I'm...",
     year: '2019',
     description: 'A three-part multi-animator project (MAP) piece on cruelty and self-recognition.',
     tags: ['art', 'digital'],
-    image: '/art/portfolio-19/01-i-think-that-im-human.jpg',
+    image: '/art/2019/01-i-think-that-im-human.jpg',
     imageAspect: '1/1',
     pieces: [
       {
@@ -437,7 +415,7 @@ const REAL_WORK: WorkItem[] = [
         tags: ['art', 'digital'],
         writeup:
           "The initial color planning I did for this multi-animator project (MAP) part went way too far and turned into this piece.",
-        image: '/art/portfolio-19/01-i-think-that-im-human.jpg',
+        image: '/art/2019/01-i-think-that-im-human.jpg',
         imageAspect: '1/1',
       },
       {
@@ -447,7 +425,7 @@ const REAL_WORK: WorkItem[] = [
         description: 'I think about God. I think of the chances. Part 2 of 3 — the animation component of the same MAP part.',
         tags: ['art', 'digital'],
         writeup: "This piece was originally a short frame-by-frame animation rather than a still image; the frame shown here stands in for it.",
-        image: '/art/portfolio-19/02-i-think-about-god.jpg',
+        image: '/art/2019/02-i-think-about-god.jpg',
         imageAspect: '1/1',
       },
       {
@@ -456,7 +434,7 @@ const REAL_WORK: WorkItem[] = [
         year: '2019',
         description: 'How carelessly we handle the hearts of others. Part 3 of 3, the second of two individual paintings made for this project.',
         tags: ['art', 'digital'],
-        image: '/art/portfolio-19/03-i-think-that-im-wrong.jpg',
+        image: '/art/2019/03-i-think-that-im-wrong.jpg',
         imageAspect: '1/1',
       },
     ],
@@ -468,7 +446,7 @@ const REAL_WORK: WorkItem[] = [
     description: 'We are but made of the same flesh and bones as the other creatures that inhabit this planet.',
     tags: ['art'],
     writeup: 'A traditional collage made out of pictures of meat cut from grocery store advertisements.',
-    image: '/art/portfolio-19/one-flesh.jpg',
+    image: '/art/2019/one-flesh.jpg',
     imageAspect: '1/1',
   },
   {
@@ -478,7 +456,7 @@ const REAL_WORK: WorkItem[] = [
     description: 'Have you heard the story of the rabbit in the moon?',
     tags: ['art', 'digital'],
     writeup: 'A small icon, made to minimize nicely.',
-    image: '/art/portfolio-19/rabbit-in-the-moon.jpg',
+    image: '/art/2019/rabbit-in-the-moon.jpg',
     imageAspect: '1/1',
   },
   {
@@ -488,7 +466,7 @@ const REAL_WORK: WorkItem[] = [
     description:
       '"Your kind may see me as the demon of greed, but I never agreed to such childish things... Is it truly bad to wish for more?" — Mammon.',
     tags: ['art', 'digital'],
-    image: '/art/portfolio-19/rex-materialistarum.jpg',
+    image: '/art/2019/rex-materialistarum.jpg',
     imageAspect: '1/1',
   },
   {
@@ -499,7 +477,7 @@ const REAL_WORK: WorkItem[] = [
       'May I not be a transparent eyeball, observer of all and influencer of none? What a shell of flesh that contains me, nay, restrains me so, keeping me chained to this world of give and take.',
     tags: ['art', 'digital'],
     writeup: "For #milesdrawthisinyourstyle, by @miles_art — an homage to Emerson's transparent eyeball, and to an artist whose focus on the human figure I often lack in my own pieces.",
-    image: '/art/portfolio-19/transparent-eyeball.jpg',
+    image: '/art/2019/transparent-eyeball.jpg',
     imageAspect: '1/1',
   },
   {
@@ -508,7 +486,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2019',
     description: 'Three scenes from an animation made for a philosophy class, on adoption and identity.',
     tags: ['art', 'digital'],
-    image: '/art/portfolio-19/philosophy-animation-01.jpg',
+    image: '/art/2019/philosophy-animation-01.jpg',
     imageAspect: '1/1',
     pieces: [
       {
@@ -519,7 +497,7 @@ const REAL_WORK: WorkItem[] = [
         tags: ['art', 'digital'],
         writeup:
           "Not every adoptee is so lucky. Adoption can be viewed as trauma — there is no adoption without abandonment. With international adoption, there is also a loss of culture. Not all adoptees are the same; not everyone views it the same way.",
-        image: '/art/portfolio-19/philosophy-animation-01.jpg',
+        image: '/art/2019/philosophy-animation-01.jpg',
         imageAspect: '1/1',
       },
       {
@@ -530,7 +508,7 @@ const REAL_WORK: WorkItem[] = [
         tags: ['art', 'digital'],
         writeup:
           "I have made no modifications to my flesh since the start of my disidentification and reconciliation with my sex, and I think that's also an important part of my identity. I still feel agender. But outside of sports, medicine, and statistics, everyone should be treated as a unique individual, regardless of sex or gender identity.",
-        image: '/art/portfolio-19/philosophy-animation-02.jpg',
+        image: '/art/2019/philosophy-animation-02.jpg',
         imageAspect: '1/1',
       },
       {
@@ -541,7 +519,7 @@ const REAL_WORK: WorkItem[] = [
         tags: ['art', 'digital'],
         writeup:
           "While I don't know how or why I was given up to the Social Welfare Institute, it could be that I was taken from my parents by government workers, and not that I was abandoned.",
-        image: '/art/portfolio-19/philosophy-animation-03.jpg',
+        image: '/art/2019/philosophy-animation-03.jpg',
         imageAspect: '1/1',
       },
     ],
