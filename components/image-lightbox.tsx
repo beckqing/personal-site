@@ -18,11 +18,20 @@ export function ImageLightbox({
   initialIndex = 0,
   children,
   className,
+  bare = false,
 }: {
   items: WorkPiece[]
   initialIndex?: number
   children: ReactNode
   className?: string
+  /**
+   * Skips the full-bleed hover scrim and "view" pill, and the default
+   * block/w-full/border/rounded chrome — for wrapping a small trigger (like
+   * a "view still" pill next to a video player) rather than an image tile
+   * that fills its own box. Caller controls layout entirely via `children`
+   * and `className`.
+   */
+  bare?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [index, setIndex] = useState(initialIndex)
@@ -50,19 +59,25 @@ export function ImageLightbox({
     <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
       <DialogPrimitive.Trigger
         className={cn(
-          'group relative block w-full appearance-none overflow-hidden rounded-2xl border border-border bg-transparent p-0 text-left transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          bare
+            ? 'group appearance-none bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+            : 'group relative block w-full appearance-none overflow-hidden rounded-2xl border border-border bg-transparent p-0 text-left transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           className,
         )}
       >
         {children}
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 bg-foreground/0 transition-colors duration-200 group-hover:bg-foreground/5"
-        />
-        <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-xs text-foreground opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
-          <Expand className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-          view
-        </span>
+        {!bare && (
+          <>
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 bg-foreground/0 transition-colors duration-200 group-hover:bg-foreground/5"
+            />
+            <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-xs text-foreground opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+              <Expand className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              view
+            </span>
+          </>
+        )}
       </DialogPrimitive.Trigger>
 
       <DialogPrimitive.Portal>
@@ -75,34 +90,40 @@ export function ImageLightbox({
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
 
-          <div className="relative flex w-full max-w-4xl flex-1 items-center justify-center">
-            {hasMultiple && (
-              <button
-                type="button"
-                onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)}
-                aria-label={`Previous: ${items[(index - 1 + items.length) % items.length].title}`}
-                className="absolute left-0 z-10 -translate-x-1 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card sm:-translate-x-14"
-              >
-                <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
-              </button>
-            )}
+          <div className="flex w-full max-w-4xl flex-1 items-center justify-center">
+            {/* Sized to the image itself (not the max-w-4xl row), so the
+                arrows sit against its actual rendered edges — a portrait
+                piece renders much narrower than the row, and arrows pinned
+                to the row's edges would end up far from the image. */}
+            <div className="relative inline-flex max-w-full items-center justify-center">
+              {hasMultiple && (
+                <button
+                  type="button"
+                  onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)}
+                  aria-label={`Previous: ${items[(index - 1 + items.length) % items.length].title}`}
+                  className="absolute left-0 z-10 -translate-x-12 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card sm:-translate-x-14"
+                >
+                  <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              )}
 
-            <WorkPlaceholder
-              item={piece}
-              fit="contain"
-              className="max-h-[65vh] max-w-full drop-shadow-2xl"
-            />
+              <WorkPlaceholder
+                item={piece}
+                fit="contain"
+                className="max-h-[65vh] max-w-full drop-shadow-2xl"
+              />
 
-            {hasMultiple && (
-              <button
-                type="button"
-                onClick={() => setIndex((i) => (i + 1) % items.length)}
-                aria-label={`Next: ${items[(index + 1) % items.length].title}`}
-                className="absolute right-0 z-10 translate-x-1 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card sm:translate-x-14"
-              >
-                <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
-              </button>
-            )}
+              {hasMultiple && (
+                <button
+                  type="button"
+                  onClick={() => setIndex((i) => (i + 1) % items.length)}
+                  aria-label={`Next: ${items[(index + 1) % items.length].title}`}
+                  className="absolute right-0 z-10 translate-x-12 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card sm:translate-x-14"
+                >
+                  <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col items-center gap-1 text-center">

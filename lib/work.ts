@@ -34,10 +34,42 @@ export type WorkPiece = {
    * (mostly science essays so far); doesn't follow automatically from tags.
    */
   hasImage?: boolean
+  /**
+   * A process/speedpaint video — a timelapse of the piece being made. Shown
+   * with a persistent scrubber rather than standard video chrome: the point
+   * is dragging through every stroke by hand, not pressing play and waiting.
+   * Distinct from `animationSrc`, which is a finished piece meant to be
+   * watched start to finish.
+   */
+  speedpaintSrc?: string
+  /** The speedpaint video's own aspect ratio, when it differs from `imageAspect`. */
+  speedpaintAspect?: string
+  /**
+   * A finished animation clip's video file (e.g. '/art/...mp4'), played with
+   * standard time-based controls on the piece's own page.
+   */
+  animationSrc?: string
 }
 
 /** A piece that holds other pieces. Rendered with a tilted deck behind it. */
-export type WorkCollection = WorkPiece & { pieces: WorkPiece[] }
+export type WorkCollection = WorkPiece & {
+  pieces: WorkPiece[]
+  /**
+   * Override for the collection stack's blank 4th card (a CSS color) — the
+   * default neutral gray doesn't fit every collection equally well (e.g. an
+   * ink-on-paper sketchbook wants something closer to actual paper, not a
+   * generic gray). Unset falls back to the default.
+   */
+  stackAccent?: string
+  /**
+   * Hand-picked slugs for the stack's front/2nd/3rd cards (1-3 entries) —
+   * e.g. the three you'd actually want someone to see in a gallery preview,
+   * rather than whichever three happen to come first. Unset falls back to
+   * the collection's first three pieces (first three with a real `image`
+   * for the image-stack case).
+   */
+  stackPieces?: string[]
+}
 
 export type WorkItem = WorkPiece | WorkCollection
 
@@ -86,6 +118,21 @@ export function isTextOnly(item: WorkItem): boolean {
  */
 export function isHybrid(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.hasImage)
+}
+
+/** A piece with a process/speedpaint video. Collections don't carry media directly. */
+export function hasSpeedpaint(item: WorkItem): boolean {
+  return !isCollection(item) && Boolean(item.speedpaintSrc)
+}
+
+/** A piece with a finished animation clip. Collections don't carry media directly. */
+export function hasAnimation(item: WorkItem): boolean {
+  return !isCollection(item) && Boolean(item.animationSrc)
+}
+
+/** The aspect a speedpaint video's player should take — its own, falling back to the finished image's. */
+export function speedpaintAspect(item: WorkPiece): string | undefined {
+  return item.speedpaintAspect ?? item.imageAspect
 }
 
 /**
@@ -172,35 +219,86 @@ export function itemTags(item: WorkItem): Set<string> {
   return tags
 }
 
-/** A collection whose pieces don't have real titles/descriptions yet. */
-function placeholderPieces(count: number, year: string): WorkPiece[] {
-  return Array.from({ length: count }, (_, i) => {
-    const n = String(i + 1).padStart(2, '0')
-    return {
-      slug: n,
-      title: n,
-      year,
-      description: 'Title and description coming soon.',
-      tags: ['art'],
-    }
-  })
-}
-
 const REAL_WORK: WorkItem[] = [
   {
     slug: 'hthtpw',
     title: 'How to Help the Planet Week',
     year: '2020',
-    description: 'A five-day series on how to help the planet. Titles and descriptions coming soon.',
+    description: 'A five-day series on how to help the planet, posted (very) late, one at a time.',
     tags: ['art'],
-    pieces: placeholderPieces(5, '2020'),
+    image: '/art/hthtpw/01.jpg',
+    imageAspect: '1/1',
+    stackAccent: '#636b5b',
+    pieces: [
+      {
+        slug: '01-mama-earth',
+        title: 'Mama Earth',
+        year: '2020',
+        description: 'Our Beautiful Planet.',
+        tags: ['art'],
+        writeup:
+          "While I was brainstorming what I would do for today, it occurred to me that humans anthropomorphize things to make them more relatable. And while that's expected, doesn't that show a flaw in how we decide to assign care? Not all things that are worth caring about are human, and that's ok.",
+        image: '/art/hthtpw/01.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '02-tiny-tracks',
+        title: 'Tiny Tracks',
+        year: '2020',
+        description: 'How to lessen your carbon footprint — twelve small ways to shrink it, one per toe.',
+        tags: ['art'],
+        writeup:
+          'Ways to shrink your carbon footprint:\n\n1. Adjust your thermostat to suit the temperature outside (cooler in the winter, warmer in the summer).\n2. Drive less — carpool, take public transportation, bike, or walk when able.\n3. Switch out incandescent light bulbs; LEDs are more efficient.\n4. Eat less beef, which emits almost 4x the amount of CO2 as chicken.\n5. Wash your clothes cold.\n6. Bring snacks (and lunch!) in reusable containers instead of plastic bags.\n7. Cloth towels instead of paper.\n8. Refillable water bottles instead of single use — recycle the ones you do use.\n9. Fly less; if you do fly, go economy class and offset your emissions.\n10. Eat local.\n11. Unsubscribe from junk mail and sign up for electronic bills.\n12. Buy second hand clothes, and only when you need to.',
+        image: '/art/hthtpw/02.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '03-creature-love',
+        title: 'Creature-Love',
+        year: '2020',
+        description: 'Why are all creatures valid and important?',
+        tags: ['art'],
+        writeup:
+          "Building off of the theme of our need to relate in order to qualify something as important, we come to the existence of charismatic megafauna — animals that have captured the hearts of the public, often through positive media portraying them.\n\nWhile these creatures deserve respect, they are not the only ones. Here, I have highlighted some invertebrates that go overlooked in most people's understanding of conservation.\n\nMolluscs like mussels and clams filter water. Native bees and wasps pollinate plants much better than honeybees (which are, in the USA, an invasive species). Lacewings, like ladybugs, eat aphids, which in turn eat plants, including those in your garden. Earthworms aerate the soil and restore nutrients to it.\n\nCreatures big and small are important to the biodiversity of the world, which is what keeps ecosystems healthy.",
+        image: '/art/hthtpw/03.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '04-many-reasons-one-goal',
+        title: 'Many Reasons, One Goal',
+        year: '2020',
+        description:
+          'Four reasons to care about the planet that don\'t hinge on believing in "global warming" specifically — for your children, for fresh water, for the plants, for the oceans.',
+        tags: ['art'],
+        writeup:
+          'While there are many reasons to care about the planet, such as a general desire for sustainable living, I thought I\'d address some that don\'t rely on a belief in the problem of "global warming", which is better termed climate change, since there are many other components.\n\nFor your children — even if you don\'t think the panic about the climate is warranted, at least think about how we are taking resources from the planet at an unsustainable rate, leaving less and less for future generations.\n\nFor fresh water — fresh water is important to most all life, and definitely all human life. While the water cycle exists and there are filtration systems (both natural and human-made), these cannot keep up with the pollution and water waste that is typical in a given US household.\n\nFor the plants — more and more trees are being cut down to make farmland (mostly pressured by animal agriculture). They are the basis of all multicellular life; we need them to live, they don\'t need us. The crops we plant in their place will never contribute to air quality as much as trees could.\n\nFor the oceans — the oceans are becoming more acidic. The CO2 in the atmosphere, along with other greenhouse gasses, directly contributes to this trend, which has been documented for years and already affects wildlife.\n\nI really don\'t know why it took me so long to post this one. It\'s been complete for a month and a half.',
+        image: '/art/hthtpw/04.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '05-stick-together',
+        title: 'Stick Together',
+        year: '2020',
+        description:
+          "On togetherness — a theme this work doesn't come by naturally, since isolation is usually what comes through instead.",
+        tags: ['art'],
+        writeup:
+          "It took me a long time to get around to completing this series. In many of my works, I convey isolation, and so I think it's difficult for me to think of togetherness. But it is true that we need each other, as seen even more starkly in this time of social distancing.\n\nWe have to remember that the influence is in our numbers — what would happen if everyone picked up five pieces of trash? Or if even half the world picked up ten? With so many people on this planet, we have the means. There's enough food and water for us as it is, but we need to work towards more efficient, sustainable, and equitable methods of distribution.\n\nThere is work to be done, and it must be done together.",
+        image: '/art/hthtpw/05.jpg',
+        imageAspect: '1/1',
+      },
+    ],
   },
   {
     slug: 'april-colors-19',
     title: "April Colors '19",
     year: '2019',
-    description: 'A month of color-study prompts, painted one a day. Images not yet archived.',
+    description: 'A month of color-study prompts, painted one a day.',
     tags: ['art', 'color'],
+    image: '/art/april-colors-19/01.jpg',
+    imageAspect: '1/1',
+    stackAccent: '#682f29',
+    stackPieces: ['10-fire-protection', '13-grounding-hopes', '26-aphrodite'],
     pieces: [
       { day: '01', title: 'Identifying Vice', prompt: 'ghost' },
       { day: '02', title: 'Deceased Gems', prompt: 'prettiest insect' },
@@ -208,35 +306,329 @@ const REAL_WORK: WorkItem[] = [
       { day: '04', title: 'Genesis 3-14', prompt: 'not enough legs' },
       { day: '05', title: 'Mistletoe', prompt: 'houseplant' },
       { day: '06', title: 'Suffocating', prompt: 'atmosphere' },
-      { day: '08', title: '[star]dust', prompt: 'no blending' },
-      { day: '09', title: 'Fire Protection', prompt: 'earth tones' },
-      { day: '10', title: 'Poison-Wild', prompt: 'eleven of something' },
-      { day: '11', title: 'False Mercy', prompt: 'sunset colors' },
-      { day: '12', title: 'Grounding Hopes', prompt: 'mantis shrimp' },
-      { day: '13', title: 'Active Defense', prompt: 'dragon' },
-      { day: '14', title: 'C. patiens', prompt: 'invent a plant' },
-      { day: '15', title: 'Armored Intimacy', prompt: 'study an object' },
-      { day: '16', title: 'Leo Tu', prompt: 'split complementary' },
-      { day: '17', title: 'Psilocybe', prompt: 'wrong colors' },
-      { day: '18', title: 'Temper', prompt: 'too many legs' },
-      { day: '19', title: "Don't Listen", prompt: 'color pick' },
-      { day: '20', title: 'Living Stone', prompt: 'lithops' },
-      { day: '21', title: 'Slick Temptation', prompt: 'something oily' },
-      { day: '22', title: 'Fertile', prompt: 'triad' },
-      { day: '23', title: 'en d o c ate', prompt: 'geometric' },
-      { day: '24', title: 'Caduceus', prompt: 'something fuzzy' },
-      { day: '25', title: 'Aphrodite', prompt: 'a color you hate' },
-      { day: '26', title: 'The Story of Humankind', prompt: 'tell a story' },
-      { day: '27', title: 'The Minister of Red', prompt: 'mixed media' },
-      { day: '28', title: 'Landscape of Sisyphus', prompt: 'landscape' },
-      { day: '29', title: 'Ornamental Diversity', prompt: 'ornamental' },
+      { day: '07', title: 'The World Is a Beautiful Place', prompt: 'analogous colors' },
+      { day: '08', title: 'Complacency', prompt: 'a fat bird' },
+      { day: '09', title: '[star]dust', prompt: 'no blending' },
+      { day: '10', title: 'Fire Protection', prompt: 'earth tones' },
+      { day: '11', title: 'Poison-Wild', prompt: 'eleven of something' },
+      { day: '12', title: 'False Mercy', prompt: 'sunset colors' },
+      { day: '13', title: 'Grounding Hopes', prompt: 'mantis shrimp' },
+      { day: '14', title: 'Active Defense', prompt: 'dragon' },
+      { day: '15', title: 'C. patiens', prompt: 'invent a plant' },
+      { day: '16', title: 'Armored Intimacy', prompt: 'study an object' },
+      { day: '17', title: 'Leo Tu', prompt: 'split complementary' },
+      { day: '18', title: 'Psilocybe', prompt: 'wrong colors' },
+      { day: '19', title: 'Temper', prompt: 'too many legs' },
+      { day: '20', title: "Don't Listen", prompt: 'color pick' },
+      { day: '21', title: 'Living Stone', prompt: 'lithops' },
+      { day: '22', title: 'Slick Temptation', prompt: 'something oily' },
+      { day: '23', title: 'Fertile', prompt: 'triad' },
+      { day: '24', title: 'en d o c ate', prompt: 'geometric' },
+      { day: '25', title: 'Caduceus', prompt: 'something fuzzy' },
+      { day: '26', title: 'Aphrodite', prompt: 'a color you hate' },
+      { day: '27', title: 'The Story of Humankind', prompt: 'tell a story' },
+      { day: '28', title: 'The Minister of Red', prompt: 'mixed media' },
+      { day: '29', title: 'Landscape of Sisyphus', prompt: 'landscape' },
+      { day: '30', title: 'Ornamental Diversity', prompt: 'ornamental' },
     ].map(({ day, title, prompt }) => ({
       slug: `${day}-${title.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-')}`,
       title,
       year: '2019',
       description: `Day ${day} of April Colors '19 — prompt: "${prompt}."`,
       tags: ['art'],
+      image: `/art/april-colors-19/${day}.jpg`,
+      imageAspect: '1/1',
     })),
+  },
+  {
+    slug: 'april-colors-24',
+    title: "April Colors '24",
+    year: '2024',
+    description: 'A month of watercolor prompts, one a day, prompt list by @faunwood.',
+    tags: ['art', 'watercolor'],
+    image: '/art/april-colors-24/01.webp',
+    imageAspect: '1/1',
+    pieces: [
+      {
+        slug: '01-favorite-color',
+        title: 'Favorite Color',
+        year: '2024',
+        description: "My favorite color is Prismacolor's indigo blue — decided in childhood, since it adds shadows without desaturating the way black does. A stellar's jay, painted with a limited palette.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/01.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '02-planet',
+        title: 'Planet',
+        year: '2024',
+        description: "Thinking about arbitrary orientation, Stewart Brand, and reproducing one of the most reproduced images in history — the Blue Marble.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/02.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '03-color-blobs',
+        title: 'Color Blobs',
+        year: '2024',
+        description: "New forms, familiar darkness, hidden light. Painting colored blobs first and drawing lineart after, fighting the urge to assign meaning too soon.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/03.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '04-scales',
+        title: 'Scales',
+        year: '2024',
+        description: "A fictional green viper, in a study of how beautiful scales can be — there's blue skin underneath.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/04.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '05-colors-from-a-bird',
+        title: 'Colors From a Bird',
+        year: '2024',
+        description: "Guess the bird? Black and off-white are part of the palette, roughly in proportion. Started as a winter scene, drifted into a beach a few brushstrokes in.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/05.webp',
+        imageAspect: '1440/1181',
+      },
+      {
+        slug: '06-gummy-candy',
+        title: 'Gummy Candy',
+        year: '2024',
+        description: "Animal-made — most springy gummy candies are gelatin, and the translucence is beautiful, even without quite having figured out how to paint it.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/06.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '07-floral',
+        title: 'Floral',
+        year: '2024',
+        description: "Biking around with flowers, embodying joy, being the person I want to be — dried flowers found on a curb.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/07.webp',
+        imageAspect: '1440/1777',
+      },
+      {
+        slug: '08-abstract',
+        title: 'Abstract',
+        year: '2024',
+        description: "Thinking about meaning, abstraction, and arbitrary orientation, again.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/08.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '09-randomly-generated-palette',
+        title: 'Randomly Generated Palette',
+        year: '2024',
+        description: "The ends and the in between, the individual and the community — a wolf, and an asexual flag I didn't consciously reach for but arrived at anyway.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/09.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '10-burn',
+        title: 'Burn',
+        year: '2024',
+        description: "It's okay to burn sometimes. May the fire bring you power, justice, and healing — reinterpreting an old deer piece in flame.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/10.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '11-gradient',
+        title: 'Gradient',
+        year: '2024',
+        description: "A palette inspired by viridis — perceptually uniform, colorblind-friendly. Gradients are inevitable with watercolor.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/11.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '12-color-blobs',
+        title: 'Color Blobs',
+        year: '2024',
+        description: "Seeing shapes in the clouds, until a snail on someone's back became a snail shapeshifter, and it all made sense.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/12.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '13-least-favorite-color',
+        title: 'Least Favorite Color',
+        year: '2024',
+        description: "Probably my least favorite color mainly because it's \"girly,\" and I was unintentionally raised to believe that was bad. Haven't gotten over it yet.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/13.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '14-seaweed',
+        title: 'Seaweed',
+        year: '2024',
+        description: "Thinking about the softness of pencil, even when permanent — done in fifteen minutes, racing midnight.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/14.webp',
+        imageAspect: '1440/1574',
+      },
+      {
+        slug: '15-self',
+        title: 'Self',
+        year: '2024',
+        description: "Thinking about fashion and capability as identity, embodiment, and what it means to be light-skinned. A self-portrait, and a long-running uncertainty about what color I actually am.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/15.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '16-trinket',
+        title: 'Trinket',
+        year: '2024',
+        description: "Thinking about utility, meaning, and \"Love's Knowledge\" by Nussbaum — a Monopoly token, my archetype of a trinket.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/16.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '17-verdant',
+        title: 'Verdant',
+        year: '2024',
+        description: "Sitting outside painting our beautiful and unruly artichoke — a beautiful day, if a harsh one for the light.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/17.webp',
+        imageAspect: '1/1',
+        // Shot outdoors, handheld — the camera is locked off through the
+        // painting, then lifts for a reveal and pans to the real artichoke.
+        // Cropped to a centered square (not the page-only rect used for the
+        // other four, which the pan at the end would break) — a loose frame
+        // through the whole clip rather than a tight one that only holds for
+        // part of it. Matches imageAspect, so no override needed here.
+        speedpaintSrc: '/art/april-colors-24/speedpaint/17-verdant.mp4',
+      },
+      {
+        slug: '18-an-animal-youve-never-drawn',
+        title: "An Animal You've Never Drawn",
+        year: '2024',
+        description: "A gold-mouth sea squirt — the only image on the animal Wikipedia page I didn't recognize at all. Do we see ourselves as kin?",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/18.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '19-randomly-generated-palette',
+        title: 'Randomly Generated Palette',
+        year: '2024',
+        description: "Thinking about the fuzziness of imagination and the skill in creating clarity. A pansy, painted from a randomly generated hex palette.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/19.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '20-cracks',
+        title: 'Cracks',
+        year: '2024',
+        description: "Layers, the beauty revealed underneath artifice, through time and weather — the back porch railing and an old fence, mixed with imagined neutrals.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/20.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '21-weather',
+        title: 'Weather',
+        year: '2024',
+        description: "Here's to not taking the beautiful weather of the Bay for granted — painted on a break from acro in Dolores Park.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/21.webp',
+        imageAspect: '4/5',
+      },
+      {
+        slug: '22-layers',
+        title: 'Layers',
+        year: '2024',
+        description: "The shifting of meaning through the process, the process of creation, the creation of meaning. Watercolors layered thick and thin.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/22.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '23-pollen',
+        title: 'Pollen',
+        year: '2024',
+        description: 'Pollen as, is, sperm. A painting from an April 2019 photo, paired with a line from my own poem "may flowers."',
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/23.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '24-color-palette-from-a-drink',
+        title: 'Color Palette From a Drink',
+        year: '2024',
+        description: "Inspired by a drink at Shooting Star Cafe in Oakland — yellow mango jelly stars and basil seeds. A long day, a simple painting.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/24.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '25-transportation',
+        title: 'Transportation',
+        year: '2024',
+        description: "Coincidentally painted on BART — well, partly, like most of my commute. What gets captured, and what doesn't.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/25.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '26-water',
+        title: 'Water',
+        year: '2024',
+        description: "Captivated by the reflections of water, especially water burbling through a bottle's neck while pouring — painted at Lion Dance Cafe on its second-to-last day of service.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/26.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '27-neutrals',
+        title: 'Neutrals',
+        year: '2024',
+        description: "How neutral can you get with a rather saturated palette? Added to over the whole month, mixing neutrals for other pieces.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/27.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '28-bw-animal-in-color',
+        title: 'B&W Animal in Color',
+        year: '2024',
+        description: "Thinking about how the unique individual is lost in numbers — particular empathy forsaken for generic pity, per Martha Nussbaum. Cows.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/28.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '29-palette-from-a-historical-painting',
+        title: 'Palette From a Historical Painting',
+        year: '2024',
+        description: "Inspired by Adolf Hyła's Divine Mercy, religious trauma, and the suffering of Jesus.",
+        tags: ['art', 'watercolor'],
+        image: '/art/april-colors-24/29.webp',
+        imageAspect: '1440/1553',
+      },
+      {
+        slug: '30-rainbow',
+        title: 'Rainbow',
+        year: '2024',
+        description:
+          "Saw a rainbow* in the clouds on a flight, encircling the shadow of the plane — a magnificent sight that I couldn't quite capture with my phone camera.",
+        tags: ['art', 'watercolor'],
+        writeup: "* Turns out it's not a rainbow, but a glory.",
+        image: '/art/april-colors-24/30.webp',
+        imageAspect: '1440/1317',
+      },
+    ],
   },
   {
     slug: 'inktober-17',
@@ -245,8 +637,11 @@ const REAL_WORK: WorkItem[] = [
     description:
       "31 ink drawings for Inktober, finished seven and a half months late — a confidence exercise as much as a daily prompt.",
     tags: ['art', 'ink'],
+    stackAccent: '#ffffff',
     writeup:
       "Seven and a half months late, I have completed Inktober. What an accomplishment.\n\nTruly though, it's been a good exercise, even if not as a daily drawing prompt. I have used it as a confidence exercise. If a design was drafted, it was only done in thumbnail form (with ink), and once the design was begun, it was completed completely in ink (with the exception of 4, 7, and 14, which were all redone).",
+    image: '/art/inktober-17/01.jpg',
+    imageAspect: '1/1',
     pieces: [
       { day: '01', title: 'Swift', line: 'This little chimney swift is not so swift anymore.' },
       { day: '02', title: 'Divided', line: "They didn't realize how divided their worlds were." },
@@ -318,15 +713,137 @@ const REAL_WORK: WorkItem[] = [
       year: '2017',
       description: line,
       tags: ['art', 'ink'],
+      image: `/art/inktober-17/${day}.jpg`,
+      thumb: `/art/inktober-17/thumb/${day}.jpg`,
+      imageAspect: '1/1',
     })),
   },
   {
-    slug: 'portfolio-17',
-    title: "Portfolio '17",
-    year: '2017',
-    description: 'Eight pieces. Titles and descriptions coming soon.',
+    slug: 'i-think-that-im',
+    title: "I Think That I'm...",
+    year: '2019',
+    description: 'A three-part multi-animator project (MAP) piece on cruelty and self-recognition.',
+    tags: ['art', 'digital'],
+    image: '/art/2019/01-i-think-that-im-human.jpg',
+    imageAspect: '1/1',
+    pieces: [
+      {
+        slug: 'i-think-that-im-human',
+        title: "I Think That I'm Human",
+        year: '2019',
+        description: 'For when we are so cruel that we fail to even recognize ourselves. Part 1 of 3.',
+        tags: ['art', 'digital'],
+        writeup:
+          "The initial color planning I did for this multi-animator project (MAP) part went way too far and turned into this piece.",
+        image: '/art/2019/01-i-think-that-im-human.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: 'i-think-about-god',
+        title: 'I Think About God',
+        year: '2019',
+        description: 'I think about God. I think of the chances. Part 2 of 3 — the animation component of the same MAP part.',
+        tags: ['art', 'digital'],
+        writeup: 'A short frame-by-frame animation, made for the same multi-animator project as the other two parts.',
+        image: '/art/2019/02-i-think-about-god.jpg',
+        imageAspect: '1/1',
+        animationSrc: '/art/2019/i-think-about-god.mp4',
+      },
+      {
+        slug: 'i-think-that-im-wrong',
+        title: "I Think That I'm Wrong",
+        year: '2019',
+        description: 'How carelessly we handle the hearts of others. Part 3 of 3, the second of two individual paintings made for this project.',
+        tags: ['art', 'digital'],
+        image: '/art/2019/03-i-think-that-im-wrong.jpg',
+        imageAspect: '1/1',
+      },
+    ],
+  },
+  {
+    slug: 'one-flesh',
+    title: 'One Flesh',
+    year: '2019',
+    description: 'We are but made of the same flesh and bones as the other creatures that inhabit this planet.',
     tags: ['art'],
-    pieces: placeholderPieces(8, '2017'),
+    writeup: 'A traditional collage made out of pictures of meat cut from grocery store advertisements.',
+    image: '/art/2019/one-flesh.jpg',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'rabbit-in-the-moon',
+    title: 'Rabbit in the Moon',
+    year: '2019',
+    description: 'Have you heard the story of the rabbit in the moon?',
+    tags: ['art', 'digital'],
+    writeup: 'A small icon, made to minimize nicely.',
+    image: '/art/2019/rabbit-in-the-moon.jpg',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'rex-materialistarum',
+    title: 'Rēx Māteriālistārum',
+    year: '2019',
+    description:
+      '"Your kind may see me as the demon of greed, but I never agreed to such childish things... Is it truly bad to wish for more?" — Mammon.',
+    tags: ['art', 'digital'],
+    image: '/art/2019/rex-materialistarum.jpg',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'transparent-eyeball',
+    title: 'Transparent Eyeball',
+    year: '2019',
+    description:
+      'May I not be a transparent eyeball, observer of all and influencer of none? What a shell of flesh that contains me, nay, restrains me so, keeping me chained to this world of give and take.',
+    tags: ['art', 'digital'],
+    writeup: "For #milesdrawthisinyourstyle, by @miles_art — an homage to Emerson's transparent eyeball, and to an artist whose focus on the human figure I often lack in my own pieces.",
+    image: '/art/2019/transparent-eyeball.jpg',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'philosophy-animation',
+    title: 'Philosophy Animation',
+    year: '2019',
+    description: 'Three scenes from an animation made for a philosophy class, on adoption and identity.',
+    tags: ['art', 'digital'],
+    image: '/art/2019/philosophy-animation-01.jpg',
+    imageAspect: '1/1',
+    pieces: [
+      {
+        slug: 'privilege',
+        title: 'Privilege',
+        year: '2019',
+        description: 'A scene from an animation made for a philosophy class, on being privileged with well-off adoptive parents who care for me.',
+        tags: ['art', 'digital'],
+        writeup:
+          "Not every adoptee is so lucky. Adoption can be viewed as trauma — there is no adoption without abandonment. With international adoption, there is also a loss of culture. Not all adoptees are the same; not everyone views it the same way.",
+        image: '/art/2019/philosophy-animation-01.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: 'reidentification',
+        title: 'Reidentification',
+        year: '2019',
+        description: 'Another scene from the same philosophy-class animation, on gender identity and reconciliation with one\'s sex.',
+        tags: ['art', 'digital'],
+        writeup:
+          "I have made no modifications to my flesh since the start of my disidentification and reconciliation with my sex, and I think that's also an important part of my identity. I still feel agender. But outside of sports, medicine, and statistics, everyone should be treated as a unique individual, regardless of sex or gender identity.",
+        image: '/art/2019/philosophy-animation-02.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: 'origins',
+        title: 'Origins',
+        year: '2019',
+        description: 'The last scene posted from the same animation, on not knowing why I was given up to the Social Welfare Institute.',
+        tags: ['art', 'digital'],
+        writeup:
+          "While I don't know how or why I was given up to the Social Welfare Institute, it could be that I was taken from my parents by government workers, and not that I was abandoned.",
+        image: '/art/2019/philosophy-animation-03.jpg',
+        imageAspect: '1/1',
+      },
+    ],
   },
   {
     slug: 'eye-studies',
@@ -337,19 +854,468 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'digital'],
     image: '/art/eye-studies/01.jpg',
     imageAspect: '1/1',
-    pieces: Array.from({ length: 8 }, (_, i) => {
-      const n = String(i + 1).padStart(2, '0')
-      return {
-        slug: n,
-        title: n,
-        year: '2022',
-        description: 'Subject hidden for now. Title coming soon.',
-        tags: ['art', 'digital'],
-        image: `/art/eye-studies/${n}.jpg`,
-        thumb: `/art/eye-studies/thumb/${n}.jpg`,
-        imageAspect: '1/1',
+    stackAccent: '#bcb5ac',
+    pieces: (() => {
+      // Process notes from the original posts, subject redacted to keep the
+      // guessing game intact — the caption text itself often named the animal.
+      // Order: turkey, pig, cow, sheep, chicken, goose, goat, fish.
+      const notes: Record<string, string> = {
+        '01': "Leaning into realism and photo studies, something I haven't done in a while. Stopping here for now — hoping to finish an eye a day this week.",
+        '03': 'The lashes on this one are so lovely.',
+        '04': "Very enjoyable to draw — the first left eye I've done for this series.",
+        '06': 'Do you know what animal this is? Thinking about recognizability and beauty.',
       }
-    }),
+      return Array.from({ length: 8 }, (_, i) => {
+        const n = String(i + 1).padStart(2, '0')
+        return {
+          slug: n,
+          title: n,
+          year: '2022',
+          description: notes[n] ?? 'Subject hidden for now. Title coming soon.',
+          tags: ['art', 'digital'],
+          image: `/art/eye-studies/${n}.jpg`,
+          thumb: `/art/eye-studies/thumb/${n}.jpg`,
+          imageAspect: '1/1',
+        }
+      })
+    })(),
+  },
+  {
+    slug: 'mindtober-21',
+    title: "Mindtober '21",
+    year: '2021',
+    description:
+      "31 days of prompts from @susitse.art, each answered with a rhyming tercet and an ink-and-colored-pencil sticky-note drawing — a companion to Inktober that leans into the diary side of a sketchbook.",
+    tags: ['art', 'ink'],
+    writeup:
+      "Happy October! I have some catching up to do, but I'm going to try to finish within the month. I love @susitse.art's work and am excited to finally make use of one of their prompt lists.\n\nFinally finished, five months late in places — happy to have generated some new ideas and little rhymes to tie it all together.",
+    image: '/art/mindtober-21/01.jpg',
+    imageAspect: '1/1',
+    stackAccent: '#281912',
+    pieces: [
+      {
+        slug: '01-my-own',
+        title: 'My Own',
+        year: '2021',
+        description: 'the first time in a subway car alone / acutely aware of the missing eyes / for better or worse, all on my own',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/01.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '02-friend',
+        title: 'Friend',
+        year: '2021',
+        description: 'i search for someone who can hear my cries / and i see someone who calls me a friend / but i recall our last words as goodbyes',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/02.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '03-greed',
+        title: 'Greed',
+        year: '2021',
+        description: 'impotent, lost, with pity to expend / on streets haunted by greed, skyscrapers loom / desperately seeking an out or an end',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/03.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '04-bloom',
+        title: 'Bloom',
+        year: '2021',
+        description: 'we fidget, prey trapped in a crowded room / yearning for progress or just something new / like the winter waits to see flowers bloom',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/04.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '05-for-you',
+        title: 'For You',
+        year: '2021',
+        description: "there are lists of reasons, any could be true / diversion, excuse, intention, and blame / but the truth is that it's all just for you",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/05.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '06-question',
+        title: 'Question',
+        year: '2021',
+        description: 'question and dodge, a rhetorical game / the harmonies left in songs yet unsung / the start and the finish one and the same',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/06.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '07-blissful',
+        title: 'Blissful',
+        year: '2021',
+        description: '"i love you, you\'re precious" rolls off the tongue / blissful adoration greases the jaw / fiercely optimistic, reckless, and young',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/07.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '08-haunted',
+        title: 'Haunted',
+        year: '2021',
+        description: 'whiplash from lust to aversion to awe / haunted by a lingering addiction / craving caresses that rub the skin raw',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/08.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '09-judge',
+        title: 'Judge',
+        year: '2021',
+        description: 'assess yourself and make a prediction / regardless of what the classes have said / i cannot judge what is truth or fiction',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/09.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '10-head',
+        title: 'Head',
+        year: '2021',
+        description: 'is everything i feel just in my head / intimacy, meaning, purpose, and drive / emotions to life like breath to the dead',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/10.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '11-need',
+        title: 'Need',
+        year: '2021',
+        description: 'to take is to live; to give is to thrive / how to know when need ends and desire starts / how do we flourish and not just survive',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/11.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '12-split',
+        title: 'Split',
+        year: '2021',
+        description: "i'm split into two or three dozen parts / a jumble of compartmentalized creeds / torn from ancient books and from lovers' hearts",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/12.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '13-i-know',
+        title: 'I Know',
+        year: '2021',
+        description: "i know ours are not coincident needs / but i'll imagine that life nonetheless / i'll let that be the cut that always bleeds",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/13.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '14-sleep',
+        title: 'Sleep',
+        year: '2021',
+        description: 'i sleep to be well, i sleep to shirk stress / this strange state that i both crave and despise / to love or to hate, to heal or regress',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/14.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '15-underdog',
+        title: 'Underdog',
+        year: '2021',
+        description: 'i look into pitiful, desperate eyes / as i cozy up with the underdog / the role of savior to savor and prize',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/15.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '16-yes',
+        title: 'Yes',
+        year: '2021',
+        description: 'consent, lust, and control become a fog / but, yes, please come and devour me whole / as we recite an age old dialogue',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/16.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '17-doubt',
+        title: 'Doubt',
+        year: '2021',
+        description: 'i chronically doubt my route and my role / equally dismiss the trite and unique / bypassing common turnpikes takes its toll',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/17.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '18-jaws',
+        title: 'Jaws',
+        year: '2021',
+        description: "since they've been mine, my jaws have been weak / never willing to latch onto the bit / so please forgive me when i cannot speak",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/18.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '19-damage',
+        title: 'Damage',
+        year: '2021',
+        description: 'singed bridges and broken lines of transit / alone in the bittersweet afterglow / concrete damage haunts the budding spirit',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/19.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '20-breath',
+        title: 'Breath',
+        year: '2021',
+        description: 'to center, to sense, to study, to know / eyes closed with perspective to understand / the breath a tool to witness lapse and flow',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/20.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '21-hand',
+        title: 'Hand',
+        year: '2021',
+        description: 'in spite or because of a gentle hand / i am wholly captivated, ensnared / caught in a perfect storm, swift and unplanned',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/21.jpg',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '22-machine',
+        title: 'Machine',
+        year: '2021',
+        description: 'shepherd the crowd, minds uncertain and scared / each a cog in an uncaring machine / feigned independence, unity impaired',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/22.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '23-limit',
+        title: 'Limit',
+        year: '2021',
+        description: 'what are the strata and what do they mean / we push each limit and make it a game / can we build our home in the in-between',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/23.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: "24-dont",
+        title: "Don't",
+        year: '2021',
+        description: "don't speak about me or call me by name / reference is condemned to being unfair / live only in shadow and make no claim",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/24.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '25-weight',
+        title: 'Weight',
+        year: '2021',
+        description: 'shed your skin, clean your scale, balance and tare / weight is not worth, but your weight is worthwhile / let be what truly is, honest and bare',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/25.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '26-time',
+        title: 'Time',
+        year: '2021',
+        description: 'i stole time in jest with a friendly smile / but now i think i truly am a thief / guilty beloved protected from trial',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/26.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '27-dark',
+        title: 'Dark',
+        year: '2021',
+        description: 'no sense of my own, blind, trusting belief / i am tired of sleep, eyes closed, in the dark / what is life but scripted, bitter, and brief',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/27.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '28-fire',
+        title: 'Fire',
+        year: '2021',
+        description: "fingers sift through ashes making their mark / disturbed earth and grey skin record the hands / craving fire's fervor and lacking the spark",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/28.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '29-grateful',
+        title: 'Grateful',
+        year: '2021',
+        description: 'debt, good, and payment, supply and demands / privileged and secure and grateful and glad / despite estranged culture and stolen lands',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/29.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '30-memory',
+        title: 'Memory',
+        year: '2021',
+        description: 'memory improves, edits out the bad / in love with what i remember of you / lost in the lie of what we could have had',
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/30.webp',
+        imageAspect: '1/1',
+      },
+      {
+        slug: '31-unknown',
+        title: 'Unknown',
+        year: '2021',
+        description: "we embrace goodbye but cry at what's new / a walk turns to sprint into the unknown / running from our wrongs and chasing what's true",
+        tags: ['art', 'ink'],
+        image: '/art/mindtober-21/31.webp',
+        imageAspect: '1/1',
+      },
+    ],
+  },
+  {
+    slug: 'womens-history-month',
+    title: "Women's History Month",
+    year: '2022',
+    description:
+      '"Man is defined as a human being and woman as a female — whenever she behaves as a human being, she is said to imitate the male." — Simone de Beauvoir, "The Second Sex" (1949)',
+    tags: ['art'],
+    writeup: 'Made for Women\'s History Month, with supplies courtesy of a work event, though not posted until months later. Fun and experimental, particularly the background — no off-canvas color mixing.',
+    image: '/art/portfolio-22/womens-history-month.webp',
+    imageAspect: '4/5',
+  },
+  {
+    slug: 'protest-sign',
+    title: 'Protest Sign',
+    year: '2022',
+    description: 'Out on the street with this sign, made in the fall — abortion is healthcare.',
+    tags: ['art'],
+    image: '/art/portfolio-22/protest-sign.webp',
+    imageAspect: '1440/1723',
+  },
+  {
+    slug: 'painted-mug',
+    title: 'Painted Mug',
+    year: '2022',
+    description: "A corporate mug turned into one worth using — hands cradling three moon phases, reflecting on the moon and complexity after reading half of \"Invisible Women\" by Caroline Criado Perez.",
+    tags: ['art'],
+    writeup:
+      "Steel wool scratched the decals off the ceramic first. The first pass was paint markers, worked out over reference; this final version is repainted in oil paint and baked — the colors shifted slightly from the heat (blue warmed, pink cooled, red went to dark magenta), but less than expected.",
+    image: '/art/portfolio-22/painted-mug.webp',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'adoption-minizine',
+    title: 'Adoption Minizine',
+    year: '2022',
+    description: 'A hand-bound minizine reflecting on belonging, transracial adoption, and adoption as human trafficking.',
+    tags: ['art', 'writing'],
+    writeup: 'Inspired by the perspectives of Black in a White Family and @adoptee_thoughts.',
+    image: '/art/portfolio-22/adoption-minizine.webp',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'presidential-pardon',
+    title: 'Presidential Pardon',
+    year: '2022',
+    description: 'Thinking about what animals — and actions — we pardon.',
+    tags: ['art', 'digital'],
+    writeup: "A companion, a year and a half later, to the eye-studies turkey — the same #46millionturkeys project, this time asking what a presidential pardon actually forgives.",
+    image: '/art/portfolio-22/presidential-pardon.webp',
+    imageAspect: '4/5',
+    speedpaintSrc: '/art/portfolio-22/speedpaint/presidential-pardon.mp4',
+  },
+  {
+    slug: 'waterfowl-and-motherhood',
+    title: 'Waterfowl and Motherhood',
+    year: '2022',
+    description: "Thinking about waterfowl and motherhood. Apparently I'm on a bird kick.",
+    tags: ['art', 'digital'],
+    image: '/art/portfolio-22/waterfowl-and-motherhood.webp',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'child-not-adult',
+    title: 'Child, Not Adult',
+    year: '2022',
+    description: 'On being seen as the child, past, dream, and not the adult, present, reality.',
+    tags: ['art', 'digital'],
+    writeup: 'A companion piece to Waterfowl and Motherhood, from the same mother-duck series.',
+    image: '/art/portfolio-22/child-not-adult.webp',
+    imageAspect: '4/5',
+    speedpaintSrc: '/art/portfolio-22/speedpaint/child-not-adult.mp4',
+  },
+  {
+    slug: 'why-be-afraid',
+    title: 'Why Be Afraid',
+    year: '2022',
+    description: '"Why be afraid if you have nothing to hide?" — why assume those watching have your best interests at heart?',
+    tags: ['art'],
+    writeup: 'A collage inspired by security envelopes and halftone screen printing. Titled "Security," July 2022.',
+    image: '/art/portfolio-22/why-be-afraid.webp',
+    imageAspect: '4/5',
+  },
+  {
+    slug: 'lady-bird',
+    title: 'Lady Bird',
+    year: '2022',
+    description:
+      '"People call each other by names their parents made up for them, but they won\'t believe in God." — Lady Bird, 2017. On giving names, labels, and gender.',
+    tags: ['art', 'digital'],
+    image: '/art/portfolio-22/lady-bird.webp',
+    imageAspect: '4/5',
+    speedpaintSrc: '/art/portfolio-22/speedpaint/lady-bird.mp4',
+  },
+  {
+    slug: 'equanimity-or-apathy',
+    title: 'Equanimity or Apathy',
+    year: '2023',
+    description: 'Is this equanimity or apathy? — to stand in a field of strawberries and not want a single sweet bite.',
+    tags: ['art', 'digital'],
+    writeup: "Inspired by personal metaphors, @onenhillion's style of digital underpainting, and a pastel by Mona Neuhaus.",
+    image: '/art/portfolio-22/equanimity-or-apathy.jpg',
+    imageAspect: '1087/763',
+  },
+  {
+    slug: 'hand-study',
+    title: 'Hand Study',
+    year: '2023',
+    description: 'Studying hands, hearts, and progress.',
+    tags: ['art', 'digital'],
+    image: '/art/portfolio-22/hand-study.webp',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'security-camera',
+    title: 'Security Camera',
+    year: '2023',
+    description: "Finally getting around to this project that's been on the to-do list for maybe a year now.",
+    tags: ['art'],
+    writeup: 'A companion piece to Why Be Afraid, continuing the same surveillance theme.',
+    image: '/art/portfolio-22/security-camera.webp',
+    imageAspect: '1/1',
+  },
+  {
+    slug: 'desire-and-distance',
+    title: 'Desire & Distance',
+    year: '2023',
+    description: 'Soft, sweet, fragile, fleeting.',
+    tags: ['art', 'digital'],
+    image: '/art/portfolio-22/desire-and-distance.webp',
+    imageAspect: '4/5',
+  },
+  {
+    slug: 'projection',
+    title: 'Projection',
+    year: '2024',
+    description: 'Projection, show, self, personhood — projected symmetry and smudged particulars.',
+    tags: ['art', 'digital'],
+    writeup:
+      "What we see ourselves as, what we claim to be, what we aspire to be, what we are. A #putriddtiys6 piece, dtiys by @putrid.hound.",
+    image: '/art/portfolio-22/projection.webp',
+    imageAspect: '1/1',
+    speedpaintSrc: '/art/portfolio-22/speedpaint/projection.mp4',
   },
   {
     slug: 'love-worth-heartbreak',
@@ -360,7 +1326,7 @@ const REAL_WORK: WorkItem[] = [
     pieces: [
       {
         title: 'metaphorical safety blanket',
-        preview: 'i am swaddled in opaque words\ni have wrapped myself up in poetry',
+        preview: 'is it possible for me to avoid metaphor?\nsuch beauty evokes words from my hand\nbut i worry that i am hiding\n\ni am swaddled in opaque words\ni have wrapped myself up in poetry\ndisguising cries as lullabies\nopen wounds as still lifes\nspasms of pain as ballet\n\nelegant and refined\n\nbeautiful',
         description:
           "On hiding in plain sight behind polished metaphors that can't help but tell the truth anyway.",
         excerpt:
@@ -368,14 +1334,14 @@ const REAL_WORK: WorkItem[] = [
       },
       {
         title: 'a love poem',
-        preview: 'let me write a sonnet to reality\nin an attempt to convince myself\nthat i am\nindeed\nin love with it.',
+        preview: "let me write a sonnet to reality\nin an attempt to convince myself\nthat i am\nindeed\nin love with it.",
         description: "A sonnet trying to convince itself it's in love with the world, and almost succeeding.",
         excerpt:
           "let me write a sonnet to reality\nin an attempt to convince myself\nthat i am\nindeed\nin love with it.\n\nThe sun shines bright and warm but does not blind\nAt foot sway flowers, nature's painted field\nMy heart is light and opens up in kind\nAllowing tender thoughts to be revealed\nThis dappled meadow is gentle and still\nAnd I the largest one which walks the earth\nThe generous Euphrates guides my will\nJust as it will till death and has since birth\nThe world is beautiful; I am at ease\nI follow the river back to my nest\nCivilization greets me like a breeze\nIt fills my sails and it brings me to rest\nThough I may think that I am now relieved\nTruly there is not one who is deceived",
       },
       {
         title: 'back to nature',
-        preview: 'how the remains of ivy look like circuit boards\ntheir rootlets secured like soldering',
+        preview: 'it is truly peculiar\nhow humankind insists\non separating\nthe natural\nfrom unnatural\n\nare we not but a different geometry\ndrawn by the same hand?',
         description:
           'On ivy that looks like circuit boards, and the human insistence on separating natural from unnatural.',
         excerpt:
@@ -530,15 +1496,51 @@ const REAL_WORK: WorkItem[] = [
       preview,
     })),
   },
+  {
+    slug: 'chinese-emoji-poetry',
+    title: 'emoji poetry, translated from chinese',
+    year: '2022',
+    description: 'An exploration in poetry and a reflection on language.',
+    tags: ['writing', 'essay', 'blog', 'language'],
+    excerpt:
+      "In my emoji translation, I tried to take into account the character choice of the Mandarin and the meaning behind each glyph — an attempt at a translation that reads the same on any platform.",
+    writeup:
+      "This poem is the focus of 19 Ways of Looking at Wang Wei, a classic study of translation that compares how different translators have rendered 鹿柴 (Deer Enclosure). As an exploration in communication and poetry, I translated this poem and another, 月夜憶舍弟, into emoji.\n\n🦌🏞️ (鹿柴): 空山不见人 / 但闻人语响 / 返景入深林 / 复照青苔上 → 📂🗻🚫👁️👥 / ↪️👂👥💬🔊 / ↩️🌳🔆🌳🌳 / 🔄🔆🌿🌿🔼\n\n🌙🌃💭🧒🧒 (月夜憶舍弟): 戍鼓斷人行，邊秋一雁聲。/ 露從今夜白，月是故鄉明。/ 有弟皆分散，無家問死生。/ 寄書長不達，況乃未休兵。 → 💂🥁🛑🚶‍♂️🚶‍♀️ · 🍂🍁1️⃣🦆🔉 / 👇🌃🌱💧⬜ · 🌙🔆🤱🏡🔆 / 🌬️🍃👦🍃👦 · 🌱☠️❓❌👨‍👩‍👧‍👦 / 📜✉️📤🚫📩 · 📍⚔️⛔☮️⚔️\n\nWhen translating, I like to see a pretty translation and a gloss translation. For 月夜憶舍弟, pretty translations came from David Hinton, Stephen Owen, Witter Bynner, and David Young. I sought out a gloss as well, at first in Google Translate — gradually separating the characters from each other — and then in the MDBG Chinese Dictionary.\n\nGoogle Translate's version of 月夜憶舍弟, unadulterated, from January 2020, reads: \"Drumming breaks the pedestrian, Bianqiu a wild goose. Lu Cong is white tonight, and the month is hometown. All the younger brothers were scattered, and the family asked about life and death. The length of the book to be sent was not reached, and the condition was not a truce.\" Although it doesn't capture the poetry or a good chunk of the meaning — look! There are no personal pronouns, unlike some human translations. I actually like the last couple of lines of this.\n\nIn my emoji translation, I tried to take into account the character choice of the Mandarin and the CLDR descriptions and text that accompany each emoji, in an effort to reflect the original beauty of Chinese and create a translation that can be perceived similarly across platforms. I haven't yet found a convenient way to see how my emoji translation varies from platform to platform, but I was amused by the differences between my phone and my computer.\n\nWith 鹿柴, I glanced at the Google translation but was surprised that I could read it — not perfectly, but the characters are simpler, within reach of someone roughly HSK 3. Because of that relative simplicity, I decided to stick closer to the Chinese, though the third line deviates a bit. I'd almost call it significant, but then I look at some of the poems in 19 Ways of Looking at Wang Wei and think it's hardly significant at all.\n\n(This is a modified version of work done in January 2020.)",
+  },
+  {
+    slug: 'first-art-fair',
+    title: 'my first art fair season',
+    year: '2023',
+    description: 'Reflecting on what went well and what I would do differently.',
+    tags: ['writing', 'essay', 'blog', 'art'],
+    excerpt:
+      "Since I am not trying to live off of my art, I frame it as an experience that I am paying for, with the opportunity to break even and even profit.",
+    writeup:
+      "Reflections on my first few times selling at art markets — all different venues and organizers with varying rules and practices. It was a great learning experience, and I think I'm going to keep doing markets for a little while. My setup isn't perfect, but it's come a long way in three tries.\n\nI always thought it'd be cool to sell my work at a street fair, and I imagined doing this my senior year of college in Worcester, where I lived close to the annual art festival StART on the Street. Unfortunately, my senior year was 2021 — no StART on the Street that year. (I had applied to StART at the Station in 2019 and was rejected.) So I applied again in 2022 on a whim, with no high hopes, and wasn't even living in Worcester anymore.\n\nI opened the acceptance email a couple of weeks late. I was excited but also concerned — no experience, and this market was outdoors with no tents provided. I'd volunteered in 2019, so I figured I'd at least have some sense of setup. I practiced putting up the tent alone once and hanging my walls, but despite spending many hours on tent design, furniture, pricing, and inventory, I wasn't as prepared as I could have been.\n\nThings that went well at stART on the Street: I sold enough to make back the $150 vendor fee and then some, and learned that the skills a market takes weren't so far out of reach for me. I was happy with my booth's overall design — the tent, table cloths, banner, pegboard, and a rug that was actually a Worcester curb find from a year prior. I packed the car the night before, left early, and bought jugs of water for weight before the hour drive. I'm not thrilled that so much of the work was improvised on the fly, but I'm proud I could come up with and execute ideas like clamping down prints with reeds and folding labels around canvas frames. I also set my eye prints up as a guessing game, which turned out to be great for engagement and sparked a lot of good conversations.\n\nThings to change for next time: setup took around 4.5 hours when I'd been allotted a little short of three, mostly because I hadn't found a good system for the reed walls or pegboard before hanging art. Wind blew art off walls and tables multiple times throughout the show — nothing was lost or damaged, but the anxiety was maddening, and paperweights would have been an easy fix. I knew I should have had clear labels printed ahead of time, but ended up handwriting them throughout the show. Point of sale was a hassle; my hands would shake doing the mental math to charge someone on Square. And the advice not to eat in one's booth just meant I wasn't eating at all — I brought overnight oats and eventually decided a smoothie would be easier to manage next time. I was usually too excited to sit in the director's chair I'd brought, and while I wanted to demo art, I couldn't figure out how to fit it in.\n\nI was incredibly tired at 7pm, which is rare for me. I was content enough with how the day went, but it felt like a lot of work and a lot of stress for not much payoff.\n\nA couple of days later I was looking for another market and ended up going with the Brighton Bazaar, even though I'd never been — some makers I followed on Instagram vended there. As part of the application I wrote a short pitch: \"I'm Beck, scientist by day and artist by night — or is it the other way around? I value creativity and discovery in all facets of my life, and my art reflects that with a diverse range of subjects, styles, and mediums. For October, I'll be showcasing darker work, much of which was made during inktobers of years past. Common themes include mental health, interpersonal conflict, and farmed animals. I find creating art a great outlet for emotions and an opportunity to connect with others.\"\n\nBrighton Bazaar was indoors and close to home. I was waitlisted for a small space that wouldn't fit much more than a 6ft table, and this time I actually practiced my setup at home with the artwork placement, rather than just the furniture. The Monday before, I was notified of an opening and confirmed by Wednesday.\n\nThis time, setup took 1 hour 20 minutes thanks to practice and a reference photo, and breakdown took 30 minutes. Interactivity was still good, though less so than at stART — I suspected that had more to do with the different demographics than my particular setup. I was still writing labels during the show, but since I was set up in time, it didn't feel stressful. Point of sale was still a struggle, and I'd forgotten my 4.5-inch square envelopes for packaging prints. I brought a smoothie again and didn't drink it — maybe a straw would have helped. I still didn't demo art, but at least made art during the event itself. This market was much easier than my first, and I'm confident being indoors was a game changer — I still can't believe I chose an outdoor market, where I had to supply all my own furniture, as my very first one.\n\nMy third market, \"Winter Hassle\" hosted by Hassle Flea, was my best in some ways and not in others. I had a hard time communicating with the organizer and an even harder time parking on tight Cambridge streets. Setup was about 1 hour 20 minutes again, with no practice in between. Point of sale was mostly good — almost everyone paid with Venmo, and I recorded all my sales on paper so I had a linear log at the end.\n\nFor next time: vendors were told to arrive early since parking is competitive, but I left ten minutes late and ended up waiting in line for entry — my first market where load-in wasn't close to my parked car. I'd ditched my chair since I'd barely used it before, and was surprised when I wanted it three hours in. I tried to demo an interactive art piece but couldn't disable the browser's gestures — it still seemed to draw people in for the brief while I had it running. I'd like to write up more about my inspirations and process for people to read while browsing, including an improved version of the eye guessing game. And this market was shorter than the other two, yet I found myself really wishing I'd packed a sandwich.\n\nAll in all, I thought this was a very successful first season. I'm still paying off some of what I bought, and my time definitely wasn't compensated, but it was a great experience. Since I'm not trying to live off my art, I frame it as an experience I'm paying for, with the opportunity to break even and even profit.",
+  },
+  {
+    slug: 'note-systems',
+    title: 'note systems',
+    year: '2023',
+    description: 'My preferred tools and strategies for taking notes, analog and digital.',
+    tags: ['writing', 'essay', 'blog'],
+    excerpt:
+      "I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
+    writeup:
+      "Current setup as of January 2023 — digital: TickTick for personal tasks, Google Calendar for events and scheduled tasks (Outlook for work as needed), and Samsung Notes for musings and spontaneous notes. Analog: sticky notes for lab tasks and data, stored in a notebook; a dedicated notebook to reflect on therapy sessions; and dedicated notebooks for high-information-density events, like classes and conferences.\n\nI need some tool to manage daily to-dos and keep them in line with my goals, both personal and professional. I don't want my note systems to feel like chores — once something feels like a chore, or like a refined art, I no longer want to do it, whether from the pressure of obligation or of perfectionism.\n\nSince I won't equip my phone with company security features, and invites aren't meant to be forwarded to personal accounts, there's some inevitable separation between my professional and personal spheres, at least digitally. A physical notebook could bridge that gap, or it could enforce the divide — I'm currently leaning toward keeping a professional-only notebook. I've bought spiral-bound notebooks, which lay flat, to make lab record keeping easier, and which could extend to other parts of my work, but likely no further if I intend to share it.\n\nMy current notebook, started when I was hired, mixes personal reflection within the professional sphere, private business-related information, and notes from work — organized but incomplete in places, with a few systems still being tested. Of those, I enjoy seeing a week at a time; week spreads help me focus my work and coordinate wetlab protocols. I do need a better task migration and assignment system, though, since I don't readily remember to check the past in order to structure the present.\n\nI don't relish the idea of separate sections or collections, but it might be the path to more regular ones, so each week looks about the same and takes up about the same amount of space no matter how much data that week generates. It would also separate what's personal from what could be shared — a separate notebook could be handed off with little personal loss. Corporate social gatherings can lead to insights about a company or department's history and culture that are relevant to my work, and external conferences provide even more context, but I struggle with not being able to duplicate information across two notebooks, or without a system for referencing one from the other. The personal and professional are so interwoven that it's hard to design a system that treats them as separate.\n\nI've found that I benefit from taking notes on the people I meet. I've looked into personal CRMs for this but haven't managed to make a habit of it, or separated the idea from feeling overly transactional and impersonal toward others. Instead my contact notes are scattered across my other notebooks, and I'm still looking for a solution — I'm hesitant about reinventing the wheel, but maybe it's not a bad way to learn. I enjoy the unobtrusiveness of a small paper notebook in a lecture, meeting, or even a chance encounter. It's slightly odder than a phone in that last case, but it wouldn't be my only joyful oddity.\n\nI've poked around a fair number of digital note-taking tools, and none are particularly satisfying. The best I've found is honestly the native Samsung Notes app, which integrates well with the S Pen — being able to pull the pen out of a locked phone and jot something down or draw a diagram has been priceless. For reminders and events I use TickTick and Google Calendar.\n\nHandwriting and stylus integration matter a lot to me, which narrows the field significantly. I want to love OneNote, given the range of what can go on a page and where, but it takes too long to load and I perpetually have sync problems, on both business and personal accounts — I still occasionally use it for recording melodies arranged in 2D space, but otherwise find it no better than Samsung Notes. I've tried Nebo too; the handwriting conversion is impressive and I like the tool selection and written commands (strike-through to erase, a vertical bar for a new line), but having to distinguish text from drawings within the structure of the page is enough friction to keep me from using it regularly, and not being able to pinch to zoom makes it feel even less aligned with how I actually work. Squid and Bamboo Paper didn't feel as intuitive as OneNote or Samsung Notes either. At a certain point, if I need more drawing tools than the Notes app offers, I switch to Infinite Painter, my primary drawing app — overkill for most note-taking, but familiar and easy for me to use, with layers, blend modes, and fast tool and color switching that the note apps lack.\n\nOf the project management tools that don't support handwriting, I've used TickTick, Todoist, Notion, and Trello. I can appreciate aspects of all of them, but TickTick is the only one I use regularly — I occasionally reach for Notion and Trello for shared task boards and ongoing but infrequently tackled projects. In January 2023 I switched from Todoist to TickTick, because on TickTick, completing a daily recurring task late (after midnight) still creates the next instance of that task the same day — ideal if the goal is just brushing your teeth before bed, whether that happens at 1am one night or 10pm the next. It also has Habits you can track and retroactively edit. Beyond that I use Google Calendar for events; I once synced it with Todoist but found that wasn't how I actually planned my day.\n\nWriting out a daily sticky note with hours and tasks is satisfying, and it does increase my productivity. But productivity isn't the only thing I want to optimize for, and I'm not interested in the transactional thinking that comes with tracking every hour of the day. My note systems are designed to maximize my personal satisfaction and minimize resistance, in hopes of encouraging consistency. I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
+  },
 ]
 
 /**
- * The fake dataset (lib/work.sample.ts) is mixed in outside production so
- * there's a bigger, more varied set to test filters and card layouts
- * against. Excluded from production builds automatically.
+ * The fake dataset (lib/work.sample.ts) can be mixed in outside production
+ * for a bigger, more varied set to test filters and card layouts against.
+ * Flip back to true when that's useful again — always excluded from
+ * production builds regardless of this flag.
  */
+const SHOW_SAMPLE_WORK = false
+
 export const WORK: WorkItem[] =
-  process.env.NODE_ENV === 'production' ? REAL_WORK : [...REAL_WORK, ...SAMPLE_WORK]
+  process.env.NODE_ENV === 'production' || !SHOW_SAMPLE_WORK ? REAL_WORK : [...REAL_WORK, ...SAMPLE_WORK]
 
 /**
  * How selected tags combine. Shared with the little venn toggle:

@@ -246,4 +246,84 @@
       transparent 4px 9px
     );
   }
+
+  /* an animation tile's centered play triangle, held at rest until hovered
+     — a soft breathe, not a video player's insistent loop. The loop only
+     exists for people who haven't asked for less motion; the scale/opacity
+     hover emphasis still lands for everyone, so nothing is lost by opting
+     out — see the group-hover animation utility in MediaBadges. */
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes media-badge-pulse {
+      0%, 100% { opacity: 1; transform: scale(1.1); }
+      50% { opacity: 0.75; transform: scale(1.18); }
+    }
+  }
+
+  /* A speedpaint's persistent timeline (see SpeedpaintPlayer) — a real,
+     continuous seek bar, since the video underneath is now real footage
+     rather than sampled stages. Reads as distinct from a stock video seek
+     bar mainly by staying visible at all times (never fading on play/hiding
+     behind hover) and by taking the piece's own discipline tone
+     (--speedpaint-tone) rather than default UA red/gray. The elapsed
+     portion fills via --speedpaint-progress, kept in sync from JS on every
+     rAF tick. Sized with a taller hit area than its visible track for
+     touch/mouse comfort. */
+  .speedpaint-timeline {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 1.25rem;
+    background: transparent;
+    cursor: pointer;
+  }
+  .speedpaint-timeline::-webkit-slider-runnable-track {
+    height: 0.35rem;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      color-mix(in srgb, var(--speedpaint-tone, var(--foreground)) 70%, transparent) var(--speedpaint-progress, 0%),
+      var(--border) var(--speedpaint-progress, 0%)
+    );
+  }
+  .speedpaint-timeline::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 0.8rem;
+    height: 0.8rem;
+    border-radius: 3px;
+    margin-top: -0.225rem;
+    background: var(--speedpaint-tone, var(--foreground));
+    border: 2px solid var(--card);
+    box-shadow: 0 1px 3px rgba(8, 11, 36, 0.3);
+  }
+  .speedpaint-timeline::-moz-range-track {
+    height: 0.35rem;
+    border-radius: 2px;
+    background: var(--border);
+  }
+  .speedpaint-timeline::-moz-range-progress {
+    height: 0.35rem;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--speedpaint-tone, var(--foreground)) 70%, transparent);
+  }
+  .speedpaint-timeline::-moz-range-thumb {
+    width: 0.8rem;
+    height: 0.8rem;
+    border-radius: 3px;
+    background: var(--speedpaint-tone, var(--foreground));
+    border: 2px solid var(--card);
+    box-shadow: 0 1px 3px rgba(8, 11, 36, 0.3);
+  }
+  /* Keyboard focus lands on the thumb, which is where the eye needs to go —
+     the native outline would ring the whole (mostly transparent) track. */
+  .speedpaint-timeline:focus {
+    outline: none;
+  }
+  .speedpaint-timeline:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .speedpaint-timeline:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
