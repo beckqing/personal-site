@@ -8,10 +8,10 @@ Last reconciled against the tree 2026-08-27 (second pass, after `2dc8324`).
 in ARCHITECTURE.md re-verified with `ffprobe` and holds.
 
 Items marked **?** need a decision before the work can start. The five open
-questions from the first pass were decided 2026-08-27 and are now recorded in
-ARCHITECTURE.md; §5 and the `HybridCard` / sample-data items resolved to "no
-action" and are struck through rather than deleted, so the reasoning stays
-findable.
+questions from the first pass were decided 2026-08-27; the decisions
+themselves — including two that closed with nothing left to do (the
+sticky-chrome rule, `HybridCard`) — are recorded in ARCHITECTURE.md, not
+here.
 
 ---
 
@@ -41,7 +41,7 @@ promote into that panel at all (see §2).
       panel wants. Also derivable ahead of the science copy.
 - [ ] Delete `lib/content.ts` once nothing imports it. `ESSAYS` is already
       exported-but-unused and can go regardless.
-- [ ] Drop the orphaned scaffold art it references (see §8).
+- [ ] Drop the orphaned scaffold art it references (see §7).
 
 ## 2. `science` is a discipline with zero work in it — **content, not design**
 
@@ -121,34 +121,12 @@ another — the kind of thing that becomes a bug the next time the data changes.
       uniform across items and children. Update the search box's placeholder
       ("search titles, descriptions, tags…") and `filterWork`'s own JSDoc,
       which currently omits even the children path it does implement.
-- [x] ~~**`HybridCard` is unreachable.**~~ **Decided: keep it ready.** All 31
-      hybrid pieces live inside `mindtober-21` and render through
-      `IllustratedTile`; `HybridCard` waits for the first standalone piece
-      carrying both `text` and `image`, at which point `isHybrid` reaches it
-      with no other change. Recorded in ARCHITECTURE.md so a future dead-code
-      pass doesn't sweep it up. No action.
 - [ ] **`isPoem ? 'poem' : 'essay'` is hardcoded in three places**
       (`TextCard`, `HybridCard`, `TextCardFace`). Anything text-forward that
       isn't tagged `poem` is labeled "essay" — correct for today's data, wrong
       for the first hybrid art piece that carries text.
 
-## 5. ~~The sticky-chrome rule and `ImageCard` disagree~~ — resolved
-
-**Resolved 2026-08-27: the rule was wrong, the code is fine.** Beck confirmed
-in a browser that `ImageCard`'s sticky chrome works despite the
-`hover:-translate-y-0.5` transform on its `<article>`. A transform on an
-ancestor does not disable a sticky descendant; only `overflow: hidden` does.
-
-The claim traces back to the design spec's §12l, whose own §13e already
-doubted it ("a transform on an ancestor shouldn't break a sticky descendant,
-but it's cheap to confirm"). ARCHITECTURE.md now states the corrected rule and
-says explicitly that the 2px lift should **not** be moved off the article —
-the old rule would otherwise get it "fixed" back out on the next review.
-
-No action. Left in place, struck through, so the correction is discoverable
-rather than silently vanishing.
-
-## 6. Media loose ends
+## 5. Media loose ends
 
 - [ ] The `object-contain` comment in `components/media-player.tsx` still
       cites Verdant's poster/video aspect mismatch as its reason; that
@@ -164,7 +142,7 @@ rather than silently vanishing.
 - [ ] The two near-identical Presidential Pardon sources (reel 39.12s vs.
       carousel-embedded 39.00s) were never diffed. The reel was used.
 
-## 7. Build configuration and route-level files
+## 6. Build configuration and route-level files
 
 - [ ] `next.config.mjs` sets `typescript.ignoreBuildErrors: true`. The tree
       typechecks clean and the build log says "Skipping validation of types",
@@ -172,23 +150,16 @@ rather than silently vanishing.
 - [ ] `images.unoptimized: true` on a site whose `public/` is 56MB of artwork.
       May be right for the deploy target, but it should be a decision rather
       than a scaffold default.
-- [ ] **No favicon, and the four icon files present are v0's, not Beck's.**
-      Both halves of this are settled — see "Icons" in ARCHITECTURE.md:
-      - `public/icon.svg` is the stock Next.js black/white template;
-        `icon-light-32x32.png`, `icon-dark-32x32.png`, and `apple-icon.png`
-        are the rest of the same v0 scaffold set. **Delete all four.**
-      - They are also inert where they sit — icons are `app/` file
-        conventions, not `public/` files, and `metadata.icons` is unset. So
-        the site currently ships no favicon at all.
-      - **Beck's real mark is in the archive**
-        (`github.com/beckqing/archived-personal-site`): root `favicon.ico`,
-        a proper 9-size `.ico` (16×16 → 256×256, 32bpp) of the `bq` monogram.
-        Copy it to `app/favicon.ico` — that alone fixes it.
-      - Optional follow-on: `app/apple-icon.png` at 180×180, regenerated from
-        the `.ico`'s 256×256 frame (`static/img/bq-logo.png` in the archive is
-        only 150×150).
-      - The collage icons need no work — `data/icons-raw.json` is
-        byte-identical to the archive's `_data/icons.json`.
+- [ ] **The four icon files in `public/` are v0's, not Beck's — delete them.**
+      `public/icon.svg` is the stock Next.js black/white template;
+      `icon-light-32x32.png`, `icon-dark-32x32.png`, and `apple-icon.png` are
+      the rest of the same scaffold set. They're also inert where they sit —
+      icons are `app/` file conventions, not `public/` files, and
+      `metadata.icons` is unset — so the site currently ships no favicon at
+      all. The actual favicon is generated as part of the brand-mark work
+      below (`favicon-moon.svg`), not copied from anywhere.
+      The collage icons need no work — `data/icons-raw.json` is
+      byte-identical to the archive's `_data/icons.json`.
 - [ ] **Retire `MoonLogo`; the `bq` monogram is the mark.** Decided
       2026-08-27 — see "The brand mark" in ARCHITECTURE.md for the palette
       breakdown and the two sub-decisions (vector source; field dropped).
@@ -236,7 +207,7 @@ rather than silently vanishing.
       priority for a personal site, worth it the moment the tag vocabulary in
       §2 changes.
 
-## 8. Dead code and orphaned assets
+## 7. Dead code and orphaned assets
 
 - [ ] **~15MB of orphaned assets** in `public/`, referenced only by
       `lib/content.ts` or nothing at all: six generated art PNGs
@@ -252,13 +223,12 @@ rather than silently vanishing.
       directly.
 - [ ] `WashiTape` and `PushPin` in `components/collage.tsx`, plus the
       `.washi-tape` block in `app/globals.css` — unused. `StampBadge` is live.
-- [x] ~~`lib/work.sample.ts` and `SHOW_SAMPLE_WORK`~~ — **Decided: keep both.**
-      Useful for testing filters and card layouts against a bigger, more
-      varied dataset. Always excluded from production builds regardless of the
-      flag. Recorded in ARCHITECTURE.md alongside `HybridCard` so neither gets
-      swept up by a dead-code pass. No action.
 
-## 9. Comments citing a document under a name it never had
+`lib/work.sample.ts` and `SHOW_SAMPLE_WORK` look like more of the same at a
+glance — they aren't. Decided to keep both; see ARCHITECTURE.md. Don't sweep
+them up here.
+
+## 8. Comments citing a document under a name it never had
 
 **Correction to an earlier version of this file:** there were never two design
 documents. `COLLECTION-CARDS.md` has never existed — the six comments below
@@ -289,7 +259,7 @@ that lives only in a working tree is one `rm` from taking its reasoning with
 it, and this one came back by luck. `docs/history/` is where the next one
 goes.
 
-## 10. Content still carrying placeholders
+## 9. Content still carrying placeholders
 
 - [ ] `eye-studies` — 4 of 8 pieces read "Subject hidden for now. Title coming
       soon.", and all 8 titles are bare numbers (`01`…`08`). The hidden
@@ -301,7 +271,7 @@ goes.
       Mindtober's tercets are short — but ARCHITECTURE's "never clamped"
       promise about `preview` only actually holds for the chapbook.
 
-## 11. Small inconsistencies
+## 10. Small inconsistencies
 
 - [ ] `night-vignette` is applied to both `<body>` (`app/layout.tsx`) and
       `/about`'s `<section>`, both with `background-attachment: fixed`, so the
@@ -321,19 +291,18 @@ goes.
 - [ ] `AboutTabs` reads the URL hash in a mount effect, so `/about#food`
       renders the `general` tab for one frame before swapping.
 
-## 12. Checked-in agent memory is stale
+## 11. Checked-in agent memory is stale
 
 `.claude/agent-memory/next-steps/project_shape.md` is tracked in git and loaded
-by the `next-steps` agent on every run. It states that `WorkPiece` "has no
+by the `next-steps` agent on every run. It stated that `WorkPiece` "has no
 `image` field at all" and that every `/work` piece deliberately renders a
-tinted swatch instead of real art. Both were true once and are now flatly
-false — `lib/work.ts` carries `image`, `imageAspect`, and `thumb`, and
-`public/art` is 52MB of real work.
+tinted swatch instead of real art — both true once, both flatly false now
+that `lib/work.ts` carries `image`/`imageAspect`/`thumb` and `public/art` is
+52MB of real work. Corrected in this pass; nothing left to do on that file.
 
-- [x] `project_shape.md` corrected in this pass.
 - [ ] `review_2026-08-25.md` item 5 rests on the same false premise. Its other
       items (dead about links, stale art-tab copy, bare Instagram link,
       `ignoreBuildErrors`, orphaned portrait/hero PNGs, `doodle-field`, missing
       sitemap/robots/OG, no lint or tests) all still hold and are carried into
-      §3, §7, and §8 above. Prune the file to just item 5's correction, or
+      §3, §6, and §7 above. Prune the file to just item 5's correction, or
       delete it now that this TODO covers it.
