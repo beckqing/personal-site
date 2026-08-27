@@ -28,6 +28,7 @@ import {
   WriteupMark,
 } from '@/components/work-visuals'
 import { ImageLightbox } from '@/components/image-lightbox'
+import { MediaBadges, PieceMedia } from '@/components/media-player'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
 
@@ -153,6 +154,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
                     <div className={aspectFor(p.slug)} style={aspectStyleFor(p)}>
                       <WorkPlaceholder item={p} />
                     </div>
+                    <MediaBadges item={p} />
                   </ImageLightbox>
                   <Link
                     href={piecePath(item, p)}
@@ -217,11 +219,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
 
   return (
     <article className="mt-6">
-      <ImageLightbox items={[piece]} className="mx-auto max-w-3xl shadow-sm">
-        <div className="aspect-[16/10] w-full overflow-hidden" style={aspectStyleFor(piece)}>
-          <WorkPlaceholder item={piece} />
-        </div>
-      </ImageLightbox>
+      <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto max-w-3xl shadow-sm" />
       <div className="mx-auto mt-8 max-w-2xl">
         <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
           {piece.title}

@@ -34,6 +34,21 @@ export type WorkPiece = {
    * (mostly science essays so far); doesn't follow automatically from tags.
    */
   hasImage?: boolean
+  /**
+   * A process/speedpaint video — a timelapse of the piece being made. Shown
+   * with a persistent scrubber rather than standard video chrome: the point
+   * is dragging through every stroke by hand, not pressing play and waiting.
+   * Distinct from `animationSrc`, which is a finished piece meant to be
+   * watched start to finish.
+   */
+  speedpaintSrc?: string
+  /** The speedpaint video's own aspect ratio, when it differs from `imageAspect`. */
+  speedpaintAspect?: string
+  /**
+   * A finished animation clip's video file (e.g. '/art/...mp4'), played with
+   * standard time-based controls on the piece's own page.
+   */
+  animationSrc?: string
 }
 
 /** A piece that holds other pieces. Rendered with a tilted deck behind it. */
@@ -103,6 +118,21 @@ export function isTextOnly(item: WorkItem): boolean {
  */
 export function isHybrid(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.hasImage)
+}
+
+/** A piece with a process/speedpaint video. Collections don't carry media directly. */
+export function hasSpeedpaint(item: WorkItem): boolean {
+  return !isCollection(item) && Boolean(item.speedpaintSrc)
+}
+
+/** A piece with a finished animation clip. Collections don't carry media directly. */
+export function hasAnimation(item: WorkItem): boolean {
+  return !isCollection(item) && Boolean(item.animationSrc)
+}
+
+/** The aspect a speedpaint video's player should take — its own, falling back to the finished image's. */
+export function speedpaintAspect(item: WorkPiece): string | undefined {
+  return item.speedpaintAspect ?? item.imageAspect
 }
 
 /**
@@ -471,6 +501,13 @@ const REAL_WORK: WorkItem[] = [
         tags: ['art', 'watercolor'],
         image: '/art/april-colors-24/17.webp',
         imageAspect: '1/1',
+        // Shot outdoors, handheld — the camera is locked off through the
+        // painting, then lifts for a reveal and pans to the real artichoke.
+        // Cropped to a centered square (not the page-only rect used for the
+        // other four, which the pan at the end would break) — a loose frame
+        // through the whole clip rather than a tight one that only holds for
+        // part of it. Matches imageAspect, so no override needed here.
+        speedpaintSrc: '/art/april-colors-24/speedpaint/17-verdant.mp4',
       },
       {
         slug: '18-an-animal-youve-never-drawn',
@@ -703,9 +740,10 @@ const REAL_WORK: WorkItem[] = [
         year: '2019',
         description: 'I think about God. I think of the chances. Part 2 of 3 — the animation component of the same MAP part.',
         tags: ['art', 'digital'],
-        writeup: "This piece was originally a short frame-by-frame animation rather than a still image; the frame shown here stands in for it.",
+        writeup: 'A short frame-by-frame animation, made for the same multi-animator project as the other two parts.',
         image: '/art/2019/02-i-think-about-god.jpg',
         imageAspect: '1/1',
+        animationSrc: '/art/2019/i-think-about-god.mp4',
       },
       {
         slug: 'i-think-that-im-wrong',
@@ -1182,6 +1220,7 @@ const REAL_WORK: WorkItem[] = [
     writeup: "A companion, a year and a half later, to the eye-studies turkey — the same #46millionturkeys project, this time asking what a presidential pardon actually forgives.",
     image: '/art/portfolio-22/presidential-pardon.webp',
     imageAspect: '4/5',
+    speedpaintSrc: '/art/portfolio-22/speedpaint/presidential-pardon.mp4',
   },
   {
     slug: 'waterfowl-and-motherhood',
@@ -1201,6 +1240,7 @@ const REAL_WORK: WorkItem[] = [
     writeup: 'A companion piece to Waterfowl and Motherhood, from the same mother-duck series.',
     image: '/art/portfolio-22/child-not-adult.webp',
     imageAspect: '4/5',
+    speedpaintSrc: '/art/portfolio-22/speedpaint/child-not-adult.mp4',
   },
   {
     slug: 'why-be-afraid',
@@ -1221,6 +1261,7 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'digital'],
     image: '/art/portfolio-22/lady-bird.webp',
     imageAspect: '4/5',
+    speedpaintSrc: '/art/portfolio-22/speedpaint/lady-bird.mp4',
   },
   {
     slug: 'equanimity-or-apathy',
@@ -1267,9 +1308,10 @@ const REAL_WORK: WorkItem[] = [
     description: 'Projection, show, self, personhood — projected symmetry and smudged particulars.',
     tags: ['art', 'digital'],
     writeup:
-      "What we see ourselves as, what we claim to be, what we aspire to be, what we are. A #putriddtiys6 piece, dtiys by @putrid.hound — a companion speedpaint video was posted alongside this image.",
+      "What we see ourselves as, what we claim to be, what we aspire to be, what we are. A #putriddtiys6 piece, dtiys by @putrid.hound.",
     image: '/art/portfolio-22/projection.webp',
     imageAspect: '1/1',
+    speedpaintSrc: '/art/portfolio-22/speedpaint/projection.mp4',
   },
   {
     slug: 'love-worth-heartbreak',

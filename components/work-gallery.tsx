@@ -29,6 +29,7 @@ import {
   type WorkItem,
 } from '@/lib/work'
 import { aspectStyleFor, CollectionStack, WorkPlaceholder } from '@/components/work-visuals'
+import { MediaBadges } from '@/components/media-player'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
 
@@ -330,6 +331,8 @@ function ImageCard({ item }: { item: WorkItem }) {
           <WorkPlaceholder item={item} />
         </div>
       </Link>
+
+      <MediaBadges item={item} />
 
       <div
         className={cn(

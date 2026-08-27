@@ -12,16 +12,8 @@ import {
   toneFor,
   WORK,
 } from '@/lib/work'
-import {
-  aspectStyleFor,
-  BookFolio,
-  categoryLabel,
-  ExcerptBlock,
-  Prose,
-  TagLinks,
-  WorkPlaceholder,
-} from '@/components/work-visuals'
-import { ImageLightbox } from '@/components/image-lightbox'
+import { BookFolio, categoryLabel, ExcerptBlock, Prose, TagLinks } from '@/components/work-visuals'
+import { PieceMedia } from '@/components/media-player'
 import { BookPageNav } from '@/components/book-page-nav'
 import { cn } from '@/lib/utils'
 
@@ -194,11 +186,12 @@ export default async function CollectionPiecePage({
 
       <article className="mt-8">
         {!textForward && (
-          <ImageLightbox items={collection.pieces} initialIndex={index} className="mx-auto max-w-3xl shadow-sm">
-            <div className="aspect-[16/10] w-full overflow-hidden" style={aspectStyleFor(piece)}>
-              <WorkPlaceholder item={piece} />
-            </div>
-          </ImageLightbox>
+          <PieceMedia
+            piece={piece}
+            lightboxItems={collection.pieces}
+            lightboxIndex={index}
+            className="mx-auto max-w-3xl shadow-sm"
+          />
         )}
         <div className={cn(!textForward && 'mx-auto mt-8 max-w-2xl')}>
           <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
