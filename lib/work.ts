@@ -1532,12 +1532,15 @@ const REAL_WORK: WorkItem[] = [
 ]
 
 /**
- * The fake dataset (lib/work.sample.ts) is mixed in outside production so
- * there's a bigger, more varied set to test filters and card layouts
- * against. Excluded from production builds automatically.
+ * The fake dataset (lib/work.sample.ts) can be mixed in outside production
+ * for a bigger, more varied set to test filters and card layouts against.
+ * Flip back to true when that's useful again — always excluded from
+ * production builds regardless of this flag.
  */
+const SHOW_SAMPLE_WORK = false
+
 export const WORK: WorkItem[] =
-  process.env.NODE_ENV === 'production' ? REAL_WORK : [...REAL_WORK, ...SAMPLE_WORK]
+  process.env.NODE_ENV === 'production' || !SHOW_SAMPLE_WORK ? REAL_WORK : [...REAL_WORK, ...SAMPLE_WORK]
 
 /**
  * How selected tags combine. Shared with the little venn toggle:
