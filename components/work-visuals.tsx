@@ -5,8 +5,11 @@ import { ArrowRight, FileText, ImageOff, Layers, Quote } from 'lucide-react'
 import {
   DISCIPLINE_FACETS,
   DISCIPLINES,
+  hasWriteup,
   isChapbook,
   isCollection,
+  isHybrid,
+  isTextForward,
   isTextOnly,
   piecePath,
   primaryDiscipline,
@@ -16,6 +19,8 @@ import {
   type WorkItem,
   type WorkPiece,
 } from '@/lib/work'
+import { ImageLightbox } from '@/components/image-lightbox'
+import { MediaBadges } from '@/components/media-player'
 import { cn } from '@/lib/utils'
 
 const ASPECTS = ['aspect-square', 'aspect-[4/5]', 'aspect-[5/4]', 'aspect-[3/4]']
@@ -174,6 +179,58 @@ export function WorkPlaceholder({
   )
 }
 
+/** A stanza that is one unbroken run, too long to be a verse line. */
+const PROSE_RUN_MIN = 90
+function isProseRun(stanza: string) {
+  return !stanza.includes('\n') && stanza.length > PROSE_RUN_MIN
+}
+
+/**
+ * The primitive that renders written work everywhere it appears — the
+ * chapbook reading page, a hybrid piece's page, and every card face (stack,
+ * TextCard, HybridCard, piece tile). Splits on blank lines into stanzas, each
+ * stanza into lines, and renders each line as its own block: a wrapped line
+ * gets a quiet 1ch hanging indent (marking it as a wrap without shouting
+ * about it — `ch` because the face is monospace, so it lands on the
+ * character grid), and a stanza gap is `1lh` of margin so it scales with type
+ * size instead of a hard-coded double `<br>`.
+ *
+ * A long unbroken stanza (prose, not verse) sets upright instead of slanted
+ * — but only at reading size. In a card the quote glyph and tint already
+ * frame the text as a quotation, so everything there stays italic
+ * regardless of form; `context="card"` skips the prose-run check entirely.
+ */
+export function VerseBlock({
+  text,
+  context = 'reading',
+  className,
+}: {
+  text: string
+  /** 'card' keeps everything slanted — see the prose-run note above. */
+  context?: 'reading' | 'card'
+  className?: string
+}) {
+  return (
+    <div className={cn('font-brand-italic max-w-[58ch] text-pretty leading-relaxed', className)}>
+      {text.split('\n\n').map((stanza, s) =>
+        context === 'reading' && isProseRun(stanza) ? (
+          <p key={s} className="font-brand not-italic [&+*]:mt-[1lh]">
+            {stanza}
+          </p>
+        ) : (
+          <p key={s} className="[&+*]:mt-[1lh]">
+            {stanza.split('\n').map((line, i) => (
+              <span key={i} className="block [text-indent:-1ch] pl-[1ch]">
+                {line || ' '}
+              </span>
+            ))}
+          </p>
+        ),
+      )}
+    </div>
+  )
+}
+
 /**
  * A stacked card's face for a chapbook — the exact same quote-icon,
  * excerpt, and title-plus-arrow treatment as a standalone TextCard (same
@@ -181,10 +238,10 @@ export function WorkPlaceholder({
  * the writing pieces beside it. Each of the three visible layers gets its
  * own piece from the chapbook (its first three), rather than all three
  * repeating the collection's own blurb, so the stack itself hints at the
- * range of what's inside. Leads with `preview` rather than the full
- * `excerpt` — a hand-set, short pull-quote meant for exactly this kind of
- * compact spot, so nothing needs clipping to fit. Used in place of
- * WorkPlaceholder for chapbook stacks, which have no images to show.
+ * range of what's inside. Leads with `preview` rather than the full `text`
+ * — a hand-set, short pull-quote meant for exactly this kind of compact
+ * spot, so nothing needs clipping to fit. Used in place of WorkPlaceholder
+ * for chapbook stacks, which have no images to show.
  */
 function TextCardFace({
   piece,
@@ -197,7 +254,7 @@ function TextCardFace({
 }) {
   const tone = toneFor(piece)
   const isPoem = piece.tags.includes('poem')
-  const excerpt = piece.preview ?? piece.excerpt ?? piece.description
+  const excerpt = piece.preview ?? piece.text ?? piece.description ?? ''
   return (
     <div
       className={cn('flex h-full w-full flex-col p-6', className)}
@@ -215,14 +272,14 @@ function TextCardFace({
         </span>
       </div>
 
-      <p
-        className={cn(
-          'font-brand-italic mt-3 text-pretty text-lg leading-relaxed text-foreground',
-          isPoem && 'whitespace-pre-line',
-        )}
-      >
-        {excerpt}
-      </p>
+      {/* flex-1 + min-h-0 (not mt-auto on the title row) keeps the title in
+          the visible peek whether the card has slack or is clamped — see
+          COLLECTION-CARDS.md §12i. */}
+      <VerseBlock
+        text={excerpt}
+        context="card"
+        className="mt-3 min-h-0 flex-1 overflow-hidden text-lg text-foreground"
+      />
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <span className="font-brand truncate text-sm lowercase tracking-wide text-muted-foreground">
@@ -255,46 +312,120 @@ function TextCardFace({
  * real pieces get low-quality thumbnails since only a thin strip of each is
  * ever visible.
  *
- * The container reserves its true height via an explicit aspect-ratio
- * computed from the cover's own aspect — the back cards are all
- * `position: absolute` and so contribute nothing to normal document flow
- * on their own, and this grid is CSS columns, which needs a real (not
- * faked-with-margin) height to lay out the next item. That height is sized
- * to the hovered stack, the taller of the two states; see maxPeek below.
+ * The container reserves its true height with bottom padding from
+ * `deckReserve` — the back cards are all `position: absolute` and so
+ * contribute nothing to normal document flow on their own, and this grid is
+ * CSS columns, which needs a real (not faked-with-margin) height to lay out
+ * the next item. That reserve is sized to REST, the state that sets the
+ * grid's rhythm; hover opens by flattening rotation rather than pushing the
+ * deck down, so the tile's bottom edge never moves.
  */
+/** A tilted card's bottom corner dips below its own bottom edge by 50*sin(deg)% of its width. */
+const dip = (deg: number) => 50 * Math.sin((deg * Math.PI) / 180)
+
+/** Card 3's cumulative offset, which card 4's is measured from rather than restated. */
+const CARD3_Y = 45.5
+
 /**
- * Card 4's hovered peek and tilt, mirrored from its `group-hover:` classes
- * below so the container can reserve the right height. Tailwind only picks up
- * arbitrary values written out as literal class strings, so these can't drive
- * the classes directly — keep the two in sync by hand.
+ * Card 4's strip is the count pill plus an equal 0.5rem margin on the three
+ * sides that show: 8 + 24 + 8. `CollectionMark` is fixed-size text
+ * (`px-2.5 py-1 text-xs` — a 16px line box plus 4px padding top and bottom,
+ * the `h-3.5` icon fitting inside that line box) sitting at
+ * `bottom-2 right-2`, so this is the one absolute length in the deck, and
+ * card 4 is the only card it could be: cards 2 and 3 show a proportion of
+ * something that scales, while card 4 is deliberately blank and exists only
+ * to carry the total. Change `CollectionMark`'s padding, text size or inset
+ * and this number changes with it — nothing recomputes it.
+ *
+ * The 8px above the pill is measured at the card's centre line, where
+ * rotation has no effect; at the pill's own corner the opposed tilts of
+ * cards 3 and 4 open the gap to 10-20px. That wedge is intended — don't
+ * flatten card 4's tilt to even it out.
  */
-const CARD4_HOVER_PEEK = 0.83
-const CARD4_HOVER_TILT = 1
-/** Same idea for card 3, used instead when there's no card 4 to reserve for. */
-const CARD3_HOVER_PEEK = 0.68
-const CARD3_HOVER_TILT = -1
+const CARD4_STRIP_PX = 40
+
+/**
+ * The deck's geometry, one table for both stacks — cards 2 and 3 in
+ * geometric decay (ratio ~0.63) as percentages of the COLUMN WIDTH (never
+ * card height or `em`), card 4 at the fixed pill strip above; tilts
+ * monotonic throughout. See "Collection stack geometry" in docs/ARCHITECTURE.md.
+ * `y`/`hy` are cumulative offsets from the cover's bottom edge (rest/hover)
+ * and `px`/`hpx` the fixed part of the same offset; `r`/`hr` are the
+ * matching tilts. The only source of truth for both the `.deck-card` CSS
+ * custom properties and the container's reserve below.
+ *
+ * Card 4's hover offset is derived, not chosen: it is whatever keeps
+ * `y + dip(r)` equal across rest and hover, so the reserve — and with it the
+ * tile's bottom edge — doesn't move when the deck flattens. The visible
+ * consequence is that card 4's strip measures 40px at rest and ~38.5px on
+ * hover at a 350px column, which the pill still clears by ~11px.
+ */
+const DECK = {
+  card2: { y: 28, px: 0, r: 3.5, hy: 30, hpx: 0, hr: 1 },
+  card3: { y: CARD3_Y, px: 0, r: -2.5, hy: 46.8, hpx: 0, hr: -1 },
+  card4: {
+    y: CARD3_Y,
+    px: CARD4_STRIP_PX,
+    r: 1.5,
+    hy: CARD3_Y + dip(1.5) - dip(0.5),
+    hpx: CARD4_STRIP_PX,
+    hr: 0.5,
+  },
+} as const
+
+type DeckCard = { y: number; px: number; r: number; hy: number; hpx: number; hr: number }
+
+/**
+ * A deck offset as a CSS length: `28%`, or `calc(45.5% + 40px)` for the one
+ * card carrying a fixed strip. Mixing the units is safe here for the same
+ * reason a bare percentage is — it still resolves against the containing
+ * block's width, and the px term simply doesn't participate.
+ */
+function deckLength(pct: number, px: number, sign: 1 | -1 = 1): string {
+  const p = `${sign * pct}%`
+  return px ? `calc(${p} ${sign > 0 ? '+' : '-'} ${px}px)` : p
+}
+
+/**
+ * The CSS custom properties `.deck-card` (globals.css) reads. `y`/`hy` go on
+ * `margin-bottom` negated, which is what pushes a `bottom-0` card down below
+ * the sized box behind it; percentage margins resolve against the containing
+ * block's WIDTH, which is the whole reason this works out to a
+ * resolution-independent deck.
+ */
+function deckVars(card: DeckCard): CSSProperties {
+  return {
+    '--y': deckLength(card.y, card.px, -1),
+    '--r': `${card.r}deg`,
+    '--hy': deckLength(card.hy, card.hpx, -1),
+    '--hr': `${card.hr}deg`,
+  } as CSSProperties
+}
+
+/** The outer container's reserve: the deepest card's offset plus how far its tilt dips its corner below that. */
+function deckReserve(hasMore: boolean): string {
+  const deepest = hasMore ? DECK.card4 : DECK.card3
+  return deckLength(deepest.y + dip(Math.abs(deepest.r)), deepest.px)
+}
+
+const deckCardBase =
+  'deck-card absolute inset-x-0 bottom-0 origin-bottom overflow-hidden rounded-xl border shadow-sm group-hover:shadow-lg'
 
 /**
  * A chapbook's version of the stack: same fanned-cards idea, but sized to
  * its own text instead of borrowed from an image's aspect ratio. The cover
  * (card 1) is the only layer left in normal document flow — `position:
  * relative` with no explicit height — so the container's real size comes
- * straight from its own content, the way a plain TextCard's does. The
- * three cards behind it are `position: absolute; inset: 0`, which stretches
- * each to match that same resolved box without pulling their own (possibly
- * longer) text into the sizing calculation the way a CSS-grid stack would —
- * a grid's auto-sized track still asks every same-cell item for its natural
- * content height even when that item is stretched to 100%, so the tallest
- * excerpt among the four would end up setting the height instead of the
- * cover. Each layer's `translate-y-[N%]` resolves against its OWN box,
- * which is why this still peeks correctly at any cover height. Being
- * absolutely positioned also takes cards 2-4 out of the normal painting
- * order, where positioned elements paint above static ones as a group
- * regardless of DOM order — card 1 needs `relative` (not the default
- * `static`) so it counts as positioned too and its later DOM position wins,
- * putting it on top where it belongs. The fixed `mb-10` reserves room in
- * the masonry column for the peek riding below the cover's own bottom edge,
- * which the absolute cards' transforms don't otherwise account for.
+ * straight from its own content, the way a plain TextCard's does. The three
+ * cards behind it are bottom-anchored and absolutely positioned, so their
+ * peek is exactly their target offset regardless of how tall their own text
+ * happens to be (COLLECTION-CARDS.md sec12h) — being absolutely positioned
+ * also takes them out of the normal painting order, where positioned
+ * elements paint above static ones as a group regardless of DOM order, so
+ * card 1 needs `relative` (not the default `static`) to count as positioned
+ * too and paint on top. Card 4 is deliberately blank, so it has no natural
+ * height and needs `h-full` (not `max-h-full`, cards 2/3's clamp) to take
+ * the cover's height outright.
  */
 function ChapbookStack({ item, className }: { item: WorkCollection; className?: string }) {
   const tone = toneFor(item)
@@ -305,8 +436,6 @@ function ChapbookStack({ item, className }: { item: WorkCollection; className?: 
   const cover = findPiece(coverSlug) ?? item.pieces[0]
   const second = findPiece(secondSlug) ?? item.pieces[1]
   const third = findPiece(thirdSlug) ?? item.pieces[2]
-  const peekBase =
-    'absolute inset-0 origin-bottom overflow-hidden rounded-xl border shadow-sm transition-[transform,box-shadow] duration-300 ease-out group-hover:shadow-lg'
   // With exactly (or fewer than) three pieces, cards 1-3 already show
   // everything the collection has — a 4th "and N more" card would be
   // showing nothing more, so it and its count pill drop out entirely, and
@@ -314,60 +443,68 @@ function ChapbookStack({ item, className }: { item: WorkCollection; className?: 
   const hasMore = item.pieces.length > 3
 
   return (
-    <div className={cn('relative', hasMore ? 'mb-16' : 'mb-10', className)}>
-      {/* Card 4: permanently blank and neutral — never a real piece, just the
-          bed the count sits on. Text boxes run much taller than the old
-          fixed-aspect image boxes, so reaching the same size peek needs a
-          bigger percentage here than the image stack used. */}
-      {hasMore && (
-        <div
-          aria-hidden="true"
-          className={cn(peekBase, 'translate-y-[26%] rotate-[2deg] group-hover:translate-y-[32%] group-hover:rotate-[1deg]')}
-          style={{
-            background: item.stackAccent ?? 'color-mix(in srgb, var(--foreground) 18%, var(--card))',
-            borderColor: item.stackAccent
-              ? `color-mix(in srgb, ${item.stackAccent} 60%, var(--foreground))`
-              : 'color-mix(in srgb, var(--foreground) 16%, var(--card))',
-          }}
-        >
-          <CollectionMark count={item.pieces.length} className="absolute bottom-2 right-2" />
-        </div>
-      )}
-      {/* Card 3 */}
-      {third && (
-        <TextCardFace
-          piece={third}
-          className={cn(
-            peekBase,
-            'translate-y-[16%] rotate-[-2deg] group-hover:translate-y-[20%] group-hover:rotate-[-1deg]',
-          )}
-          style={{ background: `color-mix(in srgb, ${tone} 9%, var(--card))` }}
-        />
-      )}
-      {/* Card 2 */}
-      {second && (
-        <TextCardFace
-          piece={second}
-          className={cn(
-            peekBase,
-            'translate-y-[8%] rotate-[1.5deg] group-hover:translate-y-[10%] group-hover:rotate-[1deg]',
-          )}
-          style={{ background: `color-mix(in srgb, ${tone} 11%, var(--card))` }}
-        />
-      )}
-      {/* Card 1: the cover — normal flow, sized to its own text, and
-          `relative` (not the flow default `static`) so it paints above the
-          absolutely positioned cards behind it. */}
-      {cover && (
-        <TextCardFace
-          piece={cover}
-          className="relative h-auto w-full origin-bottom rounded-xl border border-[color-mix(in_srgb,var(--foreground)_14%,var(--card))] shadow-sm transition-[transform,box-shadow] duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-lg"
-        />
-      )}
+    <div className={cn('relative', className)} style={{ paddingBottom: deckReserve(hasMore) }}>
+      <div className="relative">
+        {/* Card 4: permanently blank and neutral — never a real piece, just the
+            bed the count sits on. */}
+        {hasMore && (
+          <div
+            aria-hidden="true"
+            className={cn(deckCardBase, 'h-full')}
+            style={{
+              background: item.stackAccent ?? 'color-mix(in srgb, var(--foreground) 18%, var(--card))',
+              borderColor: item.stackAccent
+                ? `color-mix(in srgb, ${item.stackAccent} 60%, var(--foreground))`
+                : 'color-mix(in srgb, var(--foreground) 16%, var(--card))',
+              ...deckVars(DECK.card4),
+            }}
+          >
+            <CollectionMark count={item.pieces.length} className="absolute bottom-2 right-2" />
+          </div>
+        )}
+        {/* Card 3 */}
+        {third && (
+          <TextCardFace
+            piece={third}
+            className={cn(deckCardBase, 'max-h-full')}
+            style={{ background: `color-mix(in srgb, ${tone} 9%, var(--card))`, ...deckVars(DECK.card3) }}
+          />
+        )}
+        {/* Card 2 */}
+        {second && (
+          <TextCardFace
+            piece={second}
+            className={cn(deckCardBase, 'max-h-full')}
+            style={{ background: `color-mix(in srgb, ${tone} 11%, var(--card))`, ...deckVars(DECK.card2) }}
+          />
+        )}
+        {/* Card 1: the cover — normal flow, sized to its own text, and
+            `relative` (not the flow default `static`) so it paints above the
+            absolutely positioned cards behind it. */}
+        {cover && (
+          <TextCardFace
+            piece={cover}
+            className="relative h-auto w-full origin-bottom rounded-xl border border-[color-mix(in_srgb,var(--foreground)_14%,var(--card))] shadow-sm transition-[transform,box-shadow] duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-lg"
+          />
+        )}
+      </div>
     </div>
   )
 }
 
+/**
+ * A collection's placeholder as a tapered stack of cards, full column width
+ * like a standalone piece's image. The cover sits flat on top, fully
+ * visible; each card behind it peeks out below by a shrinking, bottom-
+ * anchored amount (sec12), so the peek is exact regardless of the mix of
+ * aspect ratios inside the collection. The 4th and lowest card is
+ * permanently blank and neutral — never a real piece — and carries the
+ * collection's real total on a pill in its own bottom-right corner, so it
+ * reads as an honest "and N more" rather than an open-ended tease. Rotation
+ * pivots around each card's own bottom-center, so the tilt reads as a lean
+ * in place. The two real backing pieces get low-quality thumbnails since
+ * only a thin strip of each is ever visible.
+ */
 export function CollectionStack({ item, className }: { item: WorkCollection; className?: string }) {
   const tone = toneFor(item)
   const chapbook = isChapbook(item)
@@ -390,104 +527,59 @@ export function CollectionStack({ item, className }: { item: WorkCollection; cla
   // card 3 becomes the deepest layer the container needs to reserve for.
   const hasMore = item.pieces.length > 3
 
-  // The reserved height is sized to the HOVER state, which is the stack at
-  // its tallest — so a hovered stack's bottom edge lands exactly one gallery
-  // gutter above the next card, same as every other tile. At rest the stack
-  // tucks up and leaves a little slack below; that's the correct trade, since
-  // rest is the state that sits next to un-hovered neighbours and hover is
-  // the one that would otherwise collide with them.
-  //
-  // The lowest point isn't the deepest card's bottom edge but its lowest
-  // corner, which its own tilt swings below that edge: rotating about the
-  // bottom centre moves a corner (width/2)·sin(theta) down, which as a
-  // fraction of the card's own height is (w/h)·0.5·sin(theta). Card 3
-  // rotates the opposite direction from card 4 (negative vs. positive), but
-  // that only swaps which corner dips — the magnitude only depends on the
-  // angle, so passing its absolute value still gives the right reserve.
-  const [wRatio, hRatio] = (item.imageAspect ?? '5/4').split('/').map(Number)
-  const cornerDip = (deg: number) => (0.5 * Math.sin((deg * Math.PI) / 180) * wRatio) / hRatio
-  const maxPeek = hasMore
-    ? CARD4_HOVER_PEEK + cornerDip(CARD4_HOVER_TILT)
-    : CARD3_HOVER_PEEK + cornerDip(Math.abs(CARD3_HOVER_TILT))
-  const containerAspect = `${wRatio} / ${hRatio * (1 + maxPeek)}`
-
-  // Every card deepens its shadow together on hover, the way a plain gallery
-  // card does (hover:shadow-lg there) — because the cards overlap, each one's
-  // shadow only really shows in the sliver of the card below it, so deepening
-  // them all reads as the layers separating rather than as four stacked
-  // drop-shadows.
-  const cardBase =
-    'absolute inset-x-0 top-0 aspect-[5/4] origin-bottom overflow-hidden rounded-xl border shadow-sm transition-[translate,rotate,box-shadow] duration-300 ease-out group-hover:shadow-lg'
-
   return (
-    <div className={cn('relative', className)} style={{ aspectRatio: containerAspect }}>
-      {/* Card 4: permanently blank and neutral — never a real piece, just the
-          bed the count sits on. It travels further on hover than card 3 does
-          (+9% against card 3's +7%) rather than holding still: card 3 easing
-          down toward it would otherwise close over the strip of it that's
-          visible, taking the pill under card 3's edge with it. Overshooting
-          keeps that strip about the same depth in both states. Not
-          aria-hidden like the other backing cards, since the count inside it
-          is real information. Skipped entirely once there's nothing left for
-          it to represent (see hasMore above). */}
-      {hasMore && (
+    <div className={cn('relative', className)} style={{ paddingBottom: deckReserve(hasMore) }}>
+      <div className="relative">
+        {/* Card 4: permanently blank and neutral — never a real piece, just the
+            bed the count sits on. Not aria-hidden like the other backing
+            cards, since the count inside it is real information. */}
+        {hasMore && (
+          <div
+            className={cn(deckCardBase, 'max-h-full aspect-[5/4]')}
+            style={{
+              background: item.stackAccent ?? 'color-mix(in srgb, var(--foreground) 18%, var(--card))',
+              borderColor: item.stackAccent
+                ? `color-mix(in srgb, ${item.stackAccent} 60%, var(--foreground))`
+                : 'color-mix(in srgb, var(--foreground) 16%, var(--card))',
+              ...aspect,
+              ...deckVars(DECK.card4),
+            }}
+          >
+            <CollectionMark count={item.pieces.length} className="absolute bottom-2 right-2" />
+          </div>
+        )}
+        {/* Card 3 */}
         <div
+          aria-hidden="true"
           className={cn(
-            cardBase,
-            'translate-y-[74%] rotate-[3deg]',
-            'group-hover:translate-y-[83%] group-hover:rotate-[1deg]',
+            deckCardBase,
+            'max-h-full aspect-[5/4] border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))]',
           )}
-          style={{
-            background: item.stackAccent ?? 'color-mix(in srgb, var(--foreground) 18%, var(--card))',
-            borderColor: item.stackAccent
-              ? `color-mix(in srgb, ${item.stackAccent} 60%, var(--foreground))`
-              : 'color-mix(in srgb, var(--foreground) 16%, var(--card))',
-            ...aspect,
-          }}
+          style={{ background: `color-mix(in srgb, ${tone} 9%, var(--card))`, ...aspect, ...deckVars(DECK.card3) }}
         >
-          {/* Inside card 4 so it inherits the card's tilt and rides its corner,
-              with matching bottom/right insets so it reads as seated in that
-              corner rather than floating near it. */}
-          <CollectionMark count={item.pieces.length} className="absolute bottom-2 right-2" />
+          {mid && <WorkPlaceholder item={mid} quality="thumb" />}
         </div>
-      )}
-      {/* Card 3 */}
-      <div
-        aria-hidden="true"
-        className={cn(
-          cardBase,
-          'translate-y-[61%] rotate-[-4.5deg] border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))]',
-          'group-hover:translate-y-[68%] group-hover:rotate-[-1deg]',
-        )}
-        style={{ background: `color-mix(in srgb, ${tone} 9%, var(--card))`, ...aspect }}
-      >
-        {mid && <WorkPlaceholder item={mid} quality="thumb" />}
-      </div>
-      {/* Card 2 */}
-      <div
-        aria-hidden="true"
-        className={cn(
-          cardBase,
-          'translate-y-[46%] rotate-[4deg] border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))]',
-          'group-hover:translate-y-[52%] group-hover:rotate-[1deg]',
-        )}
-        style={{ background: `color-mix(in srgb, ${tone} 11%, var(--card))`, ...aspect }}
-      >
-        {back && <WorkPlaceholder item={back} quality="thumb" />}
-      </div>
-      {/* Card 1: the cover — flat, 100% visible, on top, and sitting at the
-          container's top edge at rest. On hover it takes the same 2px lift a
-          plain gallery card gets (hover:-translate-y-0.5 there), so a
-          collection answers the cursor exactly like its neighbours do; the
-          rest of the stack fanning out underneath is the extra on top of
-          that, not a substitute for it. Deliberately a fixed 2px rather than
-          a percentage — matching the neighbours matters more here than
-          scaling with the card. */}
-      <div
-        className="absolute inset-x-0 top-0 aspect-[5/4] origin-bottom overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--foreground)_14%,var(--card))] shadow-sm transition-[translate,rotate,box-shadow] duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-lg"
-        style={aspect}
-      >
-        <WorkPlaceholder item={cover ?? item} />
+        {/* Card 2 */}
+        <div
+          aria-hidden="true"
+          className={cn(
+            deckCardBase,
+            'max-h-full aspect-[5/4] border-[color-mix(in_srgb,var(--foreground)_10%,var(--card))]',
+          )}
+          style={{ background: `color-mix(in srgb, ${tone} 11%, var(--card))`, ...aspect, ...deckVars(DECK.card2) }}
+        >
+          {back && <WorkPlaceholder item={back} quality="thumb" />}
+        </div>
+        {/* Card 1: the cover — flat, 100% visible, in normal flow (so it
+            sizes the container), on top. On hover it takes the same 2px lift
+            a plain gallery card gets (hover:-translate-y-0.5 there), so a
+            collection answers the cursor exactly like its neighbours do. */}
+        <div
+          className="relative aspect-[5/4] overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--foreground)_14%,var(--card))] shadow-sm transition-[transform,box-shadow] duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-lg"
+          style={aspect}
+        >
+          <WorkPlaceholder item={cover ?? item} />
+        </div>
       </div>
     </div>
   )
@@ -533,43 +625,22 @@ export function Prose({ text, className }: { text: string; className?: string })
   )
 }
 
-/** The pull-quote block for text-forward pieces, shared by cards and pages. */
-export function ExcerptBlock({ item, className }: { item: WorkPiece; className?: string }) {
-  const tone = toneFor(item)
-  const isPoem = item.tags.includes('poem')
-  return (
-    <p
-      className={cn(
-        'font-brand-italic text-pretty text-xl leading-relaxed text-foreground',
-        isPoem && 'whitespace-pre-line',
-        className,
-      )}
-      style={{ borderColor: `color-mix(in srgb, ${tone} 45%, transparent)` }}
-    >
-      {item.excerpt ?? item.description}
-    </p>
-  )
-}
-
 /**
- * A chapbook's table of contents: each poem/essay as a numbered row, the
- * way a printed book's contents page works. Kept narrow rather than
- * stretched across the page — it's a list of titles, not a grid — and
- * folio numbers only run down the left; a book's real page numbers live on
- * the reading page itself (see BookFolio), so a second number here would
- * just be noise. Replaces the usual image-grid treatment, since a chapbook
- * has no images to show.
+ * A chapbook's table of contents: each poem/essay as a numbered row, the way
+ * a printed book's contents page works — titles only, no first lines, no
+ * glosses (the taste of the writing is carried by the epigraph and the two
+ * entry points below it). Two columns, read down the first then down the
+ * second, the way a real contents page reads; a book's real page numbers
+ * live on the reading page itself (see BookFolio), so a second number here
+ * would just be noise.
  */
 export function ChapbookContents({ collection }: { collection: WorkCollection }) {
   const tone = toneFor(collection)
   return (
-    <ol className="mt-6 max-w-md divide-y divide-border rounded-2xl border border-border bg-card">
+    <ol className="mt-8 columns-1 gap-x-10 sm:columns-2">
       {collection.pieces.map((piece, i) => (
-        <li key={piece.slug}>
-          <Link
-            href={piecePath(collection, piece)}
-            className="group flex items-baseline gap-3 px-5 py-3"
-          >
+        <li key={piece.slug} className="break-inside-avoid border-b border-border/70 last:border-b-0">
+          <Link href={piecePath(collection, piece)} className="group flex items-baseline gap-3 py-3">
             <span
               className="font-brand shrink-0 text-xs tabular-nums text-muted-foreground transition-colors group-hover:text-foreground"
               style={{ color: `color-mix(in srgb, ${tone} 55%, var(--muted-foreground))` }}
@@ -596,6 +667,143 @@ export function BookFolio({ index, total }: { index: number; total: number }) {
       {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
     </p>
   )
+}
+
+/**
+ * A text-forward piece's tile inside a gallery-layout collection grid — the
+ * same quote-card idiom as a standalone TextCard, sized for a grid cell.
+ * WriteupMark sits at `right-3` here (not `left-3`, ImageTile's spot) so it
+ * doesn't collide with the Quote glyph.
+ */
+function TextTile({ collection, piece }: { collection: WorkCollection; piece: WorkPiece }) {
+  const tone = toneFor(piece)
+  const excerpt = piece.preview ?? piece.text ?? piece.description ?? ''
+  return (
+    <div className="relative w-full overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1">
+      <Link
+        href={piecePath(collection, piece)}
+        className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Quote
+          className="h-6 w-6 shrink-0 -scale-x-100"
+          style={{ color: `color-mix(in srgb, ${tone} 70%, transparent)` }}
+          strokeWidth={1.5}
+          aria-hidden="true"
+        />
+        <VerseBlock text={excerpt} context="card" className="mt-3 text-base text-foreground" />
+        <p className="mt-3 font-brand text-sm lowercase tracking-wide text-muted-foreground">{piece.title}</p>
+      </Link>
+      {hasWriteup(piece) && (
+        <div className="absolute right-3 top-3">
+          <WriteupMark />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * A plain image piece's tile inside a gallery-layout collection grid.
+ * Lightbox paging is scoped to pieces that actually carry an image — a
+ * mixed collection otherwise pages through text-only pieces onto tinted
+ * placeholders.
+ */
+function ImageTile({ collection, piece }: { collection: WorkCollection; piece: WorkPiece }) {
+  const withImage = collection.pieces.filter((p) => p.image)
+  const lightboxIndex = Math.max(0, withImage.indexOf(piece))
+  return (
+    <div className="relative w-full overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1">
+      <ImageLightbox items={withImage} initialIndex={lightboxIndex} className="rounded-none border-none">
+        <div className={aspectFor(piece.slug)} style={aspectStyleFor(piece)}>
+          <WorkPlaceholder item={piece} />
+        </div>
+        <MediaBadges item={piece} />
+      </ImageLightbox>
+      <Link
+        href={piecePath(collection, piece)}
+        className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <p className="font-brand text-sm font-bold lowercase leading-tight text-foreground/80 text-balance">
+          {piece.title}
+        </p>
+        {piece.description && (
+          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{piece.description}</p>
+        )}
+      </Link>
+      {hasWriteup(piece) && (
+        <div className="absolute left-3 top-3">
+          <WriteupMark />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * A hybrid piece's cell: image and words as one unit, neither a caption for
+ * the other — the `illustrated` collection layout's tile (§4c), and the same
+ * card landing inside an otherwise-`gallery` collection that happens to hold
+ * one hybrid piece (§4d). Folio number is the piece's position in the
+ * collection, not parsed from its slug.
+ */
+export function IllustratedTile({
+  collection,
+  piece,
+  index,
+}: {
+  collection: WorkCollection
+  piece: WorkPiece
+  index: number
+}) {
+  const tone = toneFor(piece)
+  const withImage = collection.pieces.filter((p) => p.image)
+  const lightboxIndex = Math.max(0, withImage.indexOf(piece))
+  return (
+    <div className="relative w-full overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1">
+      <ImageLightbox items={withImage} initialIndex={lightboxIndex} className="rounded-none border-none">
+        <div className={aspectFor(piece.slug)} style={aspectStyleFor(piece)}>
+          <WorkPlaceholder item={piece} />
+        </div>
+        <MediaBadges item={piece} />
+      </ImageLightbox>
+      <Link
+        href={piecePath(collection, piece)}
+        className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}
+      >
+        <p className="font-brand text-sm font-bold lowercase leading-tight text-foreground/80 text-balance">
+          {String(index + 1).padStart(2, '0')} · {piece.title}
+        </p>
+        <VerseBlock text={piece.text ?? ''} context="card" className="mt-2 text-sm text-foreground" />
+        <ArrowRight className="ml-auto mt-2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+      </Link>
+      {hasWriteup(piece) && (
+        <div className="absolute left-3 top-3">
+          <WriteupMark />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * A collection-page tile, dispatching per piece the same way `WorkCard`
+ * dispatches for the top-level gallery — a `gallery` collection holding one
+ * hybrid piece gets that piece rendered as a hybrid, without the collection
+ * itself changing layout.
+ */
+export function PieceTile({
+  collection,
+  piece,
+  index,
+}: {
+  collection: WorkCollection
+  piece: WorkPiece
+  index: number
+}) {
+  if (isHybrid(piece)) return <IllustratedTile collection={collection} piece={piece} index={index} />
+  if (isTextForward(piece)) return <TextTile collection={collection} piece={piece} />
+  return <ImageTile collection={collection} piece={piece} />
 }
 
 /** Convenience guard re-export so pages don't import from two places. */

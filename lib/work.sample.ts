@@ -115,7 +115,7 @@ export const SAMPLE_WORK: WorkItem[] = [
         description:
           'On treating a restricted pantry like a limited palette — the chemistry of substitutions, and why constraints make better bakers.',
         tags: ['writing', 'essay', 'science', 'material science', 'food'],
-        excerpt:
+        text:
           'A restricted pantry is only a limited palette. And constraints, it turns out, quietly make better bakers of us.',
         writeup:
           'Take out eggs, butter, and wheat and you have removed structure, tenderness, and elasticity in one move. What is left is a genuine engineering problem, and engineering problems are more fun than recipes.\n\nAquafaba does not replace egg white because it is similar. It works because the same globular proteins unfold and trap air at a similar pH. Once you know that, you stop following substitution charts and start reasoning.',
@@ -177,7 +177,7 @@ export const SAMPLE_WORK: WorkItem[] = [
         description:
           'The essay that came out of the data — on making peace with working while the world sleeps.',
         tags: ['writing', 'essay', 'science', 'memory'],
-        excerpt:
+        text:
           'I stopped trying to become a morning person and started asking what the night was actually giving me.',
       },
     ],
@@ -232,8 +232,7 @@ export const SAMPLE_WORK: WorkItem[] = [
     description:
       'A cross-linguistic review of how the words a culture has for color shape the way its speakers see and remember it.',
     tags: ['science', 'neuroscience', 'writing', 'essay', 'language', 'color'],
-    hasImage: true,
-    excerpt:
+    text:
       'Give a culture a word for a color, and its speakers will start to see that color everywhere — including in memory.',
     writeup:
       'Russian speakers distinguish light blue and dark blue as separate basic colors, and they sort those chips faster than English speakers do. Homer called the sea wine-dark. Neither fact means anyone sees different wavelengths.\n\nWhat changes is the categorizing — where the boundary falls, and how the memory files it afterward. Language does not paint the world. It decides which edges are worth noticing.',
@@ -245,7 +244,7 @@ export const SAMPLE_WORK: WorkItem[] = [
     description:
       'An essay about treating my interests like rooms with the doors shut — and what happened when I let the light move between them.',
     tags: ['writing', 'essay', 'memory'],
-    excerpt:
+    text:
       'I had been treating my interests like rooms with the doors shut. Then, one winter, I let the light move between them.',
     writeup:
       'For most of my twenties I kept the painting and the pipetting in separate rooms, convinced that admitting to one would disqualify me from the other.\n\nWhat actually happened, when I opened the doors, was that the color theory made me better at figures and the lab made me more patient at the easel. The rooms were never the problem. The doors were.',
@@ -257,7 +256,7 @@ export const SAMPLE_WORK: WorkItem[] = [
     description:
       'Why my favorite color is a warm indigo, and what learning to paint shadows taught me about paying attention.',
     tags: ['writing', 'essay', 'art', 'color'],
-    excerpt:
+    text:
       'A shadow is never simply gray. Learn to find the indigo pooled inside it, and you have learned, quietly, how to pay attention.',
     writeup:
       'The first useful thing anyone taught me about painting was that shadows are not gray. They are the complement of whatever light is falling, cooled and darkened.\n\nOnce you have seen the indigo in a shadow on snow, you cannot unsee it. That is most of what technique is: a permanent upgrade to your attention, disguised as a rule about paint.',
@@ -269,7 +268,7 @@ export const SAMPLE_WORK: WorkItem[] = [
     description:
       'A short poem about keeping the moon’s hours, and the light that only arrives once everything else has gone quiet.',
     tags: ['writing', 'poem', 'memory'],
-    excerpt:
+    text:
       'the house exhales.\nthe moon takes the lamp’s place\nat my desk,\nand only now do I begin.',
   },
   {
@@ -279,7 +278,7 @@ export const SAMPLE_WORK: WorkItem[] = [
     description:
       'A poem about reaching for indigo in the shadows — because nothing I have loved was ever the absence of a color.',
     tags: ['writing', 'poem', 'art', 'color'],
-    excerpt:
+    text:
       'I reach for indigo\nwhere the shadow pools —\nnothing I have loved\nwas ever the absence of a color.',
   },
   {
@@ -289,7 +288,7 @@ export const SAMPLE_WORK: WorkItem[] = [
     description:
       'A three-line poem for anyone who has been asked to pick a lane. The river does not apologize for the sea.',
     tags: ['writing', 'poem', 'memory'],
-    excerpt: 'they asked me to pick a lane.\nthe river, on its way to the sea,\ndid not apologize.',
+    text: 'they asked me to pick a lane.\nthe river, on its way to the sea,\ndid not apologize.',
   },
   {
     slug: 'living-in-the-world',
@@ -298,7 +297,7 @@ export const SAMPLE_WORK: WorkItem[] = [
     description:
       'Small observations gathered over a difficult year — on cities, on strangers, on the strange grace of ordinary Tuesdays.',
     tags: ['writing', 'essay', 'memory'],
-    excerpt:
+    text:
       'There is a strange grace to an ordinary Tuesday — if you are paying the right kind of attention to it.',
   },
   {
@@ -308,8 +307,7 @@ export const SAMPLE_WORK: WorkItem[] = [
     description:
       'Curiosity is not a childish thing to grow out of. It might be the most serious commitment an adult can make.',
     tags: ['writing', 'essay', 'science'],
-    hasImage: true,
-    excerpt:
+    text:
       'Curiosity is not a childish thing to grow out of. It may be the most serious commitment an adult can make.',
     writeup:
       'We treat curiosity as a childhood trait, something to be outgrown along with the dinosaur phase. But sustained curiosity is expensive: it costs time, it costs the comfort of already knowing, and it costs the willingness to look foolish while learning.\n\nWhich is exactly why it reads as a serious adult commitment rather than a childish one.',
@@ -339,7 +337,7 @@ export const SAMPLE_WORK: WorkItem[] = [
     description:
       'On the strange imperative grammar of recipes, and what it assumes you already know how to do.',
     tags: ['writing', 'essay', 'language', 'food'],
-    excerpt:
+    text:
       'A recipe is written entirely in commands, and every command hides an assumption about what you already know.',
   },
   {
