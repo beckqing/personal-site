@@ -8,16 +8,26 @@ export type WorkPiece = {
   slug: string
   title: string
   year: string
-  description: string
+  /** An editorial gloss — what the piece is about. Optional: not every piece has one. */
+  description?: string
   /** Non-exclusive tags — an item can be art AND science AND writing at once. */
   tags: string[]
   /**
-   * For text-forward pieces (poems, essays): a short excerpt or pull quote
-   * shown in place of a blank image, like the writing card on the home page.
-   * Poems keep their line breaks (rendered with whitespace-pre-line).
+   * The written work this page shows — a whole poem, or the passage quoted
+   * from an essay that lives elsewhere. Line breaks are real line breaks; a
+   * blank line separates stanzas or paragraphs. Distinct from `description`
+   * (an editorial gloss about the piece) and `writeup` (process notes around
+   * it). A piece carrying both `text` and `image` is a hybrid.
    */
-  excerpt?: string
-  /** A short pull-quote (1-3 lines) for compact contexts, like a poem's tile inside a collection grid — the full `excerpt` there would be too much. Falls back to `excerpt` (or `description`) where unset. */
+  text?: string
+  /**
+   * The pull quote shown on cards — a collection stack's faces, a gallery
+   * TextCard, a piece tile. Falls back to `text`, then `description`.
+   *
+   * Its length is deliberate, not incidental: the cover card is sized by this
+   * string, and a masonry column gives a taller tile more room. A long preview
+   * is how a piece claims that room. Never clamp it.
+   */
   preview?: string
   /** A longer write-up, shown only on the item's own page. Flagged with an icon. */
   writeup?: string
@@ -28,13 +38,6 @@ export type WorkPiece = {
   /** A small, heavily compressed stand-in for `image` — used where the image is barely visible (e.g. a collection stack's back cards), so full quality isn't worth the bytes. */
   thumb?: string
   /**
-   * Marks a piece as genuinely both — text-forward work that was written
-   * around a specific image and still wants it shown, rather than being
-   * purely a quote-only piece or a purely visual one. Opt-in per piece
-   * (mostly science essays so far); doesn't follow automatically from tags.
-   */
-  hasImage?: boolean
-  /**
    * A process/speedpaint video — a timelapse of the piece being made. Shown
    * with a persistent scrubber rather than standard video chrome: the point
    * is dragging through every stroke by hand, not pressing play and waiting.
@@ -42,7 +45,12 @@ export type WorkPiece = {
    * watched start to finish.
    */
   speedpaintSrc?: string
-  /** The speedpaint video's own aspect ratio, when it differs from `imageAspect`. */
+  /**
+   * The speedpaint video's own aspect ratio, when it differs from
+   * `imageAspect`. Unset on every real piece today — Verdant, the only
+   * candidate so far, shipped cropped square to match its poster — kept as
+   * the escape hatch for the first clip whose shape genuinely diverges.
+   */
   speedpaintAspect?: string
   /**
    * A finished animation clip's video file (e.g. '/art/...mp4'), played with
@@ -51,9 +59,17 @@ export type WorkPiece = {
   animationSrc?: string
 }
 
+export type CollectionLayout = 'book' | 'illustrated' | 'gallery'
+
 /** A piece that holds other pieces. Rendered with a tilted deck behind it. */
 export type WorkCollection = WorkPiece & {
   pieces: WorkPiece[]
+  /**
+   * How a collection's page is laid out. Derived from what its pieces carry
+   * when unset — see `collectionLayout`, the same escape-hatch shape as
+   * `stackPieces` and `stackAccent`.
+   */
+  layout?: CollectionLayout
   /**
    * Override for the collection stack's blank 4th card (a CSS color) — the
    * default neutral gray doesn't fit every collection equally well (e.g. an
@@ -92,12 +108,24 @@ export function piecePath(collection: WorkCollection, piece: WorkPiece): string 
 }
 
 /**
- * Text-forward pieces render as a quote-style preview card instead of an image
- * tile. Collections always show their deck, so they opt out.
+ * A page's `<meta name="description">` text — `description`, since not every
+ * piece has one, falling back to `preview` then the first line of `text`,
+ * truncated to a meta-tag-friendly length.
  */
+export function metaDescription(item: WorkPiece): string {
+  const raw = (item.description ?? item.preview ?? item.text ?? '').split('\n')[0]
+  return raw.length > 160 ? `${raw.slice(0, 159)}…` : raw
+}
+
+/** Words and a picture, both load-bearing. */
+export function isHybrid(item: WorkItem): boolean {
+  return !isCollection(item) && Boolean(item.text) && Boolean(item.image)
+}
+
+/** Words, no picture — the words are the piece. */
 export function isTextForward(item: WorkItem): boolean {
   if (isCollection(item)) return false
-  return item.tags.includes('poem') || item.tags.includes('essay')
+  return Boolean(item.text) && !item.image
 }
 
 /**
@@ -109,15 +137,6 @@ export function isTextForward(item: WorkItem): boolean {
 export function isTextOnly(item: WorkItem): boolean {
   if (isCollection(item)) return item.pieces.length > 0 && item.pieces.every(isTextForward)
   return isTextForward(item)
-}
-
-/**
- * A piece flagged with `hasImage`, checked ahead of isTextForward — a
- * text-forward piece that also carries an image renders as the hybrid
- * card, not the quote-only one.
- */
-export function isHybrid(item: WorkItem): boolean {
-  return !isCollection(item) && Boolean(item.hasImage)
 }
 
 /** A piece with a process/speedpaint video. Collections don't carry media directly. */
@@ -136,13 +155,26 @@ export function speedpaintAspect(item: WorkPiece): string | undefined {
 }
 
 /**
- * A collection made entirely of poems/essays — a chapbook. These read like
- * a little book rather than an image gallery: the collection page becomes a
- * table of contents, and each piece opens as a single page you page through,
- * instead of the usual image-grid treatment.
+ * How a collection's page is laid out. Derived from what its pieces carry,
+ * with an explicit override for the cases the rule reads wrong — the same
+ * escape-hatch shape as `stackPieces` and `stackAccent`.
+ */
+export function collectionLayout(c: WorkCollection): CollectionLayout {
+  if (c.layout) return c.layout
+  if (c.pieces.length === 0) return 'gallery'
+  if (c.pieces.every(isTextForward)) return 'book'
+  if (c.pieces.every(isHybrid)) return 'illustrated'
+  return 'gallery'
+}
+
+/**
+ * A collection read as a book: contents page, one piece per page. These read
+ * like a little book rather than an image gallery: the collection page
+ * becomes a table of contents, and each piece opens as a single page you
+ * page through, instead of the usual image-grid treatment.
  */
 export function isChapbook(item: WorkItem): boolean {
-  return isCollection(item) && isTextOnly(item)
+  return isCollection(item) && collectionLayout(item) === 'book'
 }
 
 /** There are exactly three disciplines. They overlap freely — nothing is exclusive. */
@@ -1190,7 +1222,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '01-my-own',
         title: 'My Own',
         year: '2021',
-        description: 'the first time in a subway car alone / acutely aware of the missing eyes / for better or worse, all on my own',
+        text: 'the first time in a subway car alone / acutely aware of the missing eyes / for better or worse, all on my own',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/01.jpg',
         imageAspect: '1/1',
@@ -1199,7 +1231,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '02-friend',
         title: 'Friend',
         year: '2021',
-        description: 'i search for someone who can hear my cries / and i see someone who calls me a friend / but i recall our last words as goodbyes',
+        text: 'i search for someone who can hear my cries / and i see someone who calls me a friend / but i recall our last words as goodbyes',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/02.jpg',
         imageAspect: '1/1',
@@ -1208,7 +1240,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '03-greed',
         title: 'Greed',
         year: '2021',
-        description: 'impotent, lost, with pity to expend / on streets haunted by greed, skyscrapers loom / desperately seeking an out or an end',
+        text: 'impotent, lost, with pity to expend / on streets haunted by greed, skyscrapers loom / desperately seeking an out or an end',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/03.jpg',
         imageAspect: '1/1',
@@ -1217,7 +1249,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '04-bloom',
         title: 'Bloom',
         year: '2021',
-        description: 'we fidget, prey trapped in a crowded room / yearning for progress or just something new / like the winter waits to see flowers bloom',
+        text: 'we fidget, prey trapped in a crowded room / yearning for progress or just something new / like the winter waits to see flowers bloom',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/04.jpg',
         imageAspect: '1/1',
@@ -1226,7 +1258,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '05-for-you',
         title: 'For You',
         year: '2021',
-        description: "there are lists of reasons, any could be true / diversion, excuse, intention, and blame / but the truth is that it's all just for you",
+        text: "there are lists of reasons, any could be true / diversion, excuse, intention, and blame / but the truth is that it's all just for you",
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/05.jpg',
         imageAspect: '1/1',
@@ -1235,7 +1267,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '06-question',
         title: 'Question',
         year: '2021',
-        description: 'question and dodge, a rhetorical game / the harmonies left in songs yet unsung / the start and the finish one and the same',
+        text: 'question and dodge, a rhetorical game / the harmonies left in songs yet unsung / the start and the finish one and the same',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/06.jpg',
         imageAspect: '1/1',
@@ -1244,7 +1276,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '07-blissful',
         title: 'Blissful',
         year: '2021',
-        description: '"i love you, you\'re precious" rolls off the tongue / blissful adoration greases the jaw / fiercely optimistic, reckless, and young',
+        text: '"i love you, you\'re precious" rolls off the tongue / blissful adoration greases the jaw / fiercely optimistic, reckless, and young',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/07.jpg',
         imageAspect: '1/1',
@@ -1253,7 +1285,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '08-haunted',
         title: 'Haunted',
         year: '2021',
-        description: 'whiplash from lust to aversion to awe / haunted by a lingering addiction / craving caresses that rub the skin raw',
+        text: 'whiplash from lust to aversion to awe / haunted by a lingering addiction / craving caresses that rub the skin raw',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/08.jpg',
         imageAspect: '1/1',
@@ -1262,7 +1294,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '09-judge',
         title: 'Judge',
         year: '2021',
-        description: 'assess yourself and make a prediction / regardless of what the classes have said / i cannot judge what is truth or fiction',
+        text: 'assess yourself and make a prediction / regardless of what the classes have said / i cannot judge what is truth or fiction',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/09.jpg',
         imageAspect: '1/1',
@@ -1271,7 +1303,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '10-head',
         title: 'Head',
         year: '2021',
-        description: 'is everything i feel just in my head / intimacy, meaning, purpose, and drive / emotions to life like breath to the dead',
+        text: 'is everything i feel just in my head / intimacy, meaning, purpose, and drive / emotions to life like breath to the dead',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/10.jpg',
         imageAspect: '1/1',
@@ -1280,7 +1312,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '11-need',
         title: 'Need',
         year: '2021',
-        description: 'to take is to live; to give is to thrive / how to know when need ends and desire starts / how do we flourish and not just survive',
+        text: 'to take is to live; to give is to thrive / how to know when need ends and desire starts / how do we flourish and not just survive',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/11.jpg',
         imageAspect: '1/1',
@@ -1289,7 +1321,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '12-split',
         title: 'Split',
         year: '2021',
-        description: "i'm split into two or three dozen parts / a jumble of compartmentalized creeds / torn from ancient books and from lovers' hearts",
+        text: "i'm split into two or three dozen parts / a jumble of compartmentalized creeds / torn from ancient books and from lovers' hearts",
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/12.jpg',
         imageAspect: '1/1',
@@ -1298,7 +1330,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '13-i-know',
         title: 'I Know',
         year: '2021',
-        description: "i know ours are not coincident needs / but i'll imagine that life nonetheless / i'll let that be the cut that always bleeds",
+        text: "i know ours are not coincident needs / but i'll imagine that life nonetheless / i'll let that be the cut that always bleeds",
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/13.jpg',
         imageAspect: '1/1',
@@ -1307,7 +1339,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '14-sleep',
         title: 'Sleep',
         year: '2021',
-        description: 'i sleep to be well, i sleep to shirk stress / this strange state that i both crave and despise / to love or to hate, to heal or regress',
+        text: 'i sleep to be well, i sleep to shirk stress / this strange state that i both crave and despise / to love or to hate, to heal or regress',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/14.jpg',
         imageAspect: '1/1',
@@ -1316,7 +1348,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '15-underdog',
         title: 'Underdog',
         year: '2021',
-        description: 'i look into pitiful, desperate eyes / as i cozy up with the underdog / the role of savior to savor and prize',
+        text: 'i look into pitiful, desperate eyes / as i cozy up with the underdog / the role of savior to savor and prize',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/15.jpg',
         imageAspect: '1/1',
@@ -1325,7 +1357,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '16-yes',
         title: 'Yes',
         year: '2021',
-        description: 'consent, lust, and control become a fog / but, yes, please come and devour me whole / as we recite an age old dialogue',
+        text: 'consent, lust, and control become a fog / but, yes, please come and devour me whole / as we recite an age old dialogue',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/16.jpg',
         imageAspect: '1/1',
@@ -1334,7 +1366,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '17-doubt',
         title: 'Doubt',
         year: '2021',
-        description: 'i chronically doubt my route and my role / equally dismiss the trite and unique / bypassing common turnpikes takes its toll',
+        text: 'i chronically doubt my route and my role / equally dismiss the trite and unique / bypassing common turnpikes takes its toll',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/17.jpg',
         imageAspect: '1/1',
@@ -1343,7 +1375,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '18-jaws',
         title: 'Jaws',
         year: '2021',
-        description: "since they've been mine, my jaws have been weak / never willing to latch onto the bit / so please forgive me when i cannot speak",
+        text: "since they've been mine, my jaws have been weak / never willing to latch onto the bit / so please forgive me when i cannot speak",
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/18.jpg',
         imageAspect: '1/1',
@@ -1352,7 +1384,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '19-damage',
         title: 'Damage',
         year: '2021',
-        description: 'singed bridges and broken lines of transit / alone in the bittersweet afterglow / concrete damage haunts the budding spirit',
+        text: 'singed bridges and broken lines of transit / alone in the bittersweet afterglow / concrete damage haunts the budding spirit',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/19.jpg',
         imageAspect: '1/1',
@@ -1361,7 +1393,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '20-breath',
         title: 'Breath',
         year: '2021',
-        description: 'to center, to sense, to study, to know / eyes closed with perspective to understand / the breath a tool to witness lapse and flow',
+        text: 'to center, to sense, to study, to know / eyes closed with perspective to understand / the breath a tool to witness lapse and flow',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/20.jpg',
         imageAspect: '1/1',
@@ -1370,7 +1402,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '21-hand',
         title: 'Hand',
         year: '2021',
-        description: 'in spite or because of a gentle hand / i am wholly captivated, ensnared / caught in a perfect storm, swift and unplanned',
+        text: 'in spite or because of a gentle hand / i am wholly captivated, ensnared / caught in a perfect storm, swift and unplanned',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/21.jpg',
         imageAspect: '1/1',
@@ -1379,7 +1411,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '22-machine',
         title: 'Machine',
         year: '2021',
-        description: 'shepherd the crowd, minds uncertain and scared / each a cog in an uncaring machine / feigned independence, unity impaired',
+        text: 'shepherd the crowd, minds uncertain and scared / each a cog in an uncaring machine / feigned independence, unity impaired',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/22.webp',
         imageAspect: '1/1',
@@ -1388,7 +1420,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '23-limit',
         title: 'Limit',
         year: '2021',
-        description: 'what are the strata and what do they mean / we push each limit and make it a game / can we build our home in the in-between',
+        text: 'what are the strata and what do they mean / we push each limit and make it a game / can we build our home in the in-between',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/23.webp',
         imageAspect: '1/1',
@@ -1397,7 +1429,7 @@ const REAL_WORK: WorkItem[] = [
         slug: "24-dont",
         title: "Don't",
         year: '2021',
-        description: "don't speak about me or call me by name / reference is condemned to being unfair / live only in shadow and make no claim",
+        text: "don't speak about me or call me by name / reference is condemned to being unfair / live only in shadow and make no claim",
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/24.webp',
         imageAspect: '1/1',
@@ -1406,7 +1438,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '25-weight',
         title: 'Weight',
         year: '2021',
-        description: 'shed your skin, clean your scale, balance and tare / weight is not worth, but your weight is worthwhile / let be what truly is, honest and bare',
+        text: 'shed your skin, clean your scale, balance and tare / weight is not worth, but your weight is worthwhile / let be what truly is, honest and bare',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/25.webp',
         imageAspect: '1/1',
@@ -1415,7 +1447,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '26-time',
         title: 'Time',
         year: '2021',
-        description: 'i stole time in jest with a friendly smile / but now i think i truly am a thief / guilty beloved protected from trial',
+        text: 'i stole time in jest with a friendly smile / but now i think i truly am a thief / guilty beloved protected from trial',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/26.webp',
         imageAspect: '1/1',
@@ -1424,7 +1456,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '27-dark',
         title: 'Dark',
         year: '2021',
-        description: 'no sense of my own, blind, trusting belief / i am tired of sleep, eyes closed, in the dark / what is life but scripted, bitter, and brief',
+        text: 'no sense of my own, blind, trusting belief / i am tired of sleep, eyes closed, in the dark / what is life but scripted, bitter, and brief',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/27.webp',
         imageAspect: '1/1',
@@ -1433,7 +1465,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '28-fire',
         title: 'Fire',
         year: '2021',
-        description: "fingers sift through ashes making their mark / disturbed earth and grey skin record the hands / craving fire's fervor and lacking the spark",
+        text: "fingers sift through ashes making their mark / disturbed earth and grey skin record the hands / craving fire's fervor and lacking the spark",
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/28.webp',
         imageAspect: '1/1',
@@ -1442,7 +1474,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '29-grateful',
         title: 'Grateful',
         year: '2021',
-        description: 'debt, good, and payment, supply and demands / privileged and secure and grateful and glad / despite estranged culture and stolen lands',
+        text: 'debt, good, and payment, supply and demands / privileged and secure and grateful and glad / despite estranged culture and stolen lands',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/29.webp',
         imageAspect: '1/1',
@@ -1451,7 +1483,7 @@ const REAL_WORK: WorkItem[] = [
         slug: '30-memory',
         title: 'Memory',
         year: '2021',
-        description: 'memory improves, edits out the bad / in love with what i remember of you / lost in the lie of what we could have had',
+        text: 'memory improves, edits out the bad / in love with what i remember of you / lost in the lie of what we could have had',
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/30.webp',
         imageAspect: '1/1',
@@ -1460,12 +1492,12 @@ const REAL_WORK: WorkItem[] = [
         slug: '31-unknown',
         title: 'Unknown',
         year: '2021',
-        description: "we embrace goodbye but cry at what's new / a walk turns to sprint into the unknown / running from our wrongs and chasing what's true",
+        text: "we embrace goodbye but cry at what's new / a walk turns to sprint into the unknown / running from our wrongs and chasing what's true",
         tags: ['art', 'ink'],
         image: '/art/mindtober-21/31.webp',
         imageAspect: '1/1',
       },
-    ],
+    ].map((p) => ({ ...p, text: p.text.replaceAll(' / ', '\n') })),
   },
   {
     slug: 'womens-history-month',
@@ -1630,14 +1662,14 @@ const REAL_WORK: WorkItem[] = [
         preview: 'is it possible for me to avoid metaphor?\nsuch beauty evokes words from my hand\nbut i worry that i am hiding\n\ni am swaddled in opaque words\ni have wrapped myself up in poetry\ndisguising cries as lullabies\nopen wounds as still lifes\nspasms of pain as ballet\n\nelegant and refined\n\nbeautiful',
         description:
           "On hiding in plain sight behind polished metaphors that can't help but tell the truth anyway.",
-        excerpt:
+        text:
           "is it possible for me to avoid metaphor?\nsuch beauty evokes words from my hand\nbut i worry that i am hiding\n\ni am swaddled in opaque words\ni have wrapped myself up in poetry\ndisguising cries as lullabies\nopen wounds as still lifes\nspasms of pain as ballet\n\nelegant and refined\n\nbeautiful\n\nthe best way to hide\nmay be in plain sight\n\nbut i think i'd be better hidden if i stayed silent\nthese words can't help but reflect truth\nwith their polished forms",
       },
       {
         title: 'a love poem',
         preview: "let me write a sonnet to reality\nin an attempt to convince myself\nthat i am\nindeed\nin love with it.",
         description: "A sonnet trying to convince itself it's in love with the world, and almost succeeding.",
-        excerpt:
+        text:
           "let me write a sonnet to reality\nin an attempt to convince myself\nthat i am\nindeed\nin love with it.\n\nThe sun shines bright and warm but does not blind\nAt foot sway flowers, nature's painted field\nMy heart is light and opens up in kind\nAllowing tender thoughts to be revealed\nThis dappled meadow is gentle and still\nAnd I the largest one which walks the earth\nThe generous Euphrates guides my will\nJust as it will till death and has since birth\nThe world is beautiful; I am at ease\nI follow the river back to my nest\nCivilization greets me like a breeze\nIt fills my sails and it brings me to rest\nThough I may think that I am now relieved\nTruly there is not one who is deceived",
       },
       {
@@ -1645,70 +1677,70 @@ const REAL_WORK: WorkItem[] = [
         preview: 'it is truly peculiar\nhow humankind insists\non separating\nthe natural\nfrom unnatural\n\nare we not but a different geometry\ndrawn by the same hand?',
         description:
           'On ivy that looks like circuit boards, and the human insistence on separating natural from unnatural.',
-        excerpt:
+        text:
           'how the remains of ivy look like circuit boards\ntheir rootlets secured like soldering\nonly\nnot in a perpendicular fashion\n( are rectangular grids inherently human? )\n\nit is truly peculiar\nhow humankind insists\non separating\nthe natural\nfrom unnatural\n\nare we not but a different geometry\ndrawn by the same hand?',
       },
       {
         title: 'lost',
         preview: 'there is a beauty in being lost\nwhen you have no destination in mind',
         description: "On the strange comfort of being lost, and the pull of desire that won't let it stay comfortable.",
-        excerpt:
+        text:
           "there is a beauty in being lost\nwhen you have no destination in mind\nafter all, this is what is spoken of\nas the meaning being in the journey\nand not the destination\n\ni am almost content in this new country\nbut then again\ni am not worrying over the future\nand i am avoiding dwelling on the past\nand it is altogether pleasant\n\nso this is almost mindfulness\n\nbut i feel the pull of desire\neven here\npreventing me from relaxing on my perch\n\nbut it is not people that pull me\nand i wonder\nhow much my reclusive tendencies would grow\nwere i to live alone in the city in the future\na twenty-something with a nine to five job\nearning more money than needed\ntempering greed with insignificant alms\n\nbecause i feel this disconnect now\nas i have for some weeks\nand i don't know how to reconnect\nor how i'm supposed to want to\n\ni cannot say how to regrow this garden\nand intertwine my nerves with others'\n\nbut i wonder if\nsomeday\ni will receive\na map and compass\nto orient me in this labyrinth",
       },
       {
         title: 'nourishment',
         preview: 'food is a two-faced, high maintenance lover\nwho has broken my heart more than once',
         description: 'On food as a two-faced lover, and the complicated business of still enjoying eating.',
-        excerpt:
+        text:
           'how to feed the body\nbe gentle\nencouraging\nand most of all:\nloving\n\n" do you still enjoyed eating? "\nat the time, i thought it very strange question\n— it was a puzzling jab at my new diet\nthat i wasn\'t prepared for\n\nof course i enjoyed eating\n\nif you asked me the same question today, i\'d say\n" it\'s complicated "\n\nfood is a two-faced, high maintenance lover\nwho has broken my heart more than once\nand lured me in with false promises\nmore than thrice',
       },
       {
         title: 'gluttony',
         preview: 'is this gluttony\n—this compulsive destructive need to consume?',
         description: 'A short one on compulsive consumption, and the line between hunger and appetite.',
-        excerpt:
+        text:
           "is this gluttony\n—this compulsive destructive need to consume?\n\ni bite into yet another\nanother love\nsoul\nheart\nmind\nbut am not satisfied\n\nwherein lies the difference between myself and one pained by hunger, but that of the organ?",
       },
       {
         title: 'body',
         preview: 'i look at it\nin a way i look at art\nthat i did not create',
         description: "On looking at your own body like art you didn't create, and not quite being able to claim it.",
-        excerpt:
+        text:
           'can we separate ourselves from this vessel\nwhich defines us?\n\ni look at my body in the mirror\nand find it beautiful\nthe curves, fat, and bones\nthe skin, which could be clearer\nbut has done nothing to hurt me\n\nthis body\nshould be my friend\n\nand yet\ni feel my body\nand i feel like a stranger\n\ni look at it\nin a way i look at art\nthat i did not create\n\nthe body\nmy body\n\ni cannot touch it and feel it is mine\ndespite it being so inextricably\nmine',
       },
       {
         title: 'dreams forbidden',
         preview: 'i have started wearing sunglasses\nso that when i look back\ni am not fooled',
         description: 'On refusing to imagine brighter days, and what that refusal does to the dreams that come anyway.',
-        excerpt:
+        text:
           "i have started wearing sunglasses\nso that when i look back\ni am not fooled\nby the glamour\nof brighter days\nthat i never lived\nand never will\n\nsynesthesia gives me a bitter taste and cold skin when i look at this imagined sunshine\na haze of ultraviolet rays that is but a dream\n  a dream which i do not permit myself to have\n\nand perhaps\nit is because i do not allow myself to dream by day\nmy dreams at night plague me\nwith horrors i need not fear\nand joys i will never taste",
       },
       {
         title: 'city sidewalks',
         preview: 'our love reminds me of\nwalking barefoot\nthrough the streets',
         description: 'On love that feels like walking barefoot on broken glass, and missing a softer childhood lawn.',
-        excerpt:
+        text:
           "i'm alone in the city\n\nour love reminds me of\nwalking barefoot\nthrough the streets\nthe shattered negligence\npiercing my soles\n\nand i yearn for the lawn i had\nas a child\nwhen the grass was greener\nand softer\nwhen the sharpest thing i knew\nwas a pencil\nand the only love\nunconditional",
       },
       {
         title: 'puzzle pieces',
         preview: 'our bodies fit like puzzle pieces\ncomplex and satisfying\nuntil one remembers\nthat we are but a pattern',
         description: 'On bodies fitting together and the shame of realizing how predictable the pattern is.',
-        excerpt:
+        text:
           'our bodies fit like puzzle pieces\ncomplex and satisfying\nuntil one remembers\nthat we are but a pattern\nduplicated hundreds of times\n\nit is a shame we are so predictable',
       },
       {
         title: 'loved by a dog',
         preview: 'what must the rabbit do\nto be loved by the dog?',
         description: "A short parable about a dog and a rabbit, and what it takes to be loved without being seen.",
-        excerpt:
+        text:
           'what must the rabbit do to be loved by the dog?\n\nthe dog barks\nthe rabbit hides\nwhether he needs release\nor believes that she can understand\nthe rabbit does not know\n\nshe cowers\nbut the dog does not see\nperhaps he does not notice her over his excitement?\nthe rabbit is still, fearful, and alone\ndespite their supposed love',
       },
       {
         title: 'color me',
         preview: 'after all, the best color\nis none at all\nit is colorlessness',
         description: 'On choosing colorlessness, and how emotion still paints itself across everything seen.',
-        excerpt:
+        text:
           "after all, the best color\nis none at all\nit is colorlessness\n\ntransparency\n\nwhy do we paint ourselves so?\n\nthe word paint in german\nis the same as the word for color\nand i think of this\nas my emotions are painted across my corneas\naltering everything i see\n\nmust everything be monochrome?\n\nwhether i see out of rosy lenses\nor cold, bitter blues\n\ni am always missing something",
       },
       {
@@ -1716,56 +1748,56 @@ const REAL_WORK: WorkItem[] = [
         preview:
           'i hack away at any foundation i can hope to ground myself upon and burn any bridge that may lead to greener pastures.',
         description: "A prose piece on burning bridges, old traps, and whether growth is just morphing into someone new.",
-        excerpt:
+        text:
           "i hack away at any foundation i can hope to ground myself upon and burn any bridge that may lead to greener pastures.\n\nbut perhaps it is a never quieting indignation that haunts me so, one that didn't believe that i had but whose footprints leave their mark on my behavior.\n\nthese nightmares and whirlwinds of emotions: i know why i tried to quit the world of feeling all those years ago, and this alkaline apathy neutralizes the stomach acid that threatens to lay waste to this ephemeral form.\n\ndo i dare tread upon these loose stones? despite my resistance, i still feel the burn of coarse cords, anchoring me to the post and reminding me of all the traps i have ever fallen into - nay, all the traps i have walked into and then fallen. i do not wish to imply that i have no fault in these defeats.\n\nhow do people release their grip from what had once defined them? i hate that i repeat the same problems over and over again, but i feel that the solution is too far out of reach, and i fear it is a magical looking glass that will trap me in a new world where i am no longer myself. is that what it means to grow? to continually morph into a fresh new being?",
       },
       {
         title: 'fishing for heartbreak',
         preview: 'there are no fish in this pond for me\nbut then i fell\nhook line and sinker',
         description: "On casting a line into love knowing exactly what you're about to lose, and doing it anyway.",
-        excerpt:
+        text:
           "i don't think it's right to trick a creature\nwith delicacy and richness\nonly to bite down on a blade\ncutting the lips\na deceptive capture\n\ni reel my heart back in\ni had cast my line knowing\ni would be taking nothing back with me\nthere are no fish in this pond for me\nbut then i fell\nhook line and sinker\n\nstill dripping wet\ni look at my line\nand i wouldn't change a thing\n\nfor this was a role\ni agreed to play\n\nthere are plenty of fish in the sea\nbut my my, aren't you a beautiful fish\nbut i will not trick you\neven if i fell\nhook line and sinker",
       },
       {
         title: 'surrender',
         preview: "i can't take looking at myself\nbeing the victim and the abuser.",
         description: 'A prose piece on giving up too easily and not easily enough, and wanting to be understood by a lover.',
-        excerpt:
+        text:
           "i give up too often, too easily, and yet at other times, not easily enough. my behaviors feel like they are determined by dice rolls, and yet they are predictable, and therefore not random. i pursue things i care about. i pursue things that i do not. likewise i neglect things i care about but also things i do not.\n\nthere are so many things to do better.\n\ni don't know if sitting around trying to decide what to do is even worth it, but rolling with the punches is also tiring, and i\n\ni can't take looking at myself being the victim and the abuser.\ni can't take this twisted relationship of a rabbit and a dog,\never conflicted but still content by each other's sides.\n\ni want — i need to be able to think, to share my mind with my lover.\n\nhow is it then that i am trapped, at a loss for words because i don't want to say what i feel.\nhow did this happen?\nhow\nhow\nhow\n\nin the moment\ni understood\nbut then is it not unlike a dream?\nwhere everything makes sense until you wake up.\nno longer in wonderland, you realize that everything is wrong.",
       },
       {
         title: 'chasing dawn',
         preview: 'he is made of sunset\nalways looking for a new dawn',
         description: "A poem about devotion that's always one step behind — dawn as the doe that's never caught.",
-        excerpt:
+        text:
           "he is made of sunset\nalways looking for a new dawn\n\ndawn draws her lilac hands back to her breast\nno tint left in the sky\nnovelty come and gone\na devout soul scorns help and seeks no rest\nmaking wax wings to fly\nevery day he chases dawn\n\nshe dances around him like a gazelle\nback and forth, to and fro\nbut ever out of reach\nhis is cold devotion naught could dispel\nbut still that flighty doe\nawards not act nor speech\n\nat last he halts and falls to his knees\nhot tears run down his face\nand sear his injured pride\nfor all his promises, laments, and pleas\nno mirror reflected grace\nnor did guilt once subside",
       },
       {
         title: 'a coping mechanism',
         preview: "i just want to love them\nbut i still haven't learned how to love myself",
         description: 'On loving others as a way of avoiding the harder work of loving yourself.',
-        excerpt:
+        text:
           "i dream\nof who i see as victims\nof love for them\n\ni just want to love them\nbut i still haven't learned how to love myself\n\nand so this compulsory altruism is only a coping mechanism used by the desperate\ntrying to make meaning in their life\n\ni don't know if i love you\nor if i even really care for you anymore\nbut i want to\nso i do",
       },
       {
         title: 'haunted',
         preview: "even if you haunt me in a way you'd never know:\ni did truly love you.",
         description: 'On being tortured by the past even in a safe place, and mistakes that keep visiting at night.',
-        excerpt:
+        text:
           "am i just to be tortured by the past?\ni am safe and in a solitary den and yet i wake up with adrenaline and cortisol in my veins.\ni blink, startled that my nights are so much more eventful than my days, even if my activity during these slothful hours manages to be less than that of my waking.\n\nthis has come in stages.\n\nand all concern my mistakes.\n\nbut i think of them, and while i am too shocked to cry, i tremble.\n\nwhat have i done?\n\nis this a ghost that haunts me in this house? is it yours?\n\nwhat have i done here?\n\nwas it here?\n\nit was not quite now, but close.\n\nam i still sorry, or have i moved on?\n\neven if you haunt me in a way you'd never know:\ni did truly love you.",
       },
       {
         title: 'bubble bath',
         preview: 'i cuddle up with my feelings\nand relax in a text bubble bath',
         description: 'On rereading old messages until nostalgia becomes something closer to self-harm.',
-        excerpt:
+        text:
           'i cuddle up with my feelings\nand relax in a text bubble bath\nas i relive meaningful exchanges\nthat i dilute with each read-through\n\nwhat a luxury to record love\n\nliving off the highs of the past\n\nbut when does this indulgence become abuse?',
       },
       {
         title: "a scribe's lament",
         preview: 'all my life i have been reaching for an eraser\ninstead of a different pen',
         description: 'On writing as a lifelong attempt to erase instead of rewrite.',
-        excerpt:
+        text:
           'all my life i have been reaching for an eraser\ninstead of a different pen\n\nfingers ache from a tight grip\nand forearms strain and sigh\nas they try to use friction to remove\nthe marks of days gone by\n\nbut all they do is smudge\nspreading ink onto clean white\nsuch is the folly of our kind\nto protect the fading light\n\nall i could see were shadows\nthe dark works i had done\nbut try i may to lighten them\ni could not change even one',
       },
       {
@@ -1773,17 +1805,17 @@ const REAL_WORK: WorkItem[] = [
         preview:
           'i fall back into the arms of temptation, a deceptive lover, who will always do me wrong in the end but has the most comfortable caress',
         description: "A prose piece on splitting yourself in two to survive an addiction, and who's left to save you.",
-        excerpt:
+        text:
           "i fall back into the arms of temptation, a deceptive lover, who will always do me wrong in the end but has the most comfortable caress\n\nand now i have split myself apart. a part of me wants to call this a victory but i know this is the taste of defeat, sickly sweet and full of sugar alcohols that sweep me off my feet every time\n\ni avoid my reflection, hope the shower is hot enough so i don't have to see confront what i'm really doing\n\nwho i am\n\nbut who else is there to confront me if not me? i've always said that people have to choose to save themselves, and i am no different.\n\ni have split myself away from my addicted self. i let their wounds fester but tell them that they're alright, they're safe. i barely get the high from the addiction anymore; i'm not convinced i get anything at all now besides attention\n\nas if i didn't always know that human connection was the preventative measure and the cure, and that the darkest of obsessions and the hardest to wrestle away from would be those that give you attention. a mirage of human connection.\n\nhow much harder it is when there are people who will encourage you to hurt yourself\n\nwhen you are desperately seeking despite diminishing returns",
       },
       {
         title: 'spring cleaning',
         preview: 'why do i try to reinvent myself\naccording to the calendar?',
         description: 'On the seasonal urge to reinvent yourself, and what actually gets thrown away.',
-        excerpt:
+        text:
           "why do i try to reinvent myself\naccording to the calendar?\n\ni wash my sheets for the first time in eight months and enjoy the bed rid of dust and dirt. i reorganize the stacks of paper i have accumulated, shelving birthday cards and lost friendships behind more dignified works, like a textbook that looks to never have been proofed and some notes covered in what the ignorant would call intelligence. i remove all the rotting food from the refrigerator. while i would love to indulge in the pain, my illness is something that should not be fed. i know that the only way to become clean is to embrace wellness and authenticity, but a clean slate even more tantalizing than the dessert plate i wouldn't touch last spring.",
       },
-    ].map(({ title, preview, description, excerpt }) => ({
+    ].map(({ title, preview, description, text }) => ({
       slug: title
         .toLowerCase()
         .replace(/[^\w\s-]/g, '')
@@ -1793,7 +1825,7 @@ const REAL_WORK: WorkItem[] = [
       year: '2021',
       description,
       tags: ['writing', 'poem'],
-      excerpt,
+      text,
       preview,
     })),
   },
@@ -1803,7 +1835,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2022',
     description: 'An exploration in poetry and a reflection on language.',
     tags: ['writing', 'essay', 'blog', 'language'],
-    excerpt:
+    text:
       "In my emoji translation, I tried to take into account the character choice of the Mandarin and the meaning behind each glyph — an attempt at a translation that reads the same on any platform.",
     writeup:
       "This poem is the focus of 19 Ways of Looking at Wang Wei, a classic study of translation that compares how different translators have rendered 鹿柴 (Deer Enclosure). As an exploration in communication and poetry, I translated this poem and another, 月夜憶舍弟, into emoji.\n\n🦌🏞️ (鹿柴): 空山不见人 / 但闻人语响 / 返景入深林 / 复照青苔上 → 📂🗻🚫👁️👥 / ↪️👂👥💬🔊 / ↩️🌳🔆🌳🌳 / 🔄🔆🌿🌿🔼\n\n🌙🌃💭🧒🧒 (月夜憶舍弟): 戍鼓斷人行，邊秋一雁聲。/ 露從今夜白，月是故鄉明。/ 有弟皆分散，無家問死生。/ 寄書長不達，況乃未休兵。 → 💂🥁🛑🚶‍♂️🚶‍♀️ · 🍂🍁1️⃣🦆🔉 / 👇🌃🌱💧⬜ · 🌙🔆🤱🏡🔆 / 🌬️🍃👦🍃👦 · 🌱☠️❓❌👨‍👩‍👧‍👦 / 📜✉️📤🚫📩 · 📍⚔️⛔☮️⚔️\n\nWhen translating, I like to see a pretty translation and a gloss translation. For 月夜憶舍弟, pretty translations came from David Hinton, Stephen Owen, Witter Bynner, and David Young. I sought out a gloss as well, at first in Google Translate — gradually separating the characters from each other — and then in the MDBG Chinese Dictionary.\n\nGoogle Translate's version of 月夜憶舍弟, unadulterated, from January 2020, reads: \"Drumming breaks the pedestrian, Bianqiu a wild goose. Lu Cong is white tonight, and the month is hometown. All the younger brothers were scattered, and the family asked about life and death. The length of the book to be sent was not reached, and the condition was not a truce.\" Although it doesn't capture the poetry or a good chunk of the meaning — look! There are no personal pronouns, unlike some human translations. I actually like the last couple of lines of this.\n\nIn my emoji translation, I tried to take into account the character choice of the Mandarin and the CLDR descriptions and text that accompany each emoji, in an effort to reflect the original beauty of Chinese and create a translation that can be perceived similarly across platforms. I haven't yet found a convenient way to see how my emoji translation varies from platform to platform, but I was amused by the differences between my phone and my computer.\n\nWith 鹿柴, I glanced at the Google translation but was surprised that I could read it — not perfectly, but the characters are simpler, within reach of someone roughly HSK 3. Because of that relative simplicity, I decided to stick closer to the Chinese, though the third line deviates a bit. I'd almost call it significant, but then I look at some of the poems in 19 Ways of Looking at Wang Wei and think it's hardly significant at all.\n\n(This is a modified version of work done in January 2020.)",
@@ -1814,7 +1846,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2023',
     description: 'Reflecting on what went well and what I would do differently.',
     tags: ['writing', 'essay', 'blog', 'art'],
-    excerpt:
+    text:
       "Since I am not trying to live off of my art, I frame it as an experience that I am paying for, with the opportunity to break even and even profit.",
     writeup:
       "Reflections on my first few times selling at art markets — all different venues and organizers with varying rules and practices. It was a great learning experience, and I think I'm going to keep doing markets for a little while. My setup isn't perfect, but it's come a long way in three tries.\n\nI always thought it'd be cool to sell my work at a street fair, and I imagined doing this my senior year of college in Worcester, where I lived close to the annual art festival StART on the Street. Unfortunately, my senior year was 2021 — no StART on the Street that year. (I had applied to StART at the Station in 2019 and was rejected.) So I applied again in 2022 on a whim, with no high hopes, and wasn't even living in Worcester anymore.\n\nI opened the acceptance email a couple of weeks late. I was excited but also concerned — no experience, and this market was outdoors with no tents provided. I'd volunteered in 2019, so I figured I'd at least have some sense of setup. I practiced putting up the tent alone once and hanging my walls, but despite spending many hours on tent design, furniture, pricing, and inventory, I wasn't as prepared as I could have been.\n\nThings that went well at stART on the Street: I sold enough to make back the $150 vendor fee and then some, and learned that the skills a market takes weren't so far out of reach for me. I was happy with my booth's overall design — the tent, table cloths, banner, pegboard, and a rug that was actually a Worcester curb find from a year prior. I packed the car the night before, left early, and bought jugs of water for weight before the hour drive. I'm not thrilled that so much of the work was improvised on the fly, but I'm proud I could come up with and execute ideas like clamping down prints with reeds and folding labels around canvas frames. I also set my eye prints up as a guessing game, which turned out to be great for engagement and sparked a lot of good conversations.\n\nThings to change for next time: setup took around 4.5 hours when I'd been allotted a little short of three, mostly because I hadn't found a good system for the reed walls or pegboard before hanging art. Wind blew art off walls and tables multiple times throughout the show — nothing was lost or damaged, but the anxiety was maddening, and paperweights would have been an easy fix. I knew I should have had clear labels printed ahead of time, but ended up handwriting them throughout the show. Point of sale was a hassle; my hands would shake doing the mental math to charge someone on Square. And the advice not to eat in one's booth just meant I wasn't eating at all — I brought overnight oats and eventually decided a smoothie would be easier to manage next time. I was usually too excited to sit in the director's chair I'd brought, and while I wanted to demo art, I couldn't figure out how to fit it in.\n\nI was incredibly tired at 7pm, which is rare for me. I was content enough with how the day went, but it felt like a lot of work and a lot of stress for not much payoff.\n\nA couple of days later I was looking for another market and ended up going with the Brighton Bazaar, even though I'd never been — some makers I followed on Instagram vended there. As part of the application I wrote a short pitch: \"I'm Beck, scientist by day and artist by night — or is it the other way around? I value creativity and discovery in all facets of my life, and my art reflects that with a diverse range of subjects, styles, and mediums. For October, I'll be showcasing darker work, much of which was made during inktobers of years past. Common themes include mental health, interpersonal conflict, and farmed animals. I find creating art a great outlet for emotions and an opportunity to connect with others.\"\n\nBrighton Bazaar was indoors and close to home. I was waitlisted for a small space that wouldn't fit much more than a 6ft table, and this time I actually practiced my setup at home with the artwork placement, rather than just the furniture. The Monday before, I was notified of an opening and confirmed by Wednesday.\n\nThis time, setup took 1 hour 20 minutes thanks to practice and a reference photo, and breakdown took 30 minutes. Interactivity was still good, though less so than at stART — I suspected that had more to do with the different demographics than my particular setup. I was still writing labels during the show, but since I was set up in time, it didn't feel stressful. Point of sale was still a struggle, and I'd forgotten my 4.5-inch square envelopes for packaging prints. I brought a smoothie again and didn't drink it — maybe a straw would have helped. I still didn't demo art, but at least made art during the event itself. This market was much easier than my first, and I'm confident being indoors was a game changer — I still can't believe I chose an outdoor market, where I had to supply all my own furniture, as my very first one.\n\nMy third market, \"Winter Hassle\" hosted by Hassle Flea, was my best in some ways and not in others. I had a hard time communicating with the organizer and an even harder time parking on tight Cambridge streets. Setup was about 1 hour 20 minutes again, with no practice in between. Point of sale was mostly good — almost everyone paid with Venmo, and I recorded all my sales on paper so I had a linear log at the end.\n\nFor next time: vendors were told to arrive early since parking is competitive, but I left ten minutes late and ended up waiting in line for entry — my first market where load-in wasn't close to my parked car. I'd ditched my chair since I'd barely used it before, and was surprised when I wanted it three hours in. I tried to demo an interactive art piece but couldn't disable the browser's gestures — it still seemed to draw people in for the brief while I had it running. I'd like to write up more about my inspirations and process for people to read while browsing, including an improved version of the eye guessing game. And this market was shorter than the other two, yet I found myself really wishing I'd packed a sandwich.\n\nAll in all, I thought this was a very successful first season. I'm still paying off some of what I bought, and my time definitely wasn't compensated, but it was a great experience. Since I'm not trying to live off my art, I frame it as an experience I'm paying for, with the opportunity to break even and even profit.",
@@ -1825,7 +1857,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2023',
     description: 'My preferred tools and strategies for taking notes, analog and digital.',
     tags: ['writing', 'essay', 'blog'],
-    excerpt:
+    text:
       "I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
     writeup:
       "Current setup as of January 2023 — digital: TickTick for personal tasks, Google Calendar for events and scheduled tasks (Outlook for work as needed), and Samsung Notes for musings and spontaneous notes. Analog: sticky notes for lab tasks and data, stored in a notebook; a dedicated notebook to reflect on therapy sessions; and dedicated notebooks for high-information-density events, like classes and conferences.\n\nI need some tool to manage daily to-dos and keep them in line with my goals, both personal and professional. I don't want my note systems to feel like chores — once something feels like a chore, or like a refined art, I no longer want to do it, whether from the pressure of obligation or of perfectionism.\n\nSince I won't equip my phone with company security features, and invites aren't meant to be forwarded to personal accounts, there's some inevitable separation between my professional and personal spheres, at least digitally. A physical notebook could bridge that gap, or it could enforce the divide — I'm currently leaning toward keeping a professional-only notebook. I've bought spiral-bound notebooks, which lay flat, to make lab record keeping easier, and which could extend to other parts of my work, but likely no further if I intend to share it.\n\nMy current notebook, started when I was hired, mixes personal reflection within the professional sphere, private business-related information, and notes from work — organized but incomplete in places, with a few systems still being tested. Of those, I enjoy seeing a week at a time; week spreads help me focus my work and coordinate wetlab protocols. I do need a better task migration and assignment system, though, since I don't readily remember to check the past in order to structure the present.\n\nI don't relish the idea of separate sections or collections, but it might be the path to more regular ones, so each week looks about the same and takes up about the same amount of space no matter how much data that week generates. It would also separate what's personal from what could be shared — a separate notebook could be handed off with little personal loss. Corporate social gatherings can lead to insights about a company or department's history and culture that are relevant to my work, and external conferences provide even more context, but I struggle with not being able to duplicate information across two notebooks, or without a system for referencing one from the other. The personal and professional are so interwoven that it's hard to design a system that treats them as separate.\n\nI've found that I benefit from taking notes on the people I meet. I've looked into personal CRMs for this but haven't managed to make a habit of it, or separated the idea from feeling overly transactional and impersonal toward others. Instead my contact notes are scattered across my other notebooks, and I'm still looking for a solution — I'm hesitant about reinventing the wheel, but maybe it's not a bad way to learn. I enjoy the unobtrusiveness of a small paper notebook in a lecture, meeting, or even a chance encounter. It's slightly odder than a phone in that last case, but it wouldn't be my only joyful oddity.\n\nI've poked around a fair number of digital note-taking tools, and none are particularly satisfying. The best I've found is honestly the native Samsung Notes app, which integrates well with the S Pen — being able to pull the pen out of a locked phone and jot something down or draw a diagram has been priceless. For reminders and events I use TickTick and Google Calendar.\n\nHandwriting and stylus integration matter a lot to me, which narrows the field significantly. I want to love OneNote, given the range of what can go on a page and where, but it takes too long to load and I perpetually have sync problems, on both business and personal accounts — I still occasionally use it for recording melodies arranged in 2D space, but otherwise find it no better than Samsung Notes. I've tried Nebo too; the handwriting conversion is impressive and I like the tool selection and written commands (strike-through to erase, a vertical bar for a new line), but having to distinguish text from drawings within the structure of the page is enough friction to keep me from using it regularly, and not being able to pinch to zoom makes it feel even less aligned with how I actually work. Squid and Bamboo Paper didn't feel as intuitive as OneNote or Samsung Notes either. At a certain point, if I need more drawing tools than the Notes app offers, I switch to Infinite Painter, my primary drawing app — overkill for most note-taking, but familiar and easy for me to use, with layers, blend modes, and fast tool and color switching that the note apps lack.\n\nOf the project management tools that don't support handwriting, I've used TickTick, Todoist, Notion, and Trello. I can appreciate aspects of all of them, but TickTick is the only one I use regularly — I occasionally reach for Notion and Trello for shared task boards and ongoing but infrequently tackled projects. In January 2023 I switched from Todoist to TickTick, because on TickTick, completing a daily recurring task late (after midnight) still creates the next instance of that task the same day — ideal if the goal is just brushing your teeth before bed, whether that happens at 1am one night or 10pm the next. It also has Habits you can track and retroactively edit. Beyond that I use Google Calendar for events; I once synced it with Todoist but found that wasn't how I actually planned my day.\n\nWriting out a daily sticky note with hours and tasks is satisfying, and it does increase my productivity. But productivity isn't the only thing I want to optimize for, and I'm not interested in the transactional thinking that comes with tracking every hour of the day. My note systems are designed to maximize my personal satisfaction and minimize resistance, in hopes of encouraging consistency. I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
@@ -1877,7 +1909,7 @@ export function filterWork(
     if (!q) return true
     // Collections are searchable by their children's titles too.
     const children = isCollection(item)
-      ? item.pieces.flatMap((p) => [p.title, p.description])
+      ? item.pieces.flatMap((p) => [p.title, p.description, p.text, p.preview])
       : []
     const haystack = [item.title, item.description, ...itemTags(item), ...children]
       .join(' ')

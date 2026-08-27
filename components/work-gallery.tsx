@@ -28,7 +28,7 @@ import {
   type WorkCollection,
   type WorkItem,
 } from '@/lib/work'
-import { aspectStyleFor, CollectionStack, WorkPlaceholder } from '@/components/work-visuals'
+import { aspectStyleFor, CollectionStack, VerseBlock, WorkPlaceholder } from '@/components/work-visuals'
 import { MediaBadges } from '@/components/media-player'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
@@ -179,7 +179,7 @@ function TagPill({ children, className }: { children: ReactNode; className?: str
 function TextCard({ item }: { item: WorkItem }) {
   const tone = toneFor(item)
   const isPoem = item.tags.includes('poem')
-  const excerpt = item.excerpt ?? item.description
+  const excerpt = item.preview ?? item.text ?? item.description ?? ''
   return (
     <article
       className="group flex flex-col rounded-2xl border border-border p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg"
@@ -196,14 +196,7 @@ function TextCard({ item }: { item: WorkItem }) {
           <TagPill>{isPoem ? 'poem' : 'essay'}</TagPill>
         </div>
 
-        <p
-          className={cn(
-            'font-brand-italic mt-3 text-pretty text-lg leading-relaxed text-foreground',
-            isPoem && 'whitespace-pre-line',
-          )}
-        >
-          {excerpt}
-        </p>
+        <VerseBlock text={excerpt} context="card" className="mt-3 text-lg text-foreground" />
 
         <div className="mt-4 flex items-center justify-between gap-3">
           <span className="font-brand text-sm lowercase tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
@@ -220,13 +213,13 @@ function TextCard({ item }: { item: WorkItem }) {
  * A piece that's genuinely both — text-forward work (an essay, typically)
  * written around a specific image, so it keeps TextCard's excerpt-led
  * caption pattern but leads with a short image strip instead of going
- * without one. Opt-in via a piece's `hasImage` flag (see lib/work.ts),
- * not inferred from tags.
+ * without one. A piece is a hybrid when it carries both `text` and `image`
+ * (see `isHybrid` in lib/work.ts), not inferred from tags.
  */
 function HybridCard({ item }: { item: WorkItem }) {
   const tone = toneFor(item)
   const isPoem = item.tags.includes('poem')
-  const excerpt = item.excerpt ?? item.description
+  const excerpt = item.preview ?? item.text ?? item.description ?? ''
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border transition-all hover:-translate-y-0.5 hover:shadow-lg">
       <Link href={workHref(item)} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -245,14 +238,7 @@ function HybridCard({ item }: { item: WorkItem }) {
             <TagPill>{isPoem ? 'poem' : 'essay'}</TagPill>
           </div>
 
-          <p
-            className={cn(
-              'font-brand-italic mt-3 text-pretty text-lg leading-relaxed text-foreground',
-              isPoem && 'whitespace-pre-line',
-            )}
-          >
-            {excerpt}
-          </p>
+          <VerseBlock text={excerpt} context="card" className="mt-3 text-lg text-foreground" />
 
           <div className="mt-4 flex items-center justify-between gap-3">
             <span className="font-brand text-sm lowercase tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
@@ -270,9 +256,14 @@ function HybridCard({ item }: { item: WorkItem }) {
  * A collection's card: the fanned image stack (see CollectionStack) sits
  * directly on the page background with no card chrome of its own — each
  * image in the fan is the same size as a standalone piece's image. The
- * title lives in a separate, smaller card that hovers, centered, above the
- * bottom of the stack and only reveals on hover/focus, so the images stay
- * the thing you actually look at.
+ * title lives in a separate, smaller card that only reveals on hover/focus,
+ * so the images stay the thing you actually look at. The chrome is
+ * `position: sticky` inside a tile-spanning wrapper (not `absolute
+ * bottom-6`) — on a tall chapbook tile the flow position can be off-screen,
+ * so sticky keeps it in the viewport (up to 1rem of margin) for as long as
+ * any part of the tile is visible, riding up over the cover rather than
+ * disappearing. Nothing between this wrapper and the scrollport may use
+ * `overflow: hidden` or a `transform` — either disables sticky outright.
  */
 function CollectionTile({ item }: { item: WorkCollection }) {
   return (
@@ -284,23 +275,20 @@ function CollectionTile({ item }: { item: WorkCollection }) {
         <CollectionStack item={item} />
       </Link>
 
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-x-4 bottom-6 z-30 mx-auto -translate-x-1 translate-y-2 max-w-[min(85%,20rem)] rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out',
-          'group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100',
-        )}
-      >
-        <Link
-          href={workHref(item)}
-          className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
-            {item.title}
-          </h3>
-          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-            {item.description}
-          </p>
-        </Link>
+      <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end p-4">
+        <div className="sticky bottom-4 mx-auto w-full max-w-[min(85%,20rem)] rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+          <Link
+            href={workHref(item)}
+            className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
+              {item.title}
+            </h3>
+            {item.description && (
+              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{item.description}</p>
+            )}
+          </Link>
+        </div>
       </div>
     </div>
   )
@@ -309,9 +297,15 @@ function CollectionTile({ item }: { item: WorkCollection }) {
 /**
  * Visual/other standalone pieces — a tinted blank placeholder panel above
  * the metadata. Title disappears entirely at rest, leaving just the image,
- * and surfaces as a scrim overlay on hover/focus — an experiment in
- * treating the image itself as the card. An art piece's medium (oil, ink,
- * etc.) rides along in the same overlay, pinned to the bottom-right corner.
+ * and surfaces as a sticky chrome panel on hover/focus, matching
+ * CollectionTile's idiom rather than a full-bleed gradient band — a tall
+ * piece (up to ~437px at this column width) can have its bottom edge
+ * off-screen mid-scroll, and a gradient band anchored to that edge shares
+ * the same off-screen-on-hover failure the collection tile's chrome had.
+ * The clipping that used to round the image's bottom corners moves down to
+ * the image wrapper, since `overflow-hidden` on this article would disable
+ * the sticky chrome entirely. An art piece's medium (oil, ink, etc.) rides
+ * along in the same panel, pinned to its right edge.
  */
 function ImageCard({ item }: { item: WorkItem }) {
   if (isCollection(item)) {
@@ -321,34 +315,33 @@ function ImageCard({ item }: { item: WorkItem }) {
   const medium = mediumFor(item)
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg">
+    <article className="group relative rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg">
       <Link
         href={workHref(item)}
         className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        {/* Blank placeholder image — no fabricated artwork, just a tinted panel. */}
-        <div className="aspect-[5/4] overflow-hidden" style={aspectStyleFor(item)}>
+        {/* Blank placeholder image — no fabricated artwork, just a tinted panel.
+            Rounded to `1rem - 1px` so it sits inside the article's border
+            rather than leaving a hairline of square corner outside it. */}
+        <div className="aspect-[5/4] overflow-hidden rounded-[calc(1rem-1px)]" style={aspectStyleFor(item)}>
           <WorkPlaceholder item={item} />
         </div>
       </Link>
 
       <MediaBadges item={item} />
 
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-x-0 bottom-0 z-30 flex translate-y-1 items-end justify-between gap-3 rounded-b-[inherit] bg-gradient-to-t from-card via-card/85 to-transparent px-4 pb-4 pt-10 opacity-0 transition-all duration-300 ease-out',
-          'group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100',
-        )}
-      >
-        <Link
-          href={workHref(item)}
-          className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
-            {item.title}
-          </h3>
-        </Link>
-        {medium && <TagPill className="pointer-events-auto">{medium}</TagPill>}
+      <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end p-4">
+        <div className="sticky bottom-4 mx-auto flex w-full max-w-[min(85%,20rem)] items-end justify-between gap-3 rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+          <Link
+            href={workHref(item)}
+            className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
+              {item.title}
+            </h3>
+          </Link>
+          {medium && <TagPill className="pointer-events-auto">{medium}</TagPill>}
+        </div>
       </div>
     </article>
   )

@@ -1,14 +1,16 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, BookOpen, Layers, Quote } from 'lucide-react'
+import { ArrowLeft, BookOpen, Layers } from 'lucide-react'
 import {
+  collectionLayout,
   getWorkItem,
-  hasWriteup,
   isChapbook,
   isCollection,
+  isHybrid,
   isTextForward,
   itemTags,
+  metaDescription,
   piecePath,
   primaryDiscipline,
   toneFor,
@@ -17,18 +19,14 @@ import {
   type WorkPiece,
 } from '@/lib/work'
 import {
-  aspectFor,
-  aspectStyleFor,
   categoryLabel,
   ChapbookContents,
-  ExcerptBlock,
+  PieceTile,
   Prose,
   TagLinks,
-  WorkPlaceholder,
-  WriteupMark,
+  VerseBlock,
 } from '@/components/work-visuals'
-import { ImageLightbox } from '@/components/image-lightbox'
-import { MediaBadges, PieceMedia } from '@/components/media-player'
+import { PieceMedia } from '@/components/media-player'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
 
@@ -46,7 +44,7 @@ export async function generateMetadata({
   if (!item) return {}
   return {
     title: `${item.title} · work · beck qing`,
-    description: item.description,
+    description: metaDescription(item),
   }
 }
 
@@ -54,9 +52,10 @@ export default async function WorkItemPage({ params }: { params: Promise<{ slug:
   const { slug } = await params
   const item = getWorkItem(slug)
   if (!item) notFound()
+  const chapbook = isCollection(item) && isChapbook(item)
 
   return (
-    <main className="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-20">
+    <main className={cn('mx-auto px-5 py-16 sm:px-8 sm:py-20', chapbook ? 'max-w-3xl' : 'max-w-5xl')}>
       <Link
         href="/work"
         className="font-brand inline-flex items-center gap-1.5 text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
@@ -72,11 +71,12 @@ export default async function WorkItemPage({ params }: { params: Promise<{ slug:
 
 function CollectionView({ item }: { item: WorkCollection }) {
   const tone = toneFor(item)
-  const chapbook = isChapbook(item)
+  const layout = collectionLayout(item)
+  const chapbook = layout === 'book'
   return (
     <>
-      <header className="mt-6">
-        <div className="flex items-center gap-2" style={{ color: tone }}>
+      <header className={cn('mt-6', chapbook && 'mx-auto max-w-xl text-center')}>
+        <div className={cn('flex items-center gap-2', chapbook && 'justify-center')} style={{ color: tone }}>
           {chapbook ? (
             <BookOpen className="h-4 w-4" aria-hidden="true" />
           ) : (
@@ -89,26 +89,41 @@ function CollectionView({ item }: { item: WorkCollection }) {
         <h1 className="font-brand mt-2 text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
           {item.title}
         </h1>
-        <p className="font-brand-italic mt-3 max-w-xl text-pretty text-lg text-muted-foreground">
-          {item.description}
-        </p>
+        {item.description && (
+          <p
+            className={cn(
+              'font-brand-italic mt-3 max-w-xl text-pretty text-lg text-muted-foreground',
+              chapbook && 'mx-auto',
+            )}
+          >
+            {item.description}
+          </p>
+        )}
         <p className="font-brand mt-2 text-sm lowercase text-muted-foreground">
           {item.pieces.length} pieces · {item.year}
         </p>
-        <TagLinks tags={Array.from(itemTags(item))} className="mt-5" />
+        <TagLinks tags={Array.from(itemTags(item))} className={cn('mt-5', chapbook && 'justify-center')} />
         {chapbook && item.pieces.length > 0 && (
-          <Link
-            href={piecePath(item, item.pieces[0])}
-            className="font-brand mt-6 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm lowercase transition-opacity hover:opacity-80"
-            style={{ backgroundColor: tone, color: 'var(--background)' }}
-          >
-            start reading
-            <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
-          </Link>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href={piecePath(item, item.pieces[0])}
+              className="font-brand inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm lowercase transition-opacity hover:opacity-80"
+              style={{ backgroundColor: tone, color: 'var(--background)' }}
+            >
+              start reading
+              <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
+            </Link>
+            <Link
+              href={`/work/${item.slug}/read`}
+              className="font-brand inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
+            >
+              read straight through
+            </Link>
+          </div>
         )}
       </header>
 
-      {item.writeup && <Prose text={item.writeup} className="mt-8" />}
+      {item.writeup && <Prose text={item.writeup} className={cn('mt-8', chapbook && 'mx-auto')} />}
 
       <h2 className="font-brand mt-12 text-xs uppercase tracking-[0.3em] text-muted-foreground">
         {chapbook ? 'table of contents' : 'in this collection'}
@@ -117,66 +132,10 @@ function CollectionView({ item }: { item: WorkCollection }) {
       {chapbook ? (
         <ChapbookContents collection={item} />
       ) : (
-        <MasonryGrid className="mt-6">
-        {item.pieces.map((p, i) => {
-          const textForward = isTextForward(p)
-          return (
-            <div
-              key={p.slug}
-              className="relative w-full overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1"
-            >
-              {textForward ? (
-                <Link
-                  href={piecePath(item, p)}
-                  className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Quote
-                    className="h-6 w-6 shrink-0 -scale-x-100"
-                    style={{ color: `color-mix(in srgb, ${toneFor(p)} 70%, transparent)` }}
-                    strokeWidth={1.5}
-                    aria-hidden="true"
-                  />
-                  <p
-                    className={cn(
-                      'font-brand-italic mt-3 text-pretty text-base leading-relaxed text-foreground',
-                      p.tags.includes('poem') && 'whitespace-pre-line',
-                    )}
-                  >
-                    {p.preview ?? p.excerpt ?? p.description}
-                  </p>
-                  <p className="mt-3 font-brand text-sm lowercase tracking-wide text-muted-foreground">
-                    {p.title}
-                  </p>
-                </Link>
-              ) : (
-                <>
-                  <ImageLightbox items={item.pieces} initialIndex={i} className="rounded-none border-none">
-                    <div className={aspectFor(p.slug)} style={aspectStyleFor(p)}>
-                      <WorkPlaceholder item={p} />
-                    </div>
-                    <MediaBadges item={p} />
-                  </ImageLightbox>
-                  <Link
-                    href={piecePath(item, p)}
-                    className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <p className="font-brand text-sm font-bold lowercase leading-tight text-foreground/80 text-balance">
-                      {p.title}
-                    </p>
-                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                      {p.description}
-                    </p>
-                  </Link>
-                </>
-              )}
-              {hasWriteup(p) && (
-                <div className="absolute left-3 top-3">
-                  <WriteupMark />
-                </div>
-              )}
-            </div>
-          )
-        })}
+        <MasonryGrid className="mt-6" columns={layout === 'illustrated' ? { lg: 2 } : undefined}>
+          {item.pieces.map((p, i) => (
+            <PieceTile key={p.slug} collection={item} piece={p} index={i} />
+          ))}
         </MasonryGrid>
       )}
     </>
@@ -186,6 +145,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
 function PieceView({ piece }: { piece: WorkPiece }) {
   const tone = toneFor(piece)
   const textForward = isTextForward(piece)
+  const hybrid = isHybrid(piece)
 
   const meta = (
     <p className="font-brand mt-2 flex flex-wrap items-center gap-2 text-sm lowercase" style={{ color: tone }}>
@@ -209,7 +169,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
           className="mt-8 max-w-2xl rounded-2xl border-l-2 py-1 pl-6"
           style={{ borderColor: `color-mix(in srgb, ${tone} 55%, transparent)` }}
         >
-          <ExcerptBlock item={piece} />
+          <VerseBlock text={piece.text ?? ''} className="text-xl text-foreground" />
         </div>
         {piece.writeup && <Prose text={piece.writeup} className="mt-8" />}
         <TagLinks tags={piece.tags} className="mt-10" />
@@ -225,9 +185,10 @@ function PieceView({ piece }: { piece: WorkPiece }) {
           {piece.title}
         </h1>
         {meta}
-        <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">
-          {piece.description}
-        </p>
+        {hybrid && <VerseBlock text={piece.text ?? ''} className="mt-4 text-lg text-foreground" />}
+        {piece.description && (
+          <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">{piece.description}</p>
+        )}
         {piece.writeup && <Prose text={piece.writeup} className="mt-6" />}
         <TagLinks tags={piece.tags} className="mt-8" />
       </div>

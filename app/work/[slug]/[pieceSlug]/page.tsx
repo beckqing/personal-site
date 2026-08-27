@@ -6,13 +6,15 @@ import {
   getCollectionPiece,
   isChapbook,
   isCollection,
+  isHybrid,
   isTextForward,
+  metaDescription,
   piecePath,
   primaryDiscipline,
   toneFor,
   WORK,
 } from '@/lib/work'
-import { BookFolio, categoryLabel, ExcerptBlock, Prose, TagLinks } from '@/components/work-visuals'
+import { BookFolio, categoryLabel, Prose, TagLinks, VerseBlock } from '@/components/work-visuals'
 import { PieceMedia } from '@/components/media-player'
 import { BookPageNav } from '@/components/book-page-nav'
 import { cn } from '@/lib/utils'
@@ -33,7 +35,7 @@ export async function generateMetadata({
   if (!result) return {}
   return {
     title: `${result.piece.title} · ${result.collection.title} · beck qing`,
-    description: result.piece.description,
+    description: metaDescription(result.piece),
   }
 }
 
@@ -47,19 +49,27 @@ export default async function CollectionPiecePage({
   if (!result) notFound()
   const { collection, piece, index } = result
 
-  const prev = collection.pieces[(index - 1 + collection.pieces.length) % collection.pieces.length]
-  const next = collection.pieces[(index + 1) % collection.pieces.length]
   const tone = toneFor(piece)
   const textForward = isTextForward(piece)
+  const hybrid = isHybrid(piece)
   const chapbook = isChapbook(collection)
 
   if (chapbook) {
+    // A book's first page has no previous page, and its last has no next —
+    // no wraparound, unlike the plain collection case below.
+    const prev = index > 0 ? collection.pieces[index - 1] : undefined
+    const next = index < collection.pieces.length - 1 ? collection.pieces[index + 1] : undefined
+    const contentsHref = `/work/${collection.slug}`
+
     return (
       <main className="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-20">
-        <BookPageNav prevHref={piecePath(collection, prev)} nextHref={piecePath(collection, next)} />
+        <BookPageNav
+          prevHref={prev ? piecePath(collection, prev) : null}
+          nextHref={next ? piecePath(collection, next) : contentsHref}
+        />
 
         <Link
-          href={`/work/${collection.slug}`}
+          href={contentsHref}
           className="font-brand inline-flex items-center gap-1.5 text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
         >
           <BookOpen className="h-4 w-4" aria-hidden="true" />
@@ -69,24 +79,22 @@ export default async function CollectionPiecePage({
         </Link>
 
         <div className="relative">
-          {collection.pieces.length > 1 && (
-            <>
-              <Link
-                href={piecePath(collection, prev)}
-                aria-label={`Previous: ${prev.title}`}
-                className="absolute left-0 top-1/2 z-10 hidden -translate-x-14 -translate-y-1/2 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card min-[900px]:inline-flex"
-              >
-                <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
-              </Link>
-              <Link
-                href={piecePath(collection, next)}
-                aria-label={`Next: ${next.title}`}
-                className="absolute right-0 top-1/2 z-10 hidden translate-x-14 -translate-y-1/2 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card min-[900px]:inline-flex"
-              >
-                <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
-              </Link>
-            </>
+          {prev && (
+            <Link
+              href={piecePath(collection, prev)}
+              aria-label={`Previous: ${prev.title}`}
+              className="absolute left-0 top-1/2 z-10 hidden -translate-x-14 -translate-y-1/2 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card min-[900px]:inline-flex"
+            >
+              <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
+            </Link>
           )}
+          <Link
+            href={next ? piecePath(collection, next) : contentsHref}
+            aria-label={next ? `Next: ${next.title}` : 'Back to contents'}
+            className="absolute right-0 top-1/2 z-10 hidden translate-x-14 -translate-y-1/2 rounded-full border border-border bg-background/85 p-2 text-foreground backdrop-blur-sm transition-colors hover:bg-card min-[900px]:inline-flex"
+          >
+            <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
+          </Link>
 
           <article className="mt-6 rounded-2xl border border-border bg-card px-6 py-10 shadow-sm sm:px-14 sm:py-14">
             <p
@@ -98,32 +106,19 @@ export default async function CollectionPiecePage({
             <h1 className="font-brand mt-3 text-center text-lg font-bold lowercase text-foreground/80 text-balance sm:text-xl">
               {piece.title}
             </h1>
-            <p className="font-brand mt-2 text-center text-xs lowercase text-muted-foreground">
-              {categoryLabel(piece)} · {piece.year}
-            </p>
 
             <div className="mx-auto mt-6 h-px w-12" style={{ backgroundColor: `color-mix(in srgb, ${tone} 45%, transparent)` }} />
 
-            <div className="mx-auto mt-8 max-w-md">
-              {piece.excerpt ? (
-                <ExcerptBlock item={piece} className="text-base" />
-              ) : (
-                <p className="font-brand-italic text-pretty text-base leading-relaxed text-muted-foreground">
-                  {piece.description}
-                </p>
-              )}
-            </div>
+            <VerseBlock text={piece.text ?? ''} className="mx-auto mt-8 text-base" />
 
             {piece.writeup && <Prose text={piece.writeup} className="mx-auto mt-8 max-w-md text-sm" />}
-
-            <TagLinks tags={piece.tags} className="mt-10 justify-center" />
           </article>
         </div>
 
         <BookFolio index={index} total={collection.pieces.length} />
 
-        {collection.pieces.length > 1 && (
-          <div className="mt-4 flex items-center justify-between gap-4">
+        <div className="mt-4 flex items-center justify-between gap-4">
+          {prev ? (
             <Link
               href={piecePath(collection, prev)}
               className="font-brand group flex min-w-0 items-center gap-1.5 text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
@@ -131,6 +126,10 @@ export default async function CollectionPiecePage({
               <ChevronLeft className="h-4 w-4 shrink-0 transition-transform group-hover:-translate-x-0.5" />
               <span className="truncate">{prev.title}</span>
             </Link>
+          ) : (
+            <span />
+          )}
+          {next ? (
             <Link
               href={piecePath(collection, next)}
               className="font-brand group flex min-w-0 items-center justify-end gap-1.5 text-right text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
@@ -138,11 +137,22 @@ export default async function CollectionPiecePage({
               <span className="truncate">{next.title}</span>
               <ChevronRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
             </Link>
-          </div>
-        )}
+          ) : (
+            <Link
+              href={contentsHref}
+              className="font-brand group flex min-w-0 items-center justify-end gap-1.5 text-right text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <span className="truncate">back to contents</span>
+              <ChevronRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          )}
+        </div>
       </main>
     )
   }
+
+  const prev = collection.pieces[(index - 1 + collection.pieces.length) % collection.pieces.length]
+  const next = collection.pieces[(index + 1) % collection.pieces.length]
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-20">
@@ -185,14 +195,12 @@ export default async function CollectionPiecePage({
       </div>
 
       <article className="mt-8">
-        {!textForward && (
-          <PieceMedia
-            piece={piece}
-            lightboxItems={collection.pieces}
-            lightboxIndex={index}
-            className="mx-auto max-w-3xl shadow-sm"
-          />
-        )}
+        <PieceMedia
+          piece={piece}
+          lightboxItems={collection.pieces}
+          lightboxIndex={index}
+          className="mx-auto max-w-3xl shadow-sm"
+        />
         <div className={cn(!textForward && 'mx-auto mt-8 max-w-2xl')}>
           <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
             {piece.title}
@@ -208,17 +216,22 @@ export default async function CollectionPiecePage({
             <span>{piece.year}</span>
           </p>
 
-          {textForward && piece.excerpt ? (
+          {textForward ? (
             <div
               className="mt-6 max-w-2xl border-l-2 py-1 pl-6"
               style={{ borderColor: `color-mix(in srgb, ${tone} 55%, transparent)` }}
             >
-              <ExcerptBlock item={piece} />
+              <VerseBlock text={piece.text ?? ''} className="text-lg text-foreground" />
             </div>
           ) : (
-            <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">
-              {piece.description}
-            </p>
+            <>
+              {hybrid && <VerseBlock text={piece.text ?? ''} className="mt-4 text-lg text-foreground" />}
+              {piece.description && (
+                <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">
+                  {piece.description}
+                </p>
+              )}
+            </>
           )}
 
           {piece.writeup && <Prose text={piece.writeup} className="mt-6" />}

@@ -2,15 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { CircleDot, Expand, Pause, Play } from 'lucide-react'
-import {
-  hasAnimation,
-  hasSpeedpaint,
-  isTextForward,
-  speedpaintAspect,
-  toneFor,
-  type WorkItem,
-  type WorkPiece,
-} from '@/lib/work'
+import { hasAnimation, hasSpeedpaint, speedpaintAspect, toneFor, type WorkItem, type WorkPiece } from '@/lib/work'
 import { aspectStyleFor, WorkPlaceholder } from '@/components/work-visuals'
 import { ImageLightbox } from '@/components/image-lightbox'
 import { cn } from '@/lib/utils'
@@ -319,7 +311,7 @@ export function PieceMedia({
   lightboxIndex?: number
   className?: string
 }) {
-  if (isTextForward(piece)) return null
+  if (!piece.image && !piece.animationSrc && !piece.speedpaintSrc) return null
 
   const animation = hasAnimation(piece)
   const speedpaint = hasSpeedpaint(piece)

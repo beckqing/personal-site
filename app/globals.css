@@ -259,6 +259,22 @@
     }
   }
 
+  /* A collection stack's backing cards (CollectionStack / ChapbookStack in
+     work-visuals.tsx) — bottom-anchored via negative margin-bottom so each
+     card's peek is exactly its target regardless of the card's own content
+     height (see COLLECTION-CARDS.md §12h). Driven entirely by inline custom
+     properties set from the DECK table in JS, so the numbers exist in one
+     place instead of drifting between a literal class and a JS constant. */
+  .deck-card {
+    margin-bottom: var(--y);
+    transform: rotate(var(--r));
+    transition: margin 300ms ease-out, transform 300ms ease-out, box-shadow 300ms ease-out;
+  }
+  .group:hover .deck-card {
+    margin-bottom: var(--hy);
+    transform: rotate(var(--hr));
+  }
+
   /* A speedpaint's persistent timeline (see SpeedpaintPlayer) — a real,
      continuous seek bar, since the video underneath is now real footage
      rather than sampled stages. Reads as distinct from a stock video seek

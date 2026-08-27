@@ -4,7 +4,7 @@ How this site is put together and why. Decisions live here; **what's left to
 do lives in [TODO.md](TODO.md)**.
 
 Next.js 16.3, App Router, Turbopack. Fully static — every route prerenders
-(198 pages at last build). No database, no CMS, no API routes: content is
+(199 pages at last build). No database, no CMS, no API routes: content is
 TypeScript, images are files in `public/`.
 
 ---
@@ -27,21 +27,31 @@ Facets subdivide them (`medium` for art, `form` for writing, `field` for
 science) and stay hidden in the filter UI until their discipline is selected;
 a `theme` facet applies universally. Filtering combines selected tags with
 and/or/not, plus free text over title, description, tags, and — for
-collections — their children's titles.
+collections — their children's titles, text, and previews.
+
+**`text` is the written work; `description` is optional.** `text` holds
+whatever words the page shows — a whole poem, or the passage quoted from an
+essay that lives elsewhere. `description` is an editorial gloss and isn't
+guaranteed (e.g. the Mindtober tercets have none — the tercet *is* the
+caption). `preview` is a hand-set, 1–3 line pull quote for compact contexts,
+falling back to `text` then `description`; its length is deliberate, since a
+masonry column gives a taller `preview` more room, and it's never clamped.
 
 **Behaviour is derived, not stored.** How a piece renders is computed from
 its tags and fields rather than set by a `type` column:
 
 | Predicate | Means |
 |---|---|
-| `isTextForward` | tagged `poem` or `essay` — renders as a quote card, leads with words |
+| `isTextForward` | carries `text` and no `image` — renders as a quote card, leads with words |
+| `isHybrid` | carries both `text` and `image` — both load-bearing, neither a caption for the other |
 | `isTextOnly` | a text-forward piece, or a collection made entirely of them |
-| `isChapbook` | a text-only collection — the page becomes a table of contents and pieces are read as book pages |
-| `isHybrid` | `hasImage` on a text-forward piece — see TODO §4, this path is currently dead |
+| `isChapbook` | `collectionLayout` resolves to `'book'` — the page becomes a table of contents and pieces are read as book pages |
+| `collectionLayout` | `'book'` (every piece text-forward), `'illustrated'` (every piece hybrid), or `'gallery'` (mixed/other) — overridable per collection via `layout` |
 | `hasSpeedpaint` / `hasAnimation` | carries the corresponding video |
 
-Adding a poem to a collection can therefore turn it into a chapbook. That's
-intended.
+Adding a poem to a collection can therefore turn it into a chapbook, and
+adding an image to a poem turns it into a hybrid, automatically. That's
+intended — tags say what a piece is *about*, fields say what it *has*.
 
 **Images carry their own aspect ratio.** `imageAspect` is applied as an inline
 style that overrides a card's default shape, so real artwork renders uncropped
@@ -54,6 +64,16 @@ only where an image is barely visible (the back cards of a collection stack).
 pseudo-randomness, so masonry grids look varied but never reshuffle between
 renders.
 
+**`VerseBlock`** (`components/work-visuals.tsx`) is the single primitive that
+renders written work everywhere it appears — the chapbook reading page, a
+hybrid piece's page, and every card face. It splits text into stanzas on a
+blank line and each stanza into its own line-blocks, so a wrapped line gets a
+quiet 1ch hanging indent and a stanza gap is real margin (`1lh`) rather than a
+doubled `<br>`. A stanza over 90 characters with no line break (prose, not
+verse) sets upright instead of slanted — but only at reading size;
+`context="card"` keeps everything italic, since the quote glyph and tint
+already frame a card's text as a quotation.
+
 ---
 
 ## Routes
@@ -63,8 +83,9 @@ renders.
 | `/` | hero, icon collage, three discipline panels |
 | `/about` | tabbed bio (`lib/about-content.ts`) |
 | `/work` | the filterable gallery |
-| `/work/[slug]` | a collection **or** a standalone piece — branches on `isCollection` |
+| `/work/[slug]` | a collection **or** a standalone piece — branches on `isCollection`, and on `collectionLayout` for the three collection layouts (`book`/`illustrated`/`gallery`) |
 | `/work/[slug]/[pieceSlug]` | a piece inside a collection — branches on `isChapbook` |
+| `/work/[slug]/read` | a chapbook's every piece on one page, front matter to last poem — only generated for chapbooks. A static segment beats a dynamic sibling, so this resolves ahead of `[pieceSlug]`; safe only while no piece is slugged `read` |
 
 Both detail routes are generated from `generateStaticParams` over `WORK`.
 Filter state on `/work` lives in the URL (`?tags=…`), which is why the footer
@@ -78,9 +99,12 @@ view.
 - **`work-gallery.tsx`** — the `/work` client island: filter panel, URL state,
   and `WorkCard`, which dispatches to `HybridCard` / `TextCard` / `ImageCard`
   / `CollectionTile`.
-- **`work-visuals.tsx`** — the shared pieces those cards are built from:
-  placeholders, aspect helpers, tag links, prose and excerpt blocks, the
-  collection stack, chapbook contents.
+- **`work-visuals.tsx`** — the shared pieces those cards (and a collection
+  page's own tiles) are built from: `VerseBlock`, placeholders, aspect
+  helpers, tag links, prose blocks, the collection stack, chapbook contents,
+  and `PieceTile` (dispatching to `TextTile` / `ImageTile` / `IllustratedTile`
+  for a collection page's own grid, the same way `WorkCard` dispatches at the
+  top level).
 - **`media-player.tsx`** — everything video (below).
 - **`image-lightbox.tsx`** — full-screen viewing with prev/next across a
   supplied list, so a piece opened from a collection can be paged through in
@@ -88,9 +112,80 @@ view.
 - **`masonry-grid.tsx`** — JS column distribution rather than CSS
   `columns`, so tiles can keep DOM order per column. Starts at the widest
   layout so server and first client render agree, then corrects on mount.
+  Takes an optional `columns` prop (`{ lg: 3 }` default, `{ lg: 2 }` for an
+  `illustrated` collection, whose verse needs more measure than a third of
+  the page).
 
 `MasonryGrid` and the gallery are client components; the detail pages are
 server components that hand data to small client islands.
+
+---
+
+## Collection stack geometry
+
+The fanned deck behind a collection tile (`CollectionStack` / `ChapbookStack`
+in `work-visuals.tsx`) is built mostly on **percentages of the column
+width** — never card height, `em`, or px. Card height varies three ways (a
+collection's `imageAspect`, a chapbook cover's text length, the breakpoint),
+and any offset expressed against height inherits all of them; width is
+constant across all three. This is also why the deck uses **percentage
+margins, not `translate`** — percentage vertical margins resolve against the
+containing block's *width* (the standard box-model rule), where `translate-y`
+would resolve against the element's own height.
+
+Each backing card is `position: absolute; bottom: 0`, pushed further down by
+a *negative* margin-bottom (`.deck-card` in `globals.css`, driven by inline
+`--y`/`--r`/`--hy`/`--hr` custom properties from the `DECK` table in
+`work-visuals.tsx` — one source of truth for both the CSS and the
+container's reserve, so the two can't drift apart). Anchoring from the
+bottom, not the top, is deliberate: a peek is the strip between two bottom
+edges, so it comes out exactly its target offset regardless of how tall the
+card behind it happens to be. `max-h-full` (`h-full` for a chapbook's
+deliberately-blank card 4, which otherwise has zero natural height) clamps a
+card taller than the cover, which is what keeps a much-taller backing card
+from poking out above the deck.
+
+**Card 4's strip is one fixed exception to the percentage rule: 40px,
+always.** Cards 2 and 3 show a proportion of something that scales (artwork
+or a poem's own text), so a proportion is the right unit for them. Card 4 is
+deliberately blank — it exists only to carry the collection's count pill
+(`CollectionMark`, `bottom-2 right-2`) — so its strip is sized to the pill,
+not to the deck: `0.5rem` margin + the pill's own `24px` (`px-2.5 py-1
+text-xs` → a 16px line box + 4px padding top/bottom) + `0.5rem` margin =
+`8 + 24 + 8 = 40px`. Changing `CollectionMark`'s padding, text size, or
+inset invalidates this number; it doesn't recompute from anywhere. `DECK`
+carries it as a separate `px`/`hpx` field alongside the percentage `y`/`hy`
+(`deckLength()` emits `calc(45.5% + 40px)`-style values), so the reserve
+calculation can still do arithmetic on the percentage half. Card 4's hover
+offset (`hy`) is *derived* — `CARD3_Y + dip(1.5) - dip(0.5)` — rather than a
+hand-picked number, so the rest/hover reserve pin stays exact rather than
+drifting by a fraction of a percent.
+
+This replaced an 11%-of-width strip, which cleared the pill by only 1.4px at
+a 320px phone (and only because tilt happened to swing extra room in on the
+right — a standing trap for anyone who flattened the tilts later). The fixed
+strip clears by a true 8px at every width, at the cost of the deck no longer
+being perfectly scale-invariant: at the 350px column every real breakpoint
+renders at, the taper is 98/61/40 (ratio 0.66, indistinguishable from the
+11% strip's 38.5px); narrowed to a 320px phone's 280px column it's 78/49/40
+(ratio 0.82) — card 4 stops tapering. That's the accepted trade; the
+alternative is a clipped pill. The 8px reads exactly at the card's own
+centre line; at the pill's corner, where cards 3 and 4's opposed tilts swing
+the gap open, clearance runs 10–20px depending on state and width — a wedge,
+not a measurement error, and not something to close by flattening card 4's
+tilt.
+
+The chrome — a collection tile's title card, and (matching idiom) a
+standalone `ImageCard`'s label — is `position: sticky` inside a
+tile-spanning wrapper, not `absolute bottom-N`. A collection tile can run
+past 900px (a tall chapbook cover plus its deck), taller than many
+viewports, so a flow-positioned label can sit off-screen the whole time its
+tile is hovered. Sticky keeps it within a margin of the viewport for as long
+as any part of the tile is visible. Two things silently disable it: any
+`overflow: hidden` between the chrome and the scrollport, and a `transform`
+on an ancestor of the chrome (re-anchors the sticky containing block) — the
+chrome is a sibling of the image/stack, never a descendant of a card that
+carries either.
 
 ---
 
