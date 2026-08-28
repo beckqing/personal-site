@@ -228,6 +228,11 @@ export function mediumFor(item: WorkItem): string | undefined {
   return DISCIPLINE_FACETS.art.tags.find((tag) => item.tags.includes(tag))
 }
 
+/** A writing piece's form (poem, essay, blog) — falls back to 'essay' for text-forward work carrying none of those tags. */
+export function formFor(item: WorkItem): string {
+  return DISCIPLINE_FACETS.writing.tags.find((tag) => item.tags.includes(tag)) ?? 'essay'
+}
+
 /** The accent tone (CSS value) for an item, based on its primary discipline. */
 export function toneFor(item: WorkItem): string {
   const d = primaryDiscipline(item)
@@ -954,7 +959,7 @@ const REAL_WORK: WorkItem[] = [
     description:
       "31 ink drawings for Inktober, finished seven and a half months late — a confidence exercise as much as a daily prompt.",
     tags: ['art', 'ink'],
-    stackAccent: '#ffffff',
+    stackAccent: '#c9c2b0',
     writeup:
       "Seven and a half months late, I have completed Inktober. What an accomplishment.\n\nTruly though, it's been a good exercise, even if not as a daily drawing prompt. I have used it as a confidence exercise. If a design was drafted, it was only done in thumbnail form (with ink), and once the design was begun, it was completed completely in ink (with the exception of 4, 7, and 14, which were all redone).",
     image: '/art/inktober-17/01.jpg',
@@ -1186,9 +1191,11 @@ const REAL_WORK: WorkItem[] = [
       // Order: turkey, pig, cow, sheep, chicken, goose, goat, fish.
       const notes: Record<string, string> = {
         '01': "Leaning into realism and photo studies, something I haven't done in a while. Stopping here for now — hoping to finish an eye a day this week.",
+        '02': 'thinking about recognizability & beauty',
         '03': 'The lashes on this one are so lovely.',
         '04': "Very enjoyable to draw — the first left eye I've done for this series.",
-        '06': 'Do you know what animal this is? Thinking about recognizability and beauty.',
+        '05': "hard to believe this isn't where anime eyes came from",
+        '08': '❝ Now at last I can look at you in peace, I don’t eat you anymore. ❞ — Franz Kafka',
       }
       return Array.from({ length: 8 }, (_, i) => {
         const n = String(i + 1).padStart(2, '0')
@@ -1196,7 +1203,7 @@ const REAL_WORK: WorkItem[] = [
           slug: n,
           title: n,
           year: '2022',
-          description: notes[n] ?? 'Subject hidden for now. Title coming soon.',
+          description: notes[n],
           tags: ['art', 'digital'],
           image: `/art/eye-studies/${n}.jpg`,
           thumb: `/art/eye-studies/thumb/${n}.jpg`,
@@ -1893,7 +1900,11 @@ export function nextMode(m: FilterMode): FilterMode {
   return m === 'and' ? 'or' : m === 'or' ? 'not' : 'and'
 }
 
-/** Tag combination (and/or/not) plus a free-text search over title, description, and tags. */
+/**
+ * Tag combination (and/or/not) plus a free-text search over an item's own
+ * title, description, text, preview, and tags — and, for collections, the
+ * same title/description/text/preview fields on each of their children.
+ */
 export function filterWork(
   items: WorkItem[],
   { query, tags, mode }: { query: string; tags: string[]; mode: FilterMode },
@@ -1911,7 +1922,7 @@ export function filterWork(
     const children = isCollection(item)
       ? item.pieces.flatMap((p) => [p.title, p.description, p.text, p.preview])
       : []
-    const haystack = [item.title, item.description, ...itemTags(item), ...children]
+    const haystack = [item.title, item.description, item.text, item.preview, ...itemTags(item), ...children]
       .join(' ')
       .toLowerCase()
     return haystack.includes(q)
@@ -1920,6 +1931,20 @@ export function filterWork(
 
 export function getWorkItem(slug: string): WorkItem | undefined {
   return WORK.find((item) => item.slug === slug)
+}
+
+/**
+ * A collection's pieces that actually carry an image, and where `piece`
+ * lands among them — the domain a lightbox scoped to that collection should
+ * page through, since paging onto a piece with no image renders nothing to
+ * look at. `Math.max(0, ...)` guards a `piece` with no image of its own.
+ */
+export function imageLightboxSlice(
+  collection: WorkCollection,
+  piece: WorkPiece,
+): { items: WorkPiece[]; index: number } {
+  const items = collection.pieces.filter((p) => p.image)
+  return { items, index: Math.max(0, items.indexOf(piece)) }
 }
 
 /** Resolve a piece inside a collection, with its index for prev/next links. */

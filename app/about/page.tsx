@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <main>
-      <section className="relative overflow-hidden night-vignette">
+      <section className="relative overflow-hidden">
         <div className="relative mx-auto max-w-4xl px-5 py-16 sm:px-8 sm:py-20">
           <div className="flex items-center gap-2 text-goldenrod">
             <Moon className="h-5 w-5" strokeWidth={1.75} />

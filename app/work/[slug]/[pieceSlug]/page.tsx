@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Layers } from 'lucide-react'
 import {
   getCollectionPiece,
+  imageLightboxSlice,
   isChapbook,
   isCollection,
   isHybrid,
@@ -53,6 +54,7 @@ export default async function CollectionPiecePage({
   const textForward = isTextForward(piece)
   const hybrid = isHybrid(piece)
   const chapbook = isChapbook(collection)
+  const lightboxSlice = imageLightboxSlice(collection, piece)
 
   if (chapbook) {
     // A book's first page has no previous page, and its last has no next —
@@ -197,8 +199,8 @@ export default async function CollectionPiecePage({
       <article className="mt-8">
         <PieceMedia
           piece={piece}
-          lightboxItems={collection.pieces}
-          lightboxIndex={index}
+          lightboxItems={lightboxSlice.items}
+          lightboxIndex={lightboxSlice.index}
           className="mx-auto max-w-3xl shadow-sm"
         />
         <div className={cn(!textForward && 'mx-auto mt-8 max-w-2xl')}>

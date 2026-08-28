@@ -11,6 +11,7 @@ import {
   DISCIPLINES,
   FILTER_MODES,
   filterWork,
+  formFor,
   isCollection,
   isDiscipline,
   isHybrid,
@@ -178,7 +179,6 @@ function TagPill({ children, className }: { children: ReactNode; className?: str
  */
 function TextCard({ item }: { item: WorkItem }) {
   const tone = toneFor(item)
-  const isPoem = item.tags.includes('poem')
   const excerpt = item.preview ?? item.text ?? item.description ?? ''
   return (
     <article
@@ -193,7 +193,7 @@ function TextCard({ item }: { item: WorkItem }) {
             strokeWidth={1.5}
             aria-hidden="true"
           />
-          <TagPill>{isPoem ? 'poem' : 'essay'}</TagPill>
+          <TagPill>{formFor(item)}</TagPill>
         </div>
 
         <VerseBlock text={excerpt} context="card" className="mt-3 text-lg text-foreground" />
@@ -218,7 +218,6 @@ function TextCard({ item }: { item: WorkItem }) {
  */
 function HybridCard({ item }: { item: WorkItem }) {
   const tone = toneFor(item)
-  const isPoem = item.tags.includes('poem')
   const excerpt = item.preview ?? item.text ?? item.description ?? ''
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border transition-all hover:-translate-y-0.5 hover:shadow-lg">
@@ -235,7 +234,7 @@ function HybridCard({ item }: { item: WorkItem }) {
               strokeWidth={1.5}
               aria-hidden="true"
             />
-            <TagPill>{isPoem ? 'poem' : 'essay'}</TagPill>
+            <TagPill>{formFor(item)}</TagPill>
           </div>
 
           <VerseBlock text={excerpt} context="card" className="mt-3 text-lg text-foreground" />
@@ -559,7 +558,7 @@ export function WorkGallery() {
           type="search"
           value={queryInput}
           onChange={(e) => setQueryInput(e.target.value)}
-          placeholder="search titles, descriptions, tags…"
+          placeholder="search titles, descriptions, text, tags…"
           aria-label="Search all work"
           className="font-brand w-full rounded-full border border-border bg-card py-3 pl-12 pr-4 text-base lowercase text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-goldenrod"
         />

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 import { ABOUT_TABS, type AboutTabId } from '@/lib/about-content'
 import { InstagramIcon } from '@/components/instagram-icon'
@@ -32,7 +32,10 @@ function readHashTab(): AboutTabId {
 export function AboutTabs() {
   const [active, setActive] = useState<AboutTabId>('general')
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so the hash-derived tab is applied
+  // before the browser paints — otherwise e.g. /about#food renders the
+  // `general` tab for one visible frame before swapping.
+  useLayoutEffect(() => {
     setActive(readHashTab())
     const onHashChange = () => setActive(readHashTab())
     window.addEventListener('hashchange', onHashChange)

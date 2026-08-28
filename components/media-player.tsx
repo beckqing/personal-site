@@ -217,9 +217,9 @@ export function SpeedpaintPlayer({
           preload="metadata"
           // object-contain rather than the CSS default (which stretches
           // playing frames to fill but tends to letterbox the poster,
-          // depending on browser) — makes the two consistent. Matters most
-          // for a piece like Verdant, whose poster (a square photo) doesn't
-          // share the uncropped video's 9:16 shape.
+          // depending on browser) — makes the two consistent. A guard
+          // against a poster/video aspect mismatch in general, not any one
+          // piece's shape today.
           className="h-full w-full cursor-pointer object-contain"
           aria-label={`${item.title} — speedpaint video`}
           onLoadedMetadata={(e) => {
@@ -311,12 +311,10 @@ export function PieceMedia({
   lightboxIndex?: number
   className?: string
 }) {
-  if (!piece.image && !piece.animationSrc && !piece.speedpaintSrc) return null
+  const { animationSrc, speedpaintSrc } = piece
+  if (!piece.image && !animationSrc && !speedpaintSrc) return null
 
-  const animation = hasAnimation(piece)
-  const speedpaint = hasSpeedpaint(piece)
-
-  if (!animation && !speedpaint) {
+  if (!animationSrc && !speedpaintSrc) {
     return (
       <ImageLightbox items={lightboxItems} initialIndex={lightboxIndex} className={className}>
         <div className="aspect-[16/10] w-full overflow-hidden" style={aspectStyleFor(piece)}>
@@ -326,31 +324,31 @@ export function PieceMedia({
     )
   }
 
-  const both = animation && speedpaint
+  const both = Boolean(animationSrc && speedpaintSrc)
 
   return (
     <div className={className}>
-      {animation && (
+      {animationSrc && (
         <div>
           {both && (
             <p className="font-brand mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">finished animation</p>
           )}
           <AnimationPlayer
-            src={piece.animationSrc!}
+            src={animationSrc}
             poster={piece.image}
             aspect={piece.imageAspect}
             title={piece.title}
           />
         </div>
       )}
-      {speedpaint && (
+      {speedpaintSrc && (
         <div className={both ? 'mt-8' : undefined}>
           {both && (
             <p className="font-brand mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">speedpaint</p>
           )}
           <SpeedpaintPlayer
             item={piece}
-            src={piece.speedpaintSrc!}
+            src={speedpaintSrc}
             poster={piece.image}
             aspect={speedpaintAspect(piece)}
           />

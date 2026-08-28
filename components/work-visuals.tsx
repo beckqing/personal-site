@@ -5,7 +5,9 @@ import { ArrowRight, FileText, ImageOff, Layers, Quote } from 'lucide-react'
 import {
   DISCIPLINE_FACETS,
   DISCIPLINES,
+  formFor,
   hasWriteup,
+  imageLightboxSlice,
   isChapbook,
   isCollection,
   isHybrid,
@@ -253,7 +255,6 @@ function TextCardFace({
   style?: CSSProperties
 }) {
   const tone = toneFor(piece)
-  const isPoem = piece.tags.includes('poem')
   const excerpt = piece.preview ?? piece.text ?? piece.description ?? ''
   return (
     <div
@@ -268,13 +269,13 @@ function TextCardFace({
           aria-hidden="true"
         />
         <span className="font-brand inline-flex shrink-0 items-center rounded-full border border-border px-2 py-0.5 text-[0.7rem] lowercase text-muted-foreground">
-          {isPoem ? 'poem' : 'essay'}
+          {formFor(piece)}
         </span>
       </div>
 
       {/* flex-1 + min-h-0 (not mt-auto on the title row) keeps the title in
           the visible peek whether the card has slack or is clamped — see
-          COLLECTION-CARDS.md §12i. */}
+          "Collection stack geometry" in docs/ARCHITECTURE.md. */}
       <VerseBlock
         text={excerpt}
         context="card"
@@ -419,7 +420,7 @@ const deckCardBase =
  * straight from its own content, the way a plain TextCard's does. The three
  * cards behind it are bottom-anchored and absolutely positioned, so their
  * peek is exactly their target offset regardless of how tall their own text
- * happens to be (COLLECTION-CARDS.md sec12h) — being absolutely positioned
+ * happens to be (see "Collection stack geometry" in docs/ARCHITECTURE.md) — being absolutely positioned
  * also takes them out of the normal painting order, where positioned
  * elements paint above static ones as a group regardless of DOM order, so
  * card 1 needs `relative` (not the default `static`) to count as positioned
@@ -446,10 +447,10 @@ function ChapbookStack({ item, className }: { item: WorkCollection; className?: 
     <div className={cn('relative', className)} style={{ paddingBottom: deckReserve(hasMore) }}>
       <div className="relative">
         {/* Card 4: permanently blank and neutral — never a real piece, just the
-            bed the count sits on. */}
+            bed the count sits on. Not aria-hidden like the other backing
+            cards, since the count inside it is real information. */}
         {hasMore && (
           <div
-            aria-hidden="true"
             className={cn(deckCardBase, 'h-full')}
             style={{
               background: item.stackAccent ?? 'color-mix(in srgb, var(--foreground) 18%, var(--card))',
@@ -496,7 +497,7 @@ function ChapbookStack({ item, className }: { item: WorkCollection; className?: 
  * A collection's placeholder as a tapered stack of cards, full column width
  * like a standalone piece's image. The cover sits flat on top, fully
  * visible; each card behind it peeks out below by a shrinking, bottom-
- * anchored amount (sec12), so the peek is exact regardless of the mix of
+ * anchored amount (see "Collection stack geometry" in docs/ARCHITECTURE.md), so the peek is exact regardless of the mix of
  * aspect ratios inside the collection. The 4th and lowest card is
  * permanently blank and neutral — never a real piece — and carries the
  * collection's real total on a pill in its own bottom-right corner, so it
@@ -709,8 +710,7 @@ function TextTile({ collection, piece }: { collection: WorkCollection; piece: Wo
  * placeholders.
  */
 function ImageTile({ collection, piece }: { collection: WorkCollection; piece: WorkPiece }) {
-  const withImage = collection.pieces.filter((p) => p.image)
-  const lightboxIndex = Math.max(0, withImage.indexOf(piece))
+  const { items: withImage, index: lightboxIndex } = imageLightboxSlice(collection, piece)
   return (
     <div className="relative w-full overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1">
       <ImageLightbox items={withImage} initialIndex={lightboxIndex} className="rounded-none border-none">
@@ -741,10 +741,11 @@ function ImageTile({ collection, piece }: { collection: WorkCollection; piece: W
 
 /**
  * A hybrid piece's cell: image and words as one unit, neither a caption for
- * the other — the `illustrated` collection layout's tile (§4c), and the same
- * card landing inside an otherwise-`gallery` collection that happens to hold
- * one hybrid piece (§4d). Folio number is the piece's position in the
- * collection, not parsed from its slug.
+ * the other — the `illustrated` collection layout's tile, and the same card
+ * landing inside an otherwise-`gallery` collection that happens to hold one
+ * hybrid piece (see the collection-layouts table in docs/ARCHITECTURE.md).
+ * Folio number is the piece's position in the collection, not parsed from
+ * its slug.
  */
 export function IllustratedTile({
   collection,
@@ -756,8 +757,7 @@ export function IllustratedTile({
   index: number
 }) {
   const tone = toneFor(piece)
-  const withImage = collection.pieces.filter((p) => p.image)
-  const lightboxIndex = Math.max(0, withImage.indexOf(piece))
+  const { items: withImage, index: lightboxIndex } = imageLightboxSlice(collection, piece)
   return (
     <div className="relative w-full overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1">
       <ImageLightbox items={withImage} initialIndex={lightboxIndex} className="rounded-none border-none">

@@ -29,7 +29,10 @@ function useColumnCount(columns: MasonryColumns) {
     return () => {
       for (const { mql } of queries) mql.removeEventListener('change', sync)
     }
-  }, [columns])
+    // Depend on the primitive, not `columns` itself — callers often pass a
+    // fresh object literal (e.g. `{ lg: 2 }`) on every render, which would
+    // otherwise tear down and re-add these listeners on every parent render.
+  }, [columns.lg])
 
   return count
 }
