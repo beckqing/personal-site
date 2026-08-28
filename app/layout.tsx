@@ -21,10 +21,10 @@ const notoSans = Noto_Sans({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://beckqing.com'),
   title: 'beck qing · artist · scientist · designer',
   description:
     'The personal home of Beck Qing — interdisciplinary designer. Paintings, poetry, essays on living in the world, and science communication under one crescent moon.',
-  generator: 'v0.app',
 }
 
 export const viewport: Viewport = {
