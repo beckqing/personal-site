@@ -25,9 +25,11 @@ describes it.
 currently match nothing: `science` (the discipline itself), `oil`, all four
 `field` tags, and four of the six `theme` tags.
 
-`science` is the load-bearing one — the hero copy, the homepage's third panel,
-and the footer all link to `/work?tags=science`, which renders the empty state
-today. **Decided: the vocabulary stays.** Science is core to what this site is
+`science` is the load-bearing one — the hero copy and the homepage's third
+panel both link to `/work?tags=science`, which renders the empty state today.
+(The footer carried a third such link until 2026-08-28, when it was simplified
+down to three icon links plus a disclosure of everything else — see "The
+footer" below.) **Decided: the vocabulary stays.** Science is core to what this site is
 about; the work simply hasn't been uploaded yet. Don't prune the tags, don't
 hide the chips, and don't re-frame the three-discipline structure to match a
 temporarily two-discipline dataset — the gap closes by adding work, not by
@@ -151,11 +153,11 @@ already frame a card's text as a quotation.
 | `/work/[slug]/read` | a chapbook's every piece on one page, front matter to last poem — only generated for chapbooks. A static segment beats a dynamic sibling, so this resolves ahead of `[pieceSlug]`; safe only while no piece is slugged `read` |
 
 Both detail routes are generated from `generateStaticParams` over `WORK`.
-Filter state on `/work` lives in the URL (`?tags=…`), which is why the footer
-and the home page's discipline panels can deep-link straight into a filtered
-view. One consequence worth naming: a deep link is only as good as the tag
-behind it, and `?tags=science` currently deep-links into an empty gallery
-(TODO §2 — content, not a bug; see "Content model" above).
+Filter state on `/work` lives in the URL (`?tags=…`), which is why the home
+page's discipline panels can deep-link straight into a filtered view. One
+consequence worth naming: a deep link is only as good as the tag behind it,
+and `?tags=science` currently deep-links into an empty gallery (TODO §2 —
+content, not a bug; see "Content model" above).
 
 **`sitemap.ts` and `opengraph-image.tsx`** are generated (added 2026-08-27) —
 the two file conventions judged worth having for a 203-page linked portfolio.
@@ -169,11 +171,39 @@ what the footer's `hello@beckqing.com` uses.
 
 **Every social link in `lib/about-content.ts` was supplied by Beck**, not
 inferred from handle patterns — treat them as data, and don't "correct" one
-that looks like it should follow a different convention. Two exceptions worth
-knowing: `behance` and `dribbble` are intentionally `href: '#'` with
-`soon: true`, and **there is no Twitter account** — the `twitter` entry the v0
-scaffold shipped was removed 2026-08-27 because it never corresponded to
-anything. Don't restore it.
+that looks like it should follow a different convention. **There is no
+Twitter account** — the `twitter` entry the v0 scaffold shipped was removed
+2026-08-27 because it never corresponded to anything, and Beck confirmed
+2026-08-28 it was aspirational, not forgotten. Don't restore it. `behance` and
+`dribbble` were `href: '#'` placeholders with `soon: true`; removed 2026-08-28
+at Beck's request rather than left as dead chips — re-add them once they're
+real destinations, not before.
+
+### The footer
+
+`SiteFooter` (`components/site-footer.tsx`) was rebuilt 2026-08-28 to match a
+design Beck had already built and validated on the archived 11ty site
+(`_includes/components/footer.njk` / `site-footer.css`) — a centered stack of
+three icon links (email, instagram, linkedin), a `<details>` disclosure of
+everything else, and a copyright line. The archive's own disclosure was
+present in CSS but commented out in markup; this is that design finished, not
+invented.
+
+No brand mark, no bio line, no `/work?tags=…` deep-links — all deliberately
+cut, not overlooked. The mark would be a second copy of what the sticky header
+already shows (see "The brand mark" above); the bio line was scaffold copy
+Beck never wrote; the discipline deep-links were the footer's only reason to
+need a second column, and removing them let the whole thing collapse to one
+centered column, which was the actual ask ("cleaner layout").
+
+`MORE_LINKS` is a small hardcoded array in the component, not derived from
+`lib/about-content.ts` — the footer's disclosure is a deliberately curated
+subset (no behance/dribbble/kofi/twitter, no duplicate of the email/instagram/
+linkedin icons above it), so treating `about-content.ts` as its source of
+truth would mean filtering it back down to the same list. `LinkedinIcon`
+(`components/linkedin-icon.tsx`) reuses the archive's exact validated path —
+lucide-react v1 dropped brand icons, same reason `InstagramIcon` is
+hand-rolled.
 
 ## Build configuration
 
@@ -208,10 +238,16 @@ Two things that follow from image optimization being on:
 **The mark is the `bq` monogram. The crescent moon is retired.**
 
 Built 2026-08-27: `BrandMark` (`components/brand-mark.tsx`) replaces
-`MoonLogo` at all three call sites — `components/site-nav.tsx`,
+`MoonLogo` at all three call sites it had then — `components/site-nav.tsx`,
 `components/site-footer.tsx`, and `app/page.tsx`'s hero — and
 `components/moon-logo.tsx` is deleted. Beck's preference is strong and
 settled; don't reintroduce the moon anywhere.
+
+**The footer dropped its `BrandMark` again 2026-08-28**, not as a reversal of
+the above — the header is `position: sticky` (`site-nav.tsx`), so the mark is
+already on screen at all times and a second copy in the footer was pure
+redundancy. `BrandMark`'s only call sites today are the sticky header and the
+homepage hero.
 
 The `--moon` CSS token stays: `ThemeToggle` uses it (`bg-moon/10`) and it is
 unrelated to the logo.
@@ -299,7 +335,7 @@ it, which the overpaint approach never guaranteed.
 | `light-field` | Beck's original, overpaint | pale `#CED2CD`, `rx=27` | `#080B24` | white bowl, `#0C3559`/`#69635E` overpaint |
 | `light-gold` | masked | none (page bg) | `#080B24` | `#D9AA52` |
 | `dark-crescent` | masked | none (page bg) | `#CED2CD` | white |
-| `favicon-moon` | masked, crescent only — no stems, no wedge outline | denim `#305789`, `rx=27` | — | white |
+| `favicon-moon` | masked, crescent only — no stems, no wedge outline | denim `#305789`, circle | — | white |
 
 Retired during this pass, superseded by the masked versions above:
 `light-warm`, `dark-pale`, `dark-denim`, `dark-pale-white-crescent`,
@@ -333,8 +369,9 @@ ground — not eyeballed at one size and assumed to hold at others.
 ### Favicon: a different glyph, not a smaller mark
 
 **Decided 2026-08-27, after testing at real tab size.** `favicon-moon` — the
-crescent alone, no stems, no wedge outline, white on a `#305789` denim
-`rx=27` field.
+crescent alone, no stems, no wedge outline, white on a `#305789` denim field
+(originally `rx=27`, recentered onto a circular field 2026-08-28 — see
+below).
 
 The full monogram was tried first and does not survive 16px, for a structural
 reason rather than a colour or weight one: `stroke-width: 11` on a 150
@@ -365,6 +402,42 @@ crescent isn't decorative — it's what the b and q's overlap literally
 produces (see "Construction" above) — so isolating it doesn't abandon the
 monogram's idea, it's the one piece of it that was always legible alone.
 
+### Favicon: recentered onto a circle (2026-08-28)
+
+**The original `favicon-moon.svg` was never actually laid out.** Its crescent
+was the monogram's bowl path left at the bowl's own coordinates (translated
+into frame with a bare `translate(-380, 0)`), which is where the bowl sat
+*inside the full monogram*, not where a standalone favicon's one subject
+belongs. Measured against the tile: the crescent's true bounding box was
+40.2% × 46.1% of the canvas, centered 18px left and 39px low on a 256px
+render — a 15% downward drift, invisible at 256px, illegible at 16.
+
+Fixed by measuring the crescent's real bounding box (rendered at 2048² for
+sub-pixel accuracy: center ≈ `(445.04, 98.55)` in the mask's own coordinate
+space, height ≈ `69.51`) and solving the transform that centers it in the
+150×150 tile at 67% of the tile's height — up from the accidental ~46%. That
+scale increase is also a crispness win on its own: at 16px it takes the
+crescent's thinnest limb from ~2px (below where anti-aliasing renders a clean
+edge) to ~3.2px.
+
+**The field became a circle, not a rounded rect, same pass.** `rx=27` had no
+motivating reason once the layout was being redone — a corner radius is a
+second, competing detail at 16px, jaggy and semi-random next to the subject,
+where a circle has no corners to render badly. Confirmed at 16/24/32/48/64px:
+the circle reads as a moon at every size the rounded rect didn't.
+
+**`app/icon.svg` was added, not just the raster set.** Next resolves it ahead
+of `app/favicon.ico` in Chromium and Firefox, and being a vector it's crisp at
+any size — the ICO is now effectively a Safari/legacy fallback rather than the
+primary asset. `docs/brand/variants/favicon-moon.svg` and `app/icon.svg` are
+kept byte-identical; the latter is the one Next actually serves.
+
+**`app/apple-icon.png` keeps the old rounded-rect logic's opposite: a square,
+full-bleed field, not a circle.** iOS applies its own squircle mask to
+apple-icons — a circle inside that mask renders as a shrunken dot with dead
+corners, so the field there stays a plain unrounded square at the same
+recentered scale.
+
 ### One geometry, three levels of detail
 
 Decided 2026-08-27. The mark is not treated identically everywhere, because
@@ -378,7 +451,7 @@ render. Detail is spent where there are pixels to spend it on.
 
 | Context | Size | Treatment |
 |---|---|---|
-| **favicon** | 16–256px | Keeps a field: **denim or indigo ground, white letterforms.** |
+| **favicon** | 16–256px | Keeps a field: **denim ground (circular, since 2026-08-28), white letterforms.** |
 | **header / footer** | 32px | **Monotone silhouette or stroke**, `currentColor`. No field, no internal colour. |
 | **hero** | 64px | **Field-less, counters filled**: the `b`'s crescent in white, the other two counters in a subtle tone. |
 
@@ -444,6 +517,11 @@ which is not the decided treatment. Produce `app/favicon.ico` (and a 180×180
 
 The collage icons need no work: `data/icons-raw.json` is byte-identical to the
 archive's `_data/icons.json`. Only the favicon set was ever v0's.
+
+This section records the 2026-08-27 decision to generate rather than copy; the
+geometry it produced was corrected 2026-08-28 (see "Favicon: recentered onto a
+circle" above) and `app/icon.svg` was added alongside `app/favicon.ico` and
+`app/apple-icon.png`.
 
 ---
 

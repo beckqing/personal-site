@@ -33,11 +33,13 @@ root cause as §2.
 
 ## 2. `science` is a discipline with zero work in it — **content, not design**
 
-The hero copy's `science` word, the homepage's third discipline panel, and
-the footer's `science` link all go to `/work?tags=science`, and no item
-anywhere in `lib/work.ts` carries the `science` tag — the gallery renders its
-empty state. Ten tags in the filter vocabulary have zero matching items today
-(`science`, `oil`, all four `field` tags, and four of the six `theme` tags).
+The hero copy's `science` word and the homepage's third discipline panel both
+go to `/work?tags=science` (the footer's copy of this link was removed
+2026-08-28, when the footer was simplified to three icon links and a
+disclosure), and no item anywhere in `lib/work.ts` carries the `science` tag —
+the gallery renders its empty state. Ten tags in the filter vocabulary have
+zero matching items today (`science`, `oil`, all four `field` tags, and four
+of the six `theme` tags).
 
 **Decided (2026-08-27): Beck fills it.** Science is core to Beck's identity;
 the work just hasn't been uploaded yet. The vocabulary stays exactly as it
@@ -88,3 +90,75 @@ the tag vocabulary in §2 changes.
 
 - [ ] `public/placeholder.jpg` is referenced by nothing. (`placeholder.svg`
       survives only as the dead fallback in §5 — if that goes, it can go too.)
+
+## 7. About tab glyphs want to become small illustrations — **Beck draws this**
+
+`TabGlyph` (`components/tab-glyph.tsx`) currently places one or two doodles in
+disjoint sub-regions of a 32×32 badge, all in a single `currentColor` accent.
+Beck wants them **larger, in several colours, with the outlines overlapping** —
+closer to a small illustration or profile icon than an icon.
+
+**The visual authoring is Beck's** — which doodles pair, their placement,
+rotation, and per-doodle colour. Beck drew the set and may draw more. Recorded
+here rather than mocked up.
+
+Two mechanism findings from 2026-08-28, so the drawing work isn't blocked on
+rediscovering them:
+
+- [ ] **A body fill is nearly free.** The doodles are hand-inked *outlines with
+      transparent interiors*, so overlapping them as-is reads as crossed wires —
+      nothing occludes anything. But for roughly 70% of the 50 icons the
+      **first subpath in the path data is the outer contour**: fill that
+      subpath as the body, draw the whole path over it as ink, and the doodle
+      becomes an opaque coloured shape that occludes what's behind it. Verified
+      on apple, cupcake, beaker, envelope, laptop, flask, uke, globe,
+      paint_tube. It does *not* work on crane, whisk, wheat, dna,
+      angle_brackets, or flat_brush — their first subpath is an interior flap
+      or a handle, so those need a hand-added body path or stay ink-only.
+- [ ] **Ink must be a token, not a literal.** `#080b24` is light mode's
+      `--foreground` *and* dark mode's `--background` — hardcode it and the
+      illustrations disappear in dark mode. Use `var(--foreground)`; coloured
+      bodies can stay fixed across themes.
+- [ ] A background-coloured halo stroke (`paint-order: stroke`) was tried for
+      extra separation between overlapping doodles. **It's worse** — the upper
+      doodle's halo covers the lower one's fill and the colour is lost. Filled
+      bodies, no halo.
+- [ ] Unrelated but adjacent: the key `"whisk "` in `data/icons-raw.json` has a
+      trailing space. `lib/brand-icons.ts` already `.trim()`s it so nothing is
+      broken — worth cleaning if that file is being edited anyway.
+
+Separable and not blocked on any of the above: the badge's swap easing is
+`cubic-bezier(0.22, 1, 0.36, 1)` — ease-out expo, **zero overshoot**. A
+back-out curve would give the bounce Beck asked for, as a one-line change.
+
+## 8. Gallery filter changes snap rather than animate — **blocked on a MasonryGrid rewrite**
+
+Filtering `/work` re-renders the grid instantly. A sliding (FLIP) transition
+was investigated 2026-08-28 and **is not a small change**, for a structural
+reason worth recording:
+
+`MasonryGrid` deals children round-robin into **separate flex-column `<div>`s**
+(`cols[i % columnCount].push(child)`). When the filter changes, a card's index
+changes and it moves to a *different column* — a different DOM parent. React
+can't reparent, so it unmounts the node and mounts a fresh one; stable
+`key={item.slug}` doesn't help. FLIP's premise is "same node, measure before
+and after," so it cannot work against this layout. Worse, cards that happen to
+stay in their own column *would* animate while the rest pop — non-uniform, and
+more jarring than a clean snap.
+
+- [ ] Any real fix starts by restructuring `MasonryGrid` — most likely one flat
+      relatively-positioned container with cards placed by measured
+      `transform: translate(x, y)`, so nothing ever reparents. That needs a
+      `ResizeObserver` per card (heights vary, images load async) and an
+      explicit container height, and it weakens the file's current
+      pre-hydration story, where the responsive grid template lays out
+      correctly with no JS.
+- [ ] Alternative considered: per-card `view-transition-name`, which survives
+      reparenting and would leave `MasonryGrid` alone. The site already uses
+      the View Transitions API for the theme toggle. Parked because filter
+      state lives in the URL via `router.replace` inside `useTransition`, and
+      capturing the correct "after" state through React 19's async transitions
+      is fiddly — plus an open question about colliding with the existing
+      root-level `::view-transition-*` rules and their 600ms duration.
+
+**Deliberately deferred 2026-08-28** — not worth resolving now.

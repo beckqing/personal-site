@@ -32,6 +32,7 @@ export const ABOUT_TABS: AboutTab[] = [
         ],
         links: [
           { label: 'instagram', href: 'https://www.instagram.com/beckqing/', icon: 'instagram' },
+          { label: 'linkedin', href: 'https://www.linkedin.com/in/beck-arruda/' },
         ],
       },
     ],
@@ -48,8 +49,6 @@ export const ABOUT_TABS: AboutTab[] = [
         links: [
           { label: 'instagram', href: 'https://www.instagram.com/beckqing/', icon: 'instagram' },
           { label: 'youtube', href: 'https://www.youtube.com/@beckqing' },
-          { label: 'behance', href: '#', soon: true },
-          { label: 'dribbble', href: '#', soon: true },
         ],
       },
       {

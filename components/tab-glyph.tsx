@@ -75,7 +75,9 @@ export function TabGlyph({ active, className }: { active: AboutTabId; className?
                 transformOrigin: '16px 16px',
                 transitionProperty: 'opacity, transform',
                 transitionDuration: '500ms',
-                transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                // Back-out curve (overshoots past 1 before settling) rather
+                // than a plain ease-out, so the incoming doodle bounces in.
+                transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
                 opacity: isActive ? 1 : 0,
                 transform: isActive ? 'scale(1) rotate(0deg)' : 'scale(0.7) rotate(16deg)',
               }}

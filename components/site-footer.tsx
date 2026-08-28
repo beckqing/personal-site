@@ -1,10 +1,29 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Mail } from 'lucide-react'
-import { BrandMark } from '@/components/brand-mark'
 import { InstagramIcon } from '@/components/instagram-icon'
+import { LinkedinIcon } from '@/components/linkedin-icon'
+
+const ICON_LINKS = [
+  { label: 'hello@beckqing.com', title: 'email: hello@beckqing.com', href: 'mailto:hello@beckqing.com', Icon: Mail },
+  { label: 'instagram', title: 'instagram: @beckqing', href: 'https://www.instagram.com/beckqing/', Icon: InstagramIcon },
+  { label: 'linkedin', title: 'linkedin: beck-arruda', href: 'https://www.linkedin.com/in/beck-arruda/', Icon: LinkedinIcon },
+] as const
+
+// Everything else — deliberately not iconified, just a quiet disclosure.
+// Behance/dribbble are `soon: true` in about-content.ts and stay off this
+// list until they're real; kofi and twitter never existed / were retired.
+const MORE_LINKS = [
+  { label: 'github', href: 'https://github.com/beckqing' },
+  { label: 'youtube', href: 'https://www.youtube.com/@beckqing' },
+  { label: 'codepen', href: 'https://codepen.io/beckqing' },
+  { label: 'character art instagram', href: 'https://www.instagram.com/nocturnalwhims' },
+  { label: 'deviantart', href: 'https://www.deviantart.com/nocturnalwhims' },
+  { label: 'artfight', href: 'https://artfight.net/~Wister' },
+  { label: 'toyhouse', href: 'https://toyhou.se/Wister' },
+  { label: 'flours and fungi', href: 'https://www.floursandfungi.com/' },
+] as const
 
 export function SiteFooter() {
   const pathname = usePathname()
@@ -13,65 +32,39 @@ export function SiteFooter() {
 
   return (
     <footer className="relative z-10 mt-24 border-t border-border/70 bg-card/40">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-12 sm:px-8 md:flex-row md:items-start md:justify-between">
-        <div className="max-w-sm">
-          <Link href="/" className="flex items-center gap-2.5">
-            <BrandMark className="h-8 w-8" />
-            <span className="font-brand text-lg font-bold lowercase text-foreground">
-              beck qing
-            </span>
-          </Link>
-          <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-            Interdisciplinary designer, painter, and writer. Something of a night
-            owl — working somewhere between art and science.
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-5 px-5 py-12 text-center sm:px-8">
+        <div className="flex items-center gap-6">
+          {ICON_LINKS.map(({ label, title, href, Icon }) => (
+            <a
+              key={href}
+              href={href}
+              title={title}
+              aria-label={title}
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Icon className="h-6 w-6" />
+              <span className="sr-only">{label}</span>
+            </a>
+          ))}
+        </div>
+
+        <details className="group">
+          <summary className="font-brand-italic cursor-pointer list-none text-sm text-muted-foreground/70 transition-colors hover:text-muted-foreground [&::-webkit-details-marker]:hidden">
+            see more
+          </summary>
+          <p className="mt-3 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground">
+            {MORE_LINKS.map((link, i) => (
+              <span key={link.href}>
+                <a href={link.href} className="underline-offset-4 hover:text-foreground hover:underline">
+                  {link.label}
+                </a>
+                {i < MORE_LINKS.length - 1 && ', '}
+              </span>
+            ))}
           </p>
-        </div>
+        </details>
 
-        <div className="flex flex-col gap-6 sm:flex-row sm:gap-16">
-          <nav className="flex flex-col gap-2.5">
-            <span className="font-brand text-xs uppercase tracking-widest text-muted-foreground/70">
-              explore
-            </span>
-            <Link href="/work" className="text-sm text-foreground/80 transition-colors hover:text-goldenrod">
-              all work
-            </Link>
-            <Link href="/work?tags=art" className="text-sm text-foreground/80 transition-colors hover:text-art">
-              art
-            </Link>
-            <Link href="/work?tags=writing" className="text-sm text-foreground/80 transition-colors hover:text-writing">
-              writing
-            </Link>
-            <Link href="/work?tags=science" className="text-sm text-foreground/80 transition-colors hover:text-science">
-              science
-            </Link>
-            <Link href="/about" className="text-sm text-foreground/80 transition-colors hover:text-goldenrod">
-              about
-            </Link>
-          </nav>
-
-          <div className="flex flex-col gap-2.5">
-            <span className="font-brand text-xs uppercase tracking-widest text-muted-foreground/70">
-              say hello
-            </span>
-            <a
-              href="mailto:hello@beckqing.com"
-              className="flex items-center gap-2 text-sm text-foreground/80 transition-colors hover:text-goldenrod"
-            >
-              <Mail className="h-4 w-4" />
-              hello@beckqing.com
-            </a>
-            <a
-              href="https://www.instagram.com/beckqing/"
-              className="flex items-center gap-2 text-sm text-foreground/80 transition-colors hover:text-goldenrod"
-            >
-              <InstagramIcon className="h-4 w-4" />
-              instagram
-            </a>
-          </div>
-        </div>
-      </div>
-      <div className="border-t border-border/60">
-        <p className="mx-auto max-w-6xl px-5 py-5 text-xs text-muted-foreground/70 sm:px-8">
+        <p className="text-xs text-muted-foreground/70">
           © {new Date().getFullYear()} beck qing
         </p>
       </div>
