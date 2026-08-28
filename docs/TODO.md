@@ -3,25 +3,18 @@
 Open work only. Design decisions, structure, and the record of what's already
 built live in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-Last reconciled against the tree 2026-08-27 (third pass, re-audited after the
-implementation landed). `tsc --noEmit` clean; `next build` clean, 203 static
-pages, TypeScript now actually validated during the build.
+Last reconciled against the tree 2026-08-28. `tsc --noEmit` clean; `next
+build` clean, 204 static pages, TypeScript validated during the build.
 
 Almost everything from the previous pass is closed. §1 and §2 were always
 blocked on Beck rather than on code; §4–§6 are small items that were dropped
 from this file during the implementation pass without actually being done, and
 are restored here rather than lost.
 
-**Specced 2026-08-28:** §9, §10, and §12 are fully designed in
-[specs/2026-08-essays-viewer-sort.md](specs/2026-08-essays-viewer-sort.md) —
-decisions taken, interfaces, edge cases, and what's out of scope. Build from
-that document, not from the summaries here. §11 is deferred by Beck.
-
-**2026-08-28:** §9–§11 added from Beck's review — the three imported essays
-lost their structure and links (§9, checked against the archived originals),
-the lightbox and the single-piece view look like the same thing (§10), and two
-WIP screenshots are shipping as standalone finished pieces (§11). None are
-started.
+**2026-08-28: §9, §10, and §12 shipped**, built from the spec now at
+[history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
+— see that file for where the build diverged. §11 is still deferred by Beck;
+see that section below.
 
 ---
 
@@ -174,157 +167,43 @@ more jarring than a clean snap.
 
 **Deliberately deferred 2026-08-28** — not worth resolving now.
 
-## 9. The three essays were flattened on import — **structure and links lost**
+## 9. The three essays were flattened on import — **shipped 2026-08-28**
 
-> **Specced:** [specs/2026-08-essays-viewer-sort.md](specs/2026-08-essays-viewer-sort.md)
-> workstream A. Format decided: MDX under `content/essays/`.
+Restored as MDX from the archive Markdown (`content/essays/*.mdx`), rendered
+through `components/essay.tsx`. `scripts/check-essay-fidelity.mjs` confirms
+all three match the archive prose word for word. See
+[history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
+for the full build record and where it diverged from the spec.
 
-**Checked against the originals 2026-08-28.** The archive
-(`github.com/beckqing/archived-personal-site`, `posts/*.md`) still holds all
-three as Markdown. Answering Beck's question directly: **all three were
-rewritten, not just the art fair one.** Every one lost its heading structure,
-its non-paragraph blocks, and every external link, and the prose itself was
-re-worded rather than re-wrapped.
+- [ ] **Beck:** source the booth/setup photos for `first-art-fair` from
+      Instagram, if they still exist — `[ when a woman ]`,
+      `[ photos of setup sketch and practice ]`, `[ photos of actual setup ]`,
+      `[ photos of my sketched setup ]`, `[ photos of my setup ]`, and
+      `[ flyer contest ]` all shipped omitted (no asset ever existed in the
+      archive). `mother earth` and `fire protection` needed no new upload —
+      they're cross-linked to `hthtpw/01-mama-earth` and
+      `april-colors-19/10-fire-protection`, which were already in the tree.
+- [ ] **`inktober-17` is a fourth import worth re-checking**, not covered by
+      this workstream. The archive's `projects/inktober-2017.md` carries
+      per-image alt text via `{% galleryImage %}` (Swift, Divided, Poison, …)
+      and a `<small>` "(Last updated 20 January 2023.)" line, not yet audited
+      against `lib/work.ts`.
 
-The mechanical cause is one component. `Prose`
-(`components/work-visuals.tsx:619`) is `text.split('\n\n').map(p => <p>)` —
-paragraphs and nothing else. `writeup` is a plain `string` on `WorkPiece`, so
-there is nowhere for a heading, a list, a blockquote, a display block, a link,
-or an inline image to *live*, let alone render. **Restoring the essays means
-giving `writeup` a richer shape first** — MDX, a small block union
-(`{ kind: 'heading' | 'verse' | 'list' | 'quote' | 'image' | 'prose' }`), or
-Markdown parsed at build time. That decision gates all three items below.
+## 10. Single-piece view and the lightbox look like the same thing — **shipped 2026-08-28**
 
-Note that `VerseBlock` already exists and is the right primitive for
-line-preserving display text — it just isn't reachable from a `writeup`.
-
-- [ ] **Decide the `writeup` block format.** Everything else here is blocked
-      on it.
-
-### 9.1 `chinese-emoji-poetry`
-
-- [ ] **The poems belong in display blocks, not inline prose.** The original
-      has two `<center>` blocks, each: emoji title glyph, the emoji stanza,
-      the Chinese title, then the Chinese source poem. The import mashed each
-      into one run-on paragraph joined by `→`. Beck's note: the usual poetry
-      format is casual/monospace/italic (`VerseBlock`), **but the CJK and
-      emoji blocks likely want upright and centred instead of slanted** —
-      italic CJK is a synthesized oblique, and emoji ignore the slant
-      entirely. Probably a `verse` block with a centred, non-italic variant.
-- [ ] The Google Translate output was a **blockquote** of four lines; it is
-      now an inline double-quoted sentence run together with the paragraph.
-- [ ] **Four links were dropped**: *19 Ways of Looking at Wang Wei* (Google
-      Books), the MDBG dictionary query, the Unicode CLDR emoji list, and the
-      full-emoji-list link behind "varies from platform to platform".
-- [ ] Smaller losses: the closing `(This is a modified version…)` was `<small>`,
-      book titles were italicised, and the original's aside "(currently
-      building this)" about a platform-comparison tool was cut.
-
-### 9.2 `first-art-fair`
-
-- [ ] **Headings.** Three `##` sections — "How it started", "Type II Fun",
-      "Third time's the charm?" — plus an `####` pair repeated per market:
-      "+ things that went well" / "Δ things to change for next time" (shortened
-      to "+ good" / "Δ for next time" for markets two and three). All three
-      markets are now indistinguishable walls of paragraph.
-- [ ] **The emoji bullets.** `<ul class="emoji-bullet">`, each item
-      `emoji + <i>label.</i>` in a mono span, then the explanation — 🎯 *I did
-      it!*, 🎪 *booth layout.*, 🚗 *travel logistics.*, ⌛ *practice & setup
-      time.*, 🌬 *wind.*, 🏷 *labels.*, 💳 *pos.*, 🥣 *food.*, 👋 *me.*, and so
-      on. Markets two and three reuse the same labels, which is the whole
-      point: **the repeated vocabulary is how the three markets compare across
-      the season.** Two rows are label-only shorthand (`🎯 profit. 📌 layout.
-      🚗 transport.`) meaning "same as before, no notes" — that reads as
-      nothing at all once flattened into a sentence.
-- [ ] **Blockquote.** The Brighton Bazaar application pitch was a quote block.
-- [ ] **Market header blocks.** Each market is introduced by its name, hours,
-      and date on their own lines ("stART on the Street / 11-6 Sunday 18
-      September 2022"). Those dates are gone entirely from the current text.
-- [ ] **Links dropped**: StART on the Street, StART at the Station, Brighton
-      Bazaar (Instagram), Hassle Flea. Also lost: *delirium*, the name of the
-      interactive piece demoed at Hassle Flea, now just "an interactive art
-      piece".
-- [ ] **Images — this is new work, not restoration.** The original only ever
-      had bracketed placeholders: `[ when a woman ] [ mother earth ] [ fire
-      protection ]` (the three works submitted with the application),
-      `[ photos of setup sketch and practice ]`, `[ photos of actual setup ]`
-      for stART, `[ photos of my sketched setup ]` and `[ photos of my setup ]`
-      for Brighton Bazaar, and `[ flyer contest ]` for Hassle Flea. **No image
-      files exist in the archive for any of them.** Of the three application
-      works, two are already in `lib/work.ts` — `hthtpw/01-mama-earth` and
-      `april-colors-19/10-fire-protection` — so those can be cross-linked
-      rather than re-uploaded; "when a woman" is not in the tree at all. The
-      booth and setup photos are the ones that would have to come from
-      Instagram. Note the archive also captions the first row ("The three
-      works I submitted with my application") in `<small>` — captions are part
-      of the block format decision above.
-
-### 9.3 `note-systems`
-
-Beck asked whether the others were rewritten too. This one is the clearest yes.
-
-- [ ] **Headings.** Three `#` sections — ANALOG, DIGITAL TOOLS, THE GOAL —
-      with two `##` subsections under the second (handwriting /
-      non-handwriting). All gone.
-- [ ] **The opening summary block.** "Current setup as of January 2023 —" is
-      followed by a blockquote containing two `#####` headings (Digital: /
-      Analog:) each over a bulleted list. The import turned that structured
-      at-a-glance summary into one comma-spliced sentence, which is exactly
-      the content that most wanted to stay a list.
-- [ ] **Every tool link dropped** — TickTick, Google Calendar, Samsung Notes,
-      OneNote, Nebo, Squid, Bamboo Paper, Infinite Painter, Todoist, Notion,
-      Trello.
-
-### 9.4 Cross-cutting
-
-- [ ] **`inktober-17` is the fourth import worth re-checking.** The archive's
-      `projects/inktober-2017.md` carries per-image alt text via
-      `{% galleryImage %}` (Swift, Divided, Poison, …) and a `<small>` "(Last
-      updated 20 January 2023.)" line. Not audited against `lib/work.ts` yet.
-- [ ] **Decide the fidelity rule going forward.** The rewrites smoothed Beck's
-      voice — contractions normalised, exclamation points removed, asides
-      folded into clauses. Given the standing rule that Instagram captions
-      must be Beck's verbatim text, the essays should almost certainly be
-      restored from the archive Markdown rather than re-edited from the
-      current strings.
-
-## 10. Single-piece view and the lightbox look like the same thing
-
-> **Specced:** [specs/2026-08-essays-viewer-sort.md](specs/2026-08-essays-viewer-sort.md)
-> workstream B. Decided: immersive lightbox, scroll down flies the image home.
-
-Opening the lightbox from a piece's own page barely changes what's on screen,
-so the interaction doesn't announce itself as a mode change.
-
-The two are genuinely near-identical: the piece page renders the image through
-`PieceMedia` at `max-w-3xl` with title, meta line, and text below
-(`app/work/[slug]/[pieceSlug]/page.tsx:196`); the lightbox renders the same
-image `contain` at `max-h-[65vh]` over a `bg-background/96` backdrop, with a
-centred category · discipline · year line, the title, and an `n / total`
-counter under it (`components/image-lightbox.tsx:110`). Same background
-colour, same caption fields, similar image size — the scrim is 96% opaque, so
-even the page behind it doesn't read as "still there".
-
-**Beck's ask: make scrolling down inside the lightbox return to the regular
-single-image page view** — YouTube's theater mode, where the scroll gesture
-demotes the immersive view back into the page rather than trapping you in a
-dialog you have to dismiss.
-
-- [ ] Decide what the two modes should each look like once they're
-      distinguishable. The lightbox should probably get *more* immersive
-      (bigger image, less chrome, a real scrim) so the difference is obvious
-      before the scroll gesture is what has to explain it.
-- [ ] The scroll-to-exit gesture itself. Base UI's `Dialog` locks body scroll
-      while open, so the wheel/touch handler and the transition out are both
-      on us. Worth checking whether this should reuse the View Transitions
-      setup the theme toggle already uses (see §8's note on the root-level
-      `::view-transition-*` rules and their 600ms duration).
+The lightbox is now genuinely immersive (opaque `--background` backdrop,
+image up to `92vh`/`92vw`, no border/rounding, chrome that idle-fades after
+2.5s) and scrolling down inside it flies the image back to its in-page rect
+via a plain FLIP animation, closing the dialog once the flight finishes. All
+in `components/image-lightbox.tsx`. See
+[history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
+for the full build record.
 
 ## 11. Three WIP screenshots are shipping as standalone finished pieces — **deferred by Beck**
 
 > Direction is process-stills on the finished piece; details to be talked
 > through. Sketch and open questions in
-> [specs/2026-08-essays-viewer-sort.md](specs/2026-08-essays-viewer-sort.md)
+> [history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
 > workstream D. **Don't implement it yet.**
 
 Both confirmed by opening the files 2026-08-28 — these aren't near-duplicates,
@@ -353,27 +232,14 @@ they're in-progress captures of pieces that also ship finished.
       for Beck.** Those three are the only standalone images carrying app
       chrome — the sweep is done, the list is complete.
 
-## 12. The gallery has no sort at all — **specced, not built**
+## 12. The gallery has no sort at all — **shipped 2026-08-28**
 
-> **Specced:** [specs/2026-08-essays-viewer-sort.md](specs/2026-08-essays-viewer-sort.md)
-> workstream C.
+`sortWork(items, mode)` in `lib/work.ts` (`curated | newest | oldest`,
+`curated` the identity default) and a cycle control beside the venn toggle,
+with `?sort=` in the URL on the same terms as `?mode=`. See
+[history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
+for the full build record.
 
-`filterWork` filters and returns items in array order; `WorkGallery` renders
-that straight into `MasonryGrid`. So `/work` shows **whatever order
-`REAL_WORK` happens to be in**, which is only loosely chronological:
-collections first (2020, 2019, 2024, 2017, 2019, 2019…), then standalone art
-roughly ascending 2019 → 2024, then all four writing items last. `april-colors-24`
-sits third in the gallery; `inktober-17` fourth.
-
-**There is no upload date in the data.** `year` is the only temporal field — a
-4-character string for when the *work* was made, not when it reached the site —
-so "sort by when it went up" needs a new field before it can be an option.
-
-- [ ] `sortWork(items, mode)` in `lib/work.ts` with
-      `curated | newest | oldest`; `curated` is identity and stays the default,
-      ties break by authored position.
-- [ ] A cycle control beside the venn toggle, with `?sort=` in the URL on the
-      same terms as `?mode=` (default omitted, unknown values fall back).
 - [ ] **Beck:** if "recently added" is wanted, that needs an `added` date
-      backfilled onto items. The field is specced; no item carries one, so the
-      mode shouldn't appear until some do.
+      backfilled onto items. The field is documented on `WorkPiece`; no item
+      carries one, so the mode shouldn't appear until some do.

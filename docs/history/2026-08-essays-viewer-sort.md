@@ -1,9 +1,49 @@
-# Spec — essay restoration, viewer modes, and gallery sort
+# Spec — essay restoration, viewer modes, and gallery sort (archived)
 
-**Status: as-designed, not yet built.** Written 2026-08-28. Move this file to
-[../history/](../history/) once it ships, stamped with where the build
-diverged — per the `docs/history/` rule in
-[ARCHITECTURE.md](../ARCHITECTURE.md#conventions).
+> **This is history, not current documentation. Status: shipped 2026-08-28.**
+> Workstreams A, B, and C below were built essentially as specced. **Current
+> documentation is [../ARCHITECTURE.md](../ARCHITECTURE.md)** — read this only
+> for the derivations and per-essay restoration notes ARCHITECTURE.md
+> deliberately doesn't carry.
+>
+> **Where the build diverged from this spec:**
+>
+> - **A.4 — `essayComponents` gained an `h5` mapping**, not in the spec's
+>   enumerated component list (`h2`/`h3`/`h4`/`p`/`a`/`ul`/`ol`/`li`/
+>   `blockquote`/`hr`/`strong`/`em`). `note-systems`'s opening blockquote
+>   nests two `##### Digital:` / `##### Analog:` headings, and Tailwind's
+>   Preflight neutralizes an unstyled `h5`'s size/weight to match surrounding
+>   text — without a mapping, "Digital:"/"Analog:" would render identically to
+>   plain paragraph text, defeating the point of the block the spec calls
+>   "the single block most damaged by the flattening." Styled through the
+>   same descending-size heading pattern as `h4`, one step smaller.
+> - **A.4 — the blockquote's left-rule colour.** The spec says "using the
+>   piece's tone," but `essayComponents` is one global, piece-agnostic map
+>   (per A.3's declared component signatures, nothing in the tree passes a
+>   piece or tone into it), and `first-art-fair` carries both `art` and
+>   `writing` tags, so `toneFor()` wouldn't even resolve to the same tone
+>   Beck presumably meant. Shipped as a fixed `var(--writing)` — all three
+>   MDX essays are writing pieces.
+> - **A.5 — two verbatim oddities kept, not smoothed over.** The "never
+>   rewrite imported content" rule cuts against silently treating stray
+>   archive characters as noise, so both shipped exactly as found:
+>   `chinese-emoji-poetry`'s first `<Verse>` ends with a lone `__` (no
+>   markdown pair, renders as literal text) immediately before the poem
+>   ends; `first-art-fair` has a lone `—` as its own paragraph before the
+>   closing paragraph. Worth Beck's eye — both read as possible authoring
+>   slips, but "possible slip" isn't "confirmed slip."
+> - **A.6 — first-art-fair's flyer-contest caption also dropped.** The spec's
+>   omission list names `[ flyer contest ]` itself; the sentence right below
+>   it in the archive ("My submission for the flyer contest.") captions that
+>   now-nonexistent figure, so it was dropped too, by the same "don't caption
+>   a figure that isn't there" rule the spec states for `<FigureRow>`.
+> - **A.6 — *delirium* shipped italicised**, matching the book-title
+>   convention from the other essay. The spec's restoration notes don't say
+>   either way.
+> - **Acceptance — the static page count.** The spec's "203 today" baseline
+>   was already stale before this build started: a clean build of the
+>   pre-workstream tree produced 204 pages. The actual acceptance bar —
+>   unchanged by MDX bodies adding no routes — holds: 204 before, 204 after.
 
 Covers [TODO.md](../TODO.md) §9 (workstream A), §10 (B), a new §12 (C), and
 records §11 as explicitly deferred (D). Every decision below is settled — an

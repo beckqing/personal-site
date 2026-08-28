@@ -16,6 +16,8 @@ import {
   WORK,
 } from '@/lib/work'
 import { BookFolio, categoryLabel, Prose, TagLinks, VerseBlock } from '@/components/work-visuals'
+import { EssayBody } from '@/components/essay'
+import { essayBody } from '@/lib/essay-bodies'
 import { PieceMedia } from '@/components/media-player'
 import { BookPageNav } from '@/components/book-page-nav'
 import { cn } from '@/lib/utils'
@@ -55,6 +57,7 @@ export default async function CollectionPiecePage({
   const hybrid = isHybrid(piece)
   const chapbook = isChapbook(collection)
   const lightboxSlice = imageLightboxSlice(collection, piece)
+  const Body = essayBody(piece.slug)
 
   if (chapbook) {
     // A book's first page has no previous page, and its last has no next —
@@ -236,7 +239,13 @@ export default async function CollectionPiecePage({
             </>
           )}
 
-          {piece.writeup && <Prose text={piece.writeup} className="mt-6" />}
+          {Body ? (
+            <EssayBody className="mt-6">
+              <Body />
+            </EssayBody>
+          ) : (
+            piece.writeup && <Prose text={piece.writeup} className="mt-6" />
+          )}
           <TagLinks tags={piece.tags} className="mt-8" />
         </div>
       </article>

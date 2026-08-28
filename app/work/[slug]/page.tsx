@@ -26,6 +26,8 @@ import {
   TagLinks,
   VerseBlock,
 } from '@/components/work-visuals'
+import { EssayBody } from '@/components/essay'
+import { essayBody } from '@/lib/essay-bodies'
 import { PieceMedia } from '@/components/media-player'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
@@ -146,6 +148,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
   const tone = toneFor(piece)
   const textForward = isTextForward(piece)
   const hybrid = isHybrid(piece)
+  const Body = essayBody(piece.slug)
 
   const meta = (
     <p className="font-brand mt-2 flex flex-wrap items-center gap-2 text-sm lowercase" style={{ color: tone }}>
@@ -171,7 +174,13 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         >
           <VerseBlock text={piece.text ?? ''} className="text-xl text-foreground" />
         </div>
-        {piece.writeup && <Prose text={piece.writeup} className="mt-8" />}
+        {Body ? (
+          <EssayBody className="mt-8">
+            <Body />
+          </EssayBody>
+        ) : (
+          piece.writeup && <Prose text={piece.writeup} className="mt-8" />
+        )}
         <TagLinks tags={piece.tags} className="mt-10" />
       </article>
     )
@@ -189,7 +198,13 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         {piece.description && (
           <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">{piece.description}</p>
         )}
-        {piece.writeup && <Prose text={piece.writeup} className="mt-6" />}
+        {Body ? (
+          <EssayBody className="mt-6">
+            <Body />
+          </EssayBody>
+        ) : (
+          piece.writeup && <Prose text={piece.writeup} className="mt-6" />
+        )}
         <TagLinks tags={piece.tags} className="mt-8" />
       </div>
     </article>

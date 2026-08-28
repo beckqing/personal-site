@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowRight, Quote, RotateCcw, Search, X } from 'lucide-react'
+import { ArrowDownUp, ArrowRight, Quote, RotateCcw, Search, X } from 'lucide-react'
 import {
   ALL_TAGS,
   DISCIPLINE_FACETS,
@@ -19,6 +19,9 @@ import {
   mediumFor,
   MODE_LABEL,
   nextMode,
+  SORT_LABEL,
+  SORT_MODES,
+  sortWork,
   tagTone,
   toneFor,
   UNIVERSAL_FACETS,
@@ -26,6 +29,7 @@ import {
   workHref,
   type Discipline,
   type FilterMode,
+  type SortMode,
   type WorkCollection,
   type WorkItem,
 } from '@/lib/work'
@@ -401,6 +405,10 @@ export function WorkGallery() {
     const m = searchParams.get('mode')
     return FILTER_MODES.includes(m as FilterMode) ? (m as FilterMode) : 'and'
   }, [searchParams])
+  const sort = useMemo<SortMode>(() => {
+    const s = searchParams.get('sort')
+    return SORT_MODES.includes(s as SortMode) ? (s as SortMode) : 'curated'
+  }, [searchParams])
 
   // Local mirror of the search box for instant typing feedback.
   const [queryInput, setQueryInput] = useState(urlQuery)
@@ -410,7 +418,7 @@ export function WorkGallery() {
 
   const commit = useCallback(
     (
-      changes: { q?: string | null; tags?: string[] | null; mode?: FilterMode | null },
+      changes: { q?: string | null; tags?: string[] | null; mode?: FilterMode | null; sort?: SortMode | null },
       historyMode: 'push' | 'replace',
     ) => {
       const sp = new URLSearchParams(Array.from(searchParams.entries()))
@@ -426,6 +434,11 @@ export function WorkGallery() {
         // 'and' is the default, so it stays out of the URL for clean links.
         if (changes.mode && changes.mode !== 'and') sp.set('mode', changes.mode)
         else sp.delete('mode')
+      }
+      if ('sort' in changes) {
+        // 'curated' is the default, so it stays out of the URL for clean links.
+        if (changes.sort && changes.sort !== 'curated') sp.set('sort', changes.sort)
+        else sp.delete('sort')
       }
       const qs = sp.toString()
       const url = qs ? `${pathname}?${qs}` : pathname
@@ -467,14 +480,19 @@ export function WorkGallery() {
     commit({ mode: nextMode(mode) }, 'push')
   }, [mode, commit])
 
+  const cycleSort = useCallback(() => {
+    const i = SORT_MODES.indexOf(sort)
+    commit({ sort: SORT_MODES[(i + 1) % SORT_MODES.length] }, 'push')
+  }, [sort, commit])
+
   const reset = useCallback(() => {
     setQueryInput('')
-    commit({ q: null, tags: null, mode: null }, 'push')
+    commit({ q: null, tags: null, mode: null, sort: null }, 'push')
   }, [commit])
 
   const results = useMemo(
-    () => filterWork(WORK, { query: queryInput, tags: Array.from(selectedTags), mode }),
-    [queryInput, selectedTags, mode],
+    () => sortWork(filterWork(WORK, { query: queryInput, tags: Array.from(selectedTags), mode }), sort),
+    [queryInput, selectedTags, mode, sort],
   )
 
   const activeDisciplines = useMemo(
@@ -612,6 +630,15 @@ export function WorkGallery() {
               reset
             </button>
           )}
+          <button
+            type="button"
+            onClick={cycleSort}
+            aria-label={`Sort: ${SORT_LABEL[sort]}. Activate to change.`}
+            className="font-brand inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm lowercase text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground"
+          >
+            <ArrowDownUp className="h-3.5 w-3.5" aria-hidden="true" />
+            {SORT_LABEL[sort]}
+          </button>
           <VennMode mode={mode} onCycle={cycleMode} />
         </div>
       </div>

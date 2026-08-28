@@ -4,7 +4,7 @@ How this site is put together and why. Decisions live here; **what's left to
 do lives in [TODO.md](TODO.md)**.
 
 Next.js 16.3, App Router, Turbopack. Fully static — every route prerenders
-(203 pages at last build, including a generated `sitemap.ts` and
+(204 pages at last build, including a generated `sitemap.ts` and
 `opengraph-image.tsx`). No database, no CMS: content is TypeScript, images
 are files in `public/`.
 
@@ -51,6 +51,13 @@ and/or/not, plus free text over title, description, and tags — and, for
 collections only, their children's titles, descriptions, `text`, and
 `preview`.
 
+**The gallery's default order is editorial.** `/work` renders `lib/work.ts`'s
+authored array order, and `sortWork`'s `curated` mode is identity — it is a
+real choice, not an accident, so it is the default and stays out of the URL.
+`newest`/`oldest` sort on `year` (when the work was made — there is no upload
+date in the data) and break ties by authored position, so Beck's order
+survives inside each year.
+
 That last asymmetry was a bug, not a design: an item's **own** `text` and
 `preview` used to go unsearched, so a line of a Mindtober tercet was findable
 (it belongs to a child of a collection) while the same line in a standalone
@@ -72,6 +79,36 @@ on all 22 poems, and nothing else in the tree sets one. The other 34 pieces
 carrying `text` fall through to the full `text` inside an `overflow-hidden`
 card face — fine while those are Mindtober tercets, but the "never clamped"
 guarantee only actually holds where a `preview` was written.
+
+### Essay bodies are MDX; everything else is a string
+
+`writeup` holds a plain string rendered as paragraphs by `Prose` — right for
+the ~20 short process notes that make up almost every write-up on the site.
+Three essays needed more than paragraphs: headings, emoji-bullet lists,
+blockquotes, centred verse blocks, and external links. Rather than grow
+`writeup` into a markup dialect, those bodies live as MDX in
+`content/essays/<slug>.mdx` and render through the components in
+`components/essay.tsx`.
+
+**Why MDX and not a richer string or a typed block union:** the source of
+truth for all three is Markdown in the archived 11ty site, so MDX keeps the
+import close to a copy, which is the whole point — these essays were flattened
+and re-worded once already because the target couldn't hold the source (see
+the "imported content is never rewritten" rule below). Hand-transcribing them
+into a TS block union would have reintroduced exactly that transcription step.
+
+**The server/client boundary is load-bearing.** `lib/work.ts` is imported by
+three client components (`work-gallery`, `image-lightbox`, `media-player`), so
+it stays plain serializable data — no component references, ever. The MDX map
+lives in `lib/essay-bodies.ts`, imported only by the two server page files.
+`lib/work.ts` carries `MDX_ESSAY_SLUGS`, a list of plain strings, so the
+client-side `hasWriteup()` can still badge an essay without importing the MDX
+runtime; `lib/essay-bodies.ts` asserts the two agree at build time.
+
+`mdx-components.tsx` at the repo root is required by `@next/mdx` under the App
+Router, and in Next 16 its `useMDXComponents` **takes no arguments** — older
+examples pass and merge a `components` parameter. `md`/`mdx` are deliberately
+absent from `pageExtensions`: essays are imports, not routes.
 
 **`eye-studies` pieces are titled `01`–`08` on purpose.** Decided 2026-08-27:
 the numbering stays. The collection is a guessing game — the caption text
@@ -160,7 +197,7 @@ and `?tags=science` currently deep-links into an empty gallery (TODO §2 —
 content, not a bug; see "Content model" above).
 
 **`sitemap.ts` and `opengraph-image.tsx`** are generated (added 2026-08-27) —
-the two file conventions judged worth having for a 203-page linked portfolio.
+the two file conventions judged worth having for a 204-page linked portfolio.
 `robots.ts`, `not-found.tsx`, and `error.tsx` are deliberately still absent:
 Next's default `/_not-found` already covers the not-found case, and nothing
 has asked for the other two.
