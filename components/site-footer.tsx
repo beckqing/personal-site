@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Mail } from 'lucide-react'
-import { MoonLogo } from '@/components/moon-logo'
+import { BrandMark } from '@/components/brand-mark'
 import { InstagramIcon } from '@/components/instagram-icon'
 
 export function SiteFooter() {
@@ -16,7 +16,7 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-12 sm:px-8 md:flex-row md:items-start md:justify-between">
         <div className="max-w-sm">
           <Link href="/" className="flex items-center gap-2.5">
-            <MoonLogo className="h-8 w-8" />
+            <BrandMark className="h-8 w-8" />
             <span className="font-brand text-lg font-bold lowercase text-foreground">
               beck qing
             </span>
@@ -61,7 +61,7 @@ export function SiteFooter() {
               hello@beckqing.com
             </a>
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/beckqing/"
               className="flex items-center gap-2 text-sm text-foreground/80 transition-colors hover:text-goldenrod"
             >
               <InstagramIcon className="h-4 w-4" />

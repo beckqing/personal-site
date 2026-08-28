@@ -3,15 +3,16 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Palette, Feather, FlaskConical, Quote } from 'lucide-react'
-import { MoonLogo } from '@/components/moon-logo'
+import { BrandMark } from '@/components/brand-mark'
 import { StampBadge } from '@/components/collage'
 import { HeroWordScatter, IconScatterField, CategoryWord, useCollage } from '@/components/hero-icon-collage'
 import type { IconCategory } from '@/lib/brand-icons'
-import { ARTWORKS, POEMS, PROJECTS } from '@/lib/content'
+import { PROJECTS } from '@/lib/content'
+import { getWorkItem, getCollectionPiece } from '@/lib/work'
 import { cn } from '@/lib/utils'
 
-const featuredArt = ARTWORKS.find((a) => a.slug === 'lamplight') ?? ARTWORKS[0]
-const featuredPoem = POEMS[0]
+const featuredArt = getWorkItem('rabbit-in-the-moon')!
+const featuredPoem = getCollectionPiece('love-worth-heartbreak', 'lost')!.piece
 const featuredProject = PROJECTS[0]
 
 // accentClass holds the full Tailwind class (not just a color name plugged
@@ -113,7 +114,7 @@ function DisciplinePanels() {
                   strokeWidth={1.5}
                 />
                 <p className="font-brand-italic mt-2 text-lg leading-relaxed text-foreground">
-                  {featuredPoem.lines.filter(Boolean).slice(0, 3).join(' ')}
+                  {featuredPoem.preview!.split('\n').filter(Boolean).slice(0, 3).join(' ')}
                 </p>
                 <p className="font-brand mt-4 text-xs lowercase tracking-wide text-muted-foreground">
                   — from &ldquo;{featuredPoem.title}&rdquo;
@@ -164,7 +165,7 @@ export default function HomePage() {
         <section className="relative overflow-hidden">
           <IconScatterField />
           <div className="relative mx-auto flex max-w-6xl flex-col items-center px-5 py-24 text-center sm:px-8 sm:py-32">
-            <MoonLogo className="h-16 w-16" />
+            <BrandMark detail="filled" className="h-16 w-16" />
             <p className="font-brand mt-8 text-sm uppercase tracking-[0.35em] text-secondary-foreground/70">
               personal home of
             </p>

@@ -82,6 +82,10 @@
   --goldenrod: #97671a; /* deeper goldenrod for text */
   --terracotta: #8c3623;
   --moon: #305789;
+  /* BrandMark's hero crescent, `light-gold` colourway — brighter than
+     --goldenrod's text-legible light-mode value, since Beck's own drawn
+     colourway (not a derived one) is what's decided for the mark. */
+  --brand-crescent: #d9aa52;
   --sky: #68bfed;
   --spring-green: #aadb6c;
 
@@ -137,6 +141,10 @@
   --goldenrod: #d9aa52;
   --terracotta: #8c3623;
   --moon: #ced2cd;
+  /* BrandMark's hero crescent, `dark-crescent` colourway — literal white,
+     since it reads as a highlight rather than vanishing the way --moon's
+     own field colour nearly does against this theme's --background. */
+  --brand-crescent: #ffffff;
   --sky: #68bfed;
   --spring-green: #aadb6c;
 
@@ -229,24 +237,6 @@
     transform: rotate(0deg) translateY(-0.4rem) scale(1.025);
   }
 
-  /* a strip of washi tape pinning a panel to the page */
-  .washi-tape {
-    transform: translateX(-50%) rotate(var(--tape-tilt, -5deg));
-    box-shadow: 0 1px 2px rgba(8, 11, 36, 0.15);
-    opacity: 0.9;
-  }
-  .washi-tape::before,
-  .washi-tape::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      -45deg,
-      rgba(255, 255, 255, 0.22) 0 4px,
-      transparent 4px 9px
-    );
-  }
-
   /* an animation tile's centered play triangle, held at rest until hovered
      — a soft breathe, not a video player's insistent loop. The loop only
      exists for people who haven't asked for less motion; the scale/opacity
@@ -262,7 +252,7 @@
   /* A collection stack's backing cards (CollectionStack / ChapbookStack in
      work-visuals.tsx) — bottom-anchored via negative margin-bottom so each
      card's peek is exactly its target regardless of the card's own content
-     height (see COLLECTION-CARDS.md §12h). Driven entirely by inline custom
+     height (see "Collection stack geometry" in docs/ARCHITECTURE.md). Driven entirely by inline custom
      properties set from the DECK table in JS, so the numbers exist in one
      place instead of drifting between a literal class and a JS constant. */
   .deck-card {

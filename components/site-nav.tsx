@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { MoonLogo } from '@/components/moon-logo'
+import { BrandMark } from '@/components/brand-mark'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { cn } from '@/lib/utils'
 
@@ -18,7 +18,7 @@ export function SiteNav() {
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-md">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
         <Link href="/" className="flex items-center gap-2.5">
-          <MoonLogo className="h-8 w-8" />
+          <BrandMark className="h-8 w-8" />
           <span className="font-brand text-lg font-bold lowercase tracking-tight text-foreground">
             beck qing
           </span>
