@@ -31,8 +31,7 @@ export const ABOUT_TABS: AboutTab[] = [
           'Hi there! I am an interdisciplinary designer perpetually trying to figure out how stuff works, whether it\u2019s color theory or croissants. At present, I\u2019m in the SF bay area working as an automation scientist, captivated by the idea of engineering biology.',
         ],
         links: [
-          { label: 'instagram', href: '#', icon: 'instagram' },
-          { label: 'twitter', href: '#' },
+          { label: 'instagram', href: 'https://www.instagram.com/beckqing/', icon: 'instagram' },
         ],
       },
     ],
@@ -44,11 +43,11 @@ export const ABOUT_TABS: AboutTab[] = [
     sections: [
       {
         paragraphs: [
-          'As an artist, I enjoy exploring new mediums and techniques. My primary background is in illustration and fine art, but I also have experience with character art and graphic design. Soon I will be publishing my portfolio on this site. Most of my work is on Instagram.',
+          'As an artist, I enjoy exploring new mediums and techniques. My primary background is in illustration and fine art, but I also have experience with character art and graphic design. Most of my work is on Instagram.',
         ],
         links: [
-          { label: 'instagram', href: '#', icon: 'instagram' },
-          { label: 'youtube', href: '#' },
+          { label: 'instagram', href: 'https://www.instagram.com/beckqing/', icon: 'instagram' },
+          { label: 'youtube', href: 'https://www.youtube.com/@beckqing' },
           { label: 'behance', href: '#', soon: true },
           { label: 'dribbble', href: '#', soon: true },
         ],
@@ -58,10 +57,10 @@ export const ABOUT_TABS: AboutTab[] = [
           'My character art and design work has led me onto a number of platforms that I am no longer active on but which can be found here.',
         ],
         links: [
-          { label: 'character art instagram', href: '#', icon: 'instagram' },
-          { label: 'deviantart', href: '#' },
-          { label: 'artfight', href: '#' },
-          { label: 'toyhouse', href: '#' },
+          { label: 'character art instagram', href: 'https://www.instagram.com/nocturnalwhims', icon: 'instagram' },
+          { label: 'deviantart', href: 'https://www.deviantart.com/nocturnalwhims' },
+          { label: 'artfight', href: 'https://artfight.net/~Wister' },
+          { label: 'toyhouse', href: 'https://toyhou.se/Wister' },
         ],
       },
     ],
@@ -76,8 +75,8 @@ export const ABOUT_TABS: AboutTab[] = [
           'I\u2019ve been making my way around the world of web development and programming more generally, with a few classes, hackathons, and professional projects here and there. I\u2019m particularly interested in new ways to share science and visualize information.',
         ],
         links: [
-          { label: 'github', href: '#' },
-          { label: 'codepen', href: '#' },
+          { label: 'github', href: 'https://github.com/beckqing' },
+          { label: 'codepen', href: 'https://codepen.io/beckqing' },
         ],
       },
     ],
@@ -91,7 +90,7 @@ export const ABOUT_TABS: AboutTab[] = [
         paragraphs: [
           'Several years ago, I found allergy-friendly baking to be an exciting challenge, akin to painting with a limited palette. My kitchen pursuits have nurtured a love of material science and a passion for kinder food systems. I write a vegan food blog with recipes and restaurant reviews.',
         ],
-        links: [{ label: 'the blog', href: '#' }],
+        links: [{ label: 'the blog', href: 'https://www.floursandfungi.com/' }],
       },
     ],
   },
