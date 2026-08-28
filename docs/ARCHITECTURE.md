@@ -4,8 +4,9 @@ How this site is put together and why. Decisions live here; **what's left to
 do lives in [TODO.md](TODO.md)**.
 
 Next.js 16.3, App Router, Turbopack. Fully static — every route prerenders
-(199 pages at last build). No database, no CMS, no API routes: content is
-TypeScript, images are files in `public/`.
+(203 pages at last build, including a generated `sitemap.ts` and
+`opengraph-image.tsx`). No database, no CMS: content is TypeScript, images
+are files in `public/`.
 
 Verified against the tree 2026-08-27. Where the code and this document
 disagree, the disagreement is recorded here and tracked in
@@ -48,12 +49,13 @@ and/or/not, plus free text over title, description, and tags — and, for
 collections only, their children's titles, descriptions, `text`, and
 `preview`.
 
-That last asymmetry is a bug, not a design: an item's **own** `text` and
-`preview` are never searched, so a line of a Mindtober tercet is findable
+That last asymmetry was a bug, not a design: an item's **own** `text` and
+`preview` used to go unsearched, so a line of a Mindtober tercet was findable
 (it belongs to a child of a collection) while the same line in a standalone
-essay's pull quote is not. **Decided: search should cover an item's own `text`
-and its tags too** — the haystack becomes uniform across items and children.
-Not yet implemented; TODO §4.
+essay's pull quote was not. Fixed 2026-08-27 — `filterWork` now searches an
+item's own `title`, `description`, `text`, `preview`, and tags, the same four
+text fields (plus tags) it already searched on children — the haystack is
+uniform across items and children.
 
 **`text` is the written work; `description` is optional.** `text` holds
 whatever words the page shows — a whole poem, or the passage quoted from an
@@ -68,6 +70,14 @@ on all 22 poems, and nothing else in the tree sets one. The other 34 pieces
 carrying `text` fall through to the full `text` inside an `overflow-hidden`
 card face — fine while those are Mindtober tercets, but the "never clamped"
 guarantee only actually holds where a `preview` was written.
+
+**`eye-studies` pieces are titled `01`–`08` on purpose.** Decided 2026-08-27:
+the numbering stays. The collection is a guessing game — the caption text
+often names the animal, so titles that named the subject would give it away.
+Four of the eight also carry no `description`, which is the same choice, not
+missing data. (The earlier "Subject hidden for now. Title coming soon."
+placeholder copy *was* a leftover and is gone.) Don't "fix" these into
+descriptive titles.
 
 **Behaviour is derived, not stored.** How a piece renders is computed from
 its tags and fields rather than set by a `type` column:
@@ -145,23 +155,66 @@ Filter state on `/work` lives in the URL (`?tags=…`), which is why the footer
 and the home page's discipline panels can deep-link straight into a filtered
 view. One consequence worth naming: a deep link is only as good as the tag
 behind it, and `?tags=science` currently deep-links into an empty gallery
-(TODO §2).
+(TODO §2 — content, not a bug; see "Content model" above).
 
-**Not present:** `sitemap.ts`, `robots.ts`, `not-found.tsx`, `error.tsx`,
-`opengraph-image.tsx`, and any favicon (TODO §7).
+**`sitemap.ts` and `opengraph-image.tsx`** are generated (added 2026-08-27) —
+the two file conventions judged worth having for a 203-page linked portfolio.
+`robots.ts`, `not-found.tsx`, and `error.tsx` are deliberately still absent:
+Next's default `/_not-found` already covers the not-found case, and nothing
+has asked for the other two.
+
+`beckqing.com` is the real domain (confirmed 2026-08-27), which is what
+`sitemap.ts`'s `BASE_URL` and `layout.tsx`'s `metadataBase` are pinned to, and
+what the footer's `hello@beckqing.com` uses.
+
+**Every social link in `lib/about-content.ts` was supplied by Beck**, not
+inferred from handle patterns — treat them as data, and don't "correct" one
+that looks like it should follow a different convention. Two exceptions worth
+knowing: `behance` and `dribbble` are intentionally `href: '#'` with
+`soon: true`, and **there is no Twitter account** — the `twitter` entry the v0
+scaffold shipped was removed 2026-08-27 because it never corresponded to
+anything. Don't restore it.
+
+## Build configuration
+
+`next.config.mjs` is **empty, deliberately.** Both v0 scaffold defaults were
+removed 2026-08-27 and neither should come back without a reason:
+
+- **`typescript.ignoreBuildErrors: true`** — removed. The tree typechecks
+  clean, so it bought nothing and hid the next regression. `next build` now
+  actually reports "Running TypeScript" instead of skipping it.
+- **`images.unoptimized: true`** — removed, i.e. **Next Image Optimization is
+  on.** Approved by Beck 2026-08-27. This is the site's biggest performance
+  lever: `public/art` is 41MB across ~200 files, and unoptimized a gallery
+  tile rendered at ~460px still downloads the full-resolution original (up to
+  ~560KB), thirty at a time on `/work`. Both `next/image` call sites already
+  pass a correct `sizes` (`work-visuals.tsx`'s placeholder and the homepage
+  polaroid), so responsive srcsets work as intended.
+
+Two things that follow from image optimization being on:
+
+- **The deploy target must run the Next image optimizer** — native on Vercel,
+  handled by Netlify's Next runtime. It breaks only on a purely static host,
+  or if someone adds `output: 'export'`. There is no deploy config in the
+  repo, so this is an assumption worth re-checking if the host changes.
+- **SVG through `next/image` 400s by default** (it needs
+  `dangerouslyAllowSVG`). `app/page.tsx`'s `featuredArt.image ||
+  '/placeholder.svg'` fallback is therefore a trap that did not exist while
+  images were unoptimized — dead today, since the featured piece always has a
+  real image. See TODO.
 
 ## The brand mark
 
 **The mark is the `bq` monogram. The crescent moon is retired.**
 
-Decided 2026-08-27: `MoonLogo` — a crescent nested in a rounded square, drawn
-in code — comes out of the nav, the footer, and the homepage hero, and
-`components/moon-logo.tsx` is deleted. The `bq` monogram replaces it in all
-three places. Beck's preference is strong and settled; don't reintroduce the
-moon anywhere (TODO §7).
+Built 2026-08-27: `BrandMark` (`components/brand-mark.tsx`) replaces
+`MoonLogo` at all three call sites — `components/site-nav.tsx`,
+`components/site-footer.tsx`, and `app/page.tsx`'s hero — and
+`components/moon-logo.tsx` is deleted. Beck's preference is strong and
+settled; don't reintroduce the moon anywhere.
 
-Keep the `--moon` CSS token when the component goes: `ThemeToggle` uses it
-(`bg-moon/10`) and it is unrelated to the logo.
+The `--moon` CSS token stays: `ThemeToggle` uses it (`bg-moon/10`) and it is
+unrelated to the logo.
 
 ### The monogram
 
@@ -363,6 +416,18 @@ An earlier draft of this section proposed deriving the counters with
 superseded: Beck had already drawn the per-theme colourways, and drawn values
 beat derived ones here.
 
+**What `BrandMark` actually reads is two tokens, not the table above.** Ink is
+`var(--foreground)` in `filled` mode and `currentColor` in `stroke` mode; the
+crescent is **`--brand-crescent`**, a token added for this and defined per
+theme in `globals.css` — `#d9aa52` light, `#ffffff` dark. That collapses the
+whole light/dark colourway switch into one custom property rather than
+branching in the component.
+
+`--brand-crescent` is deliberately *not* `--goldenrod`: light-mode
+`--goldenrod` is `#97671a`, darkened for text legibility, while the crescent
+wants the artboard's brighter `#d9aa52`. Same reasoning as `--hero-icon-*`
+existing alongside the discipline tones. Don't collapse the two.
+
 ### Favicon — a new asset, not the archive's file
 
 `public/icon.svg`, `apple-icon.png`, and the two 32×32 PNGs are v0 scaffold —
@@ -398,9 +463,11 @@ archive's `_data/icons.json`. Only the favicon set was ever v0's.
 - **`image-lightbox.tsx`** — full-screen viewing with prev/next across a
   supplied list, so a piece opened from a collection can be paged through in
   place. It renders whatever list it's handed; **scoping that list to pieces
-  that actually carry an image is the caller's job**, and only the tile
-  components do it (`ImageTile`, `IllustratedTile`). The piece detail route
-  still passes `collection.pieces` unfiltered — TODO §4.
+  that actually carry an image is the caller's job**. `imageLightboxSlice()`
+  (`lib/work.ts`) is that one place — `ImageTile`, `IllustratedTile`, and the
+  piece detail route (`app/work/[slug]/[pieceSlug]/page.tsx`) all call it
+  rather than each re-deriving the filtered list and index (fixed 2026-08-27;
+  the piece detail route used to pass `collection.pieces` unfiltered).
 - **`masonry-grid.tsx`** — JS column distribution rather than CSS
   `columns`, so tiles can keep DOM order per column. Starts at the widest
   layout so server and first client render agree, then corrects on mount.
@@ -558,8 +625,14 @@ survive.
 > was never corrected — the wrong text and the square-cropped file landed in
 > the *same commit* (`c8e1c51`). Recorded here so it isn't rediscovered as a
 > regression. The `object-contain` rule it motivated is still in the code and
-> still reasonable as a general guard; only its stated reason is obsolete
-> (TODO §3).
+> still reasonable as a general guard; its comment (`components/media-player.tsx`)
+> was rewritten 2026-08-27 to state that general reason instead of citing
+> Verdant, since Verdant no longer has the mismatch that motivated the rule.
+
+**Two source files were never diffed.** The reel version (39.12s) and the
+carousel-embedded version (39.00s) of the Presidential Pardon speedpaint are
+near-identical; the reel is what shipped. Neither is wrong — recorded here so
+the unreviewed duplicate isn't mistaken for an open question.
 
 ### What ships
 
@@ -601,6 +674,11 @@ tight page-only rect that the pan would break.
   rather than as an either/or, which is what made "both" an unreachable case
   before. Always ends with a "view still image" trigger, since neither video
   substitutes for seeing the finished image full-screen.
+  `PieceView` (`app/work/[slug]/page.tsx`) returns early for a text-forward
+  standalone piece without calling `PieceMedia` at all, so a poem that ever
+  carried an animation would render no media. No such piece exists today;
+  recorded here so it isn't rediscovered as a mystery rather than a
+  known, currently-unreachable gap.
 - **`MediaBadges`** — the gallery-tile indicators.
 - **`ImageLightbox`** takes a `bare` prop that drops the full-bleed hover scrim
   and "view" pill, so it can be triggered from a compact link.
@@ -667,23 +745,23 @@ icons, and the panels stay in sync without prop-drilling.
 ## Conventions
 
 - Path alias `@/*` → repo root.
-- shadcn (`base-nova`, neutral base, CSS variables) with lucide icons. Only
-  `button` and `dialog` are vendored into `components/ui/`, and neither is
-  imported by anything.
+- shadcn (`base-nova`, neutral base, CSS variables) with lucide icons.
+  `components/ui/` is empty — the only two files ever vendored there
+  (`button`, `dialog`) were imported by nothing and were deleted 2026-08-27.
 - Comments explain **why**, not what — several of them record decisions that
   look wrong without the context (the rAF polling, the hydration fallback, the
   literal Tailwind classes). Keep that habit.
-- **Comments cite this file, never a scratch document.** Six comments point at
-  `COLLECTION-CARDS.md` §12h/§12i/sec12 and §4c/§4d. No such file has ever
-  existed — they are misnamed references to `docs/COLLECTION-FORMATS.md`,
-  which was written, never committed, and deleted per its own instruction once
-  the redesign shipped. It has since been recovered from a session transcript
-  and archived at
+- **Comments cite this file, never a scratch document.** Six comments used to
+  point at a `COLLECTION-CARDS.md` that never existed — misnamed references to
+  `docs/COLLECTION-FORMATS.md`, which was written, never committed, and
+  deleted per its own instruction once the redesign shipped. It has since been
+  recovered from a session transcript and archived at
   [history/2026-08-collection-formats.md](history/2026-08-collection-formats.md).
-  The comments should cite ARCHITECTURE.md's own sections, not the archive
-  (TODO §9). If a rule is load-bearing enough to cite, it belongs here or
-  inline — a design doc that only exists in someone's working tree is one
-  `rm` from taking its reasoning with it.
+  All six were rewritten 2026-08-27 to cite this file's own "Collection stack
+  geometry" section (or the collection-layouts table) instead. If a rule is
+  load-bearing enough to cite, it belongs here or inline — a design doc that
+  only exists in someone's working tree is one `rm` from taking its reasoning
+  with it.
 - **`docs/history/`** holds as-designed specs for work that has shipped. They
   are stamped as historical, carry a list of where the build diverged, and are
   never the answer to "how does this work today" — that is always this file.

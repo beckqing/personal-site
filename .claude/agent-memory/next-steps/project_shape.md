@@ -9,33 +9,32 @@ metadata:
 in-repo and are more current than this file.** This is only a pointer.
 
 Next.js 16.3 (App Router, Turbopack), React 19, Tailwind v4, TypeScript, pnpm.
-Originally scaffolded by v0.app (`metadata.generator: 'v0.app'` in
-app/layout.tsx, and `next.config.mjs` still has v0-style
-`typescript.ignoreBuildErrors: true` + `images.unoptimized: true`).
+Originally scaffolded by v0.app; the scaffold leftovers (`metadata.generator`,
+`typescript.ignoreBuildErrors`, `images.unoptimized`, the v0 favicon set,
+`package.json`'s `"my-project"` name) were all cleared out 2026-08-27 along
+with the fabricated homepage content and the retired MoonLogo — see TODO.md's
+git history around that date if you need the "why", not this file.
 
 Routes (all present, all have `metadata`/`generateMetadata`):
-- `/` — app/page.tsx, hero + discipline panels
+- `/` — app/page.tsx, hero (BrandMark, components/brand-mark.tsx) + discipline panels
 - `/about` — app/about/page.tsx, tabbed bio (components/about-tabs.tsx, content in lib/about-content.ts)
 - `/work` — app/work/page.tsx, filterable gallery (components/work-gallery.tsx, data in lib/work.ts)
 - `/work/[slug]`, `/work/[slug]/[pieceSlug]`, `/work/[slug]/read` — collection,
   piece, and chapbook straight-through routes, all statically generated via
-  `generateStaticParams`. 199 static pages at last build.
+  `generateStaticParams`.
+- `sitemap.ts`, `opengraph-image.tsx` — generated; `app/favicon.ico` and
+  `app/apple-icon.png` are static files rendered from `docs/brand/`.
+203 static pages at last build.
 
 Content is all hardcoded in `lib/*.ts` (work.ts, content.ts, about-content.ts,
-brand-icons.ts) — no CMS, no markdown files. `lib/work.ts` is the single source
-of truth for `/work`: 30 top-level items (9 collections, 21 standalone pieces)
-and 163 pieces inside collections. `lib/content.ts` ARTWORKS/POEMS/PROJECTS is
-fabricated v0 scaffold content and still feeds the homepage only — see TODO §1.
+brand-icons.ts) — no CMS, no markdown files. `lib/work.ts` is the single
+source of truth for `/work`: 30 top-level items (9 collections, 21 standalone
+pieces) and 163 pieces inside collections. `lib/content.ts` is now just
+`PROJECTS` (the fabricated science stat) — `ARTWORKS`/`POEMS`/`ESSAYS` were
+deleted once the homepage's art and writing panels moved to real
+`lib/work.ts` content; `PROJECTS` stays until Beck adds real science work
+(see TODO.md §2, still open — the one open item this file used to track that
+still needs Beck, not code).
 
-**Correction (2026-08-27):** an earlier version of this file said `WorkPiece`
-"has no `image` field at all" and that every `/work` piece deliberately renders
-a tinted color swatch. That was true before the art import and is now false.
-`WorkPiece` carries `image`, `imageAspect`, and `thumb`; `public/art` is 52MB
-of real work; `WorkPlaceholder` renders the real image when there is one and
-falls back to a tinted panel only when there isn't. Do not re-derive
-recommendations from the old claim.
-
-No test runner and no eslint config. See `docs/TODO.md` for the live open-work
-list — it supersedes `review_2026-08-25.md`.
-
-[[review_2026-08-25]]
+No test runner and no eslint config (deferred — low priority for a personal
+site). See `docs/TODO.md` for the live open-work list.

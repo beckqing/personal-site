@@ -1,2 +1,1 @@
-- [Project shape](project_shape.md) — Next 16 App Router personal/portfolio site for Beck Qing (v0.app-generated, pnpm), 4 routes, all with metadata.
-- [2026-08-25 review findings](review_2026-08-25.md) — full prioritized list from the first next-steps pass; check before re-surfacing.
+- [Project shape](project_shape.md) — Next 16 App Router personal/portfolio site for Beck Qing (pnpm), route map, content model pointers.
