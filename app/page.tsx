@@ -89,7 +89,7 @@ function DisciplinePanels() {
                 <div className="mt-5 -rotate-1 rounded-lg border-2 border-foreground/10 bg-background p-2 shadow-sm transition-transform group-hover:rotate-0">
                   <div className="relative aspect-[4/3] overflow-hidden rounded-sm">
                     <Image
-                      src={featuredArt.image || '/placeholder.svg'}
+                      src={featuredArt.image || '/placeholder.jpg'}
                       alt={featuredArt.title}
                       fill
                       sizes="(max-width: 640px) 100vw, 380px"

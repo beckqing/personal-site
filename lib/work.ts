@@ -63,6 +63,37 @@ export type WorkPiece = {
    * added' sort mode should only appear once at least one does.
    */
   added?: string
+  /**
+   * WIP screenshots documenting how this piece got made — app chrome, tool
+   * palettes, reference photos. Rendered in their own "process" section after
+   * the writeup, not inline with the finished image. Not a `WorkPiece`: no
+   * slug, no page, never in the gallery or search — see "Three WIP
+   * screenshots" in TODO.md history for why.
+   */
+  process?: ProcessStill[]
+  /**
+   * Marks a piece as still in progress rather than finished — surfaced
+   * honestly in the gallery and on the piece page rather than hidden until
+   * done. When the finished piece lands, drop this and move its WIP
+   * screenshot into `process` instead.
+   */
+  unfinished?: boolean
+}
+
+/**
+ * A single WIP screenshot documenting a piece's making — see `WorkPiece.process`.
+ */
+export type ProcessStill = {
+  src: string
+  /**
+   * Authored commentary — what stage this is and what changed after it. Same
+   * rung as `writeup`: a plain string, paragraphs split on `\n\n`, rendered
+   * through Prose. Not alt text, and not generated from what's visible in
+   * the screenshot — this is the piece owner's own words.
+   */
+  caption?: string
+  /** Accessibility description, distinct from `caption`. */
+  alt?: string
 }
 
 export type CollectionLayout = 'book' | 'illustrated' | 'gallery'
@@ -1575,16 +1606,6 @@ const REAL_WORK: WorkItem[] = [
     speedpaintSrc: '/art/portfolio-22/speedpaint/presidential-pardon.mp4',
   },
   {
-    slug: 'waterfowl-and-motherhood',
-    title: 'Waterfowl and Motherhood',
-    year: '2022',
-    description: 'Thinking about waterfowl and motherhood.',
-    tags: ['art', 'digital'],
-    writeup: "Apparently I'm on a bird kick.",
-    image: '/art/portfolio-22/waterfowl-and-motherhood.webp',
-    imageAspect: '1/1',
-  },
-  {
     slug: 'child-not-adult',
     title: 'Child, Not Adult',
     year: '2022',
@@ -1595,6 +1616,13 @@ const REAL_WORK: WorkItem[] = [
     image: '/art/portfolio-22/child-not-adult.webp',
     imageAspect: '4/5',
     speedpaintSrc: '/art/portfolio-22/speedpaint/child-not-adult.mp4',
+    process: [
+      {
+        src: '/art/portfolio-22/waterfowl-and-motherhood.webp',
+        caption: "Apparently I'm on a bird kick.",
+        alt: 'In-progress screenshot of the duck illustration in the drawing app, layer panel and two mallard reference photos visible.',
+      },
+    ],
   },
   {
     slug: 'why-be-afraid',
@@ -1633,15 +1661,6 @@ const REAL_WORK: WorkItem[] = [
     imageAspect: '1087/763',
   },
   {
-    slug: 'hand-study',
-    title: 'Hand Study',
-    year: '2023',
-    description: 'Studying hands, hearts, and progress.',
-    tags: ['art', 'digital'],
-    image: '/art/portfolio-22/hand-study.webp',
-    imageAspect: '1/1',
-  },
-  {
     slug: 'security-camera',
     title: 'Security Camera',
     year: '2023',
@@ -1649,6 +1668,7 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art'],
     image: '/art/portfolio-22/security-camera.webp',
     imageAspect: '1/1',
+    unfinished: true,
   },
   {
     slug: 'desire-and-distance',
@@ -1658,6 +1678,13 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'digital'],
     image: '/art/portfolio-22/desire-and-distance.webp',
     imageAspect: '4/5',
+    process: [
+      {
+        src: '/art/portfolio-22/hand-study.webp',
+        caption: 'Studying hands, hearts, and progress.',
+        alt: 'In-progress screenshot of the hand study in the drawing app, tool palette and layer panel visible.',
+      },
+    ],
   },
   {
     slug: 'projection',

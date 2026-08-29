@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, FileText, ImageOff, Layers, Quote } from 'lucide-react'
+import { ArrowRight, FileText, Hourglass, ImageOff, Layers, Quote } from 'lucide-react'
 import {
   DISCIPLINE_FACETS,
   DISCIPLINES,
@@ -73,6 +73,21 @@ export function WriteupMark({ className }: { className?: string }) {
       )}
     >
       <FileText className="h-3.5 w-3.5" strokeWidth={1.75} />
+    </span>
+  )
+}
+
+/** Badge flagging a piece as still in progress rather than finished — see `WorkPiece.unfinished`. */
+export function UnfinishedMark({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        'font-brand inline-flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-xs lowercase text-foreground backdrop-blur-sm',
+        className,
+      )}
+    >
+      <Hourglass className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+      in progress
     </span>
   )
 }
@@ -623,6 +638,65 @@ export function Prose({ text, className }: { text: string; className?: string })
         <p key={i}>{para}</p>
       ))}
     </div>
+  )
+}
+
+/**
+ * One process still as a minimal, ephemeral `WorkPiece` stand-in — just
+ * enough shape for `ImageLightbox`/`WorkPlaceholder` to render it. Never
+ * added to `WORK`, never routed to: its `slug` exists only as a React key
+ * and lightbox identity, and `title` carries the still's own `alt` (falling
+ * back to the parent piece's title) so the opened lightbox image gets the
+ * still's accessibility text rather than repeating the piece's title for
+ * every still.
+ */
+function processLightboxItem(piece: WorkPiece, still: NonNullable<WorkPiece['process']>[number], index: number): WorkPiece {
+  return {
+    slug: `${piece.slug}-process-${index}`,
+    title: still.alt ?? piece.title,
+    year: piece.year,
+    tags: piece.tags,
+    image: still.src,
+  }
+}
+
+/**
+ * A piece's "how this got made" section — WIP screenshots, each its own
+ * `<figure>` with the image opening in the ordinary lightbox and an authored
+ * caption underneath (see `WorkPiece.process`). Placed below the writeup,
+ * under its own heading, deliberately not inside `PieceMedia`: a WIP
+ * screenshot is a different register from the finished-image media there,
+ * and sitting directly under the finished image would invite reading it as
+ * another artwork rather than "here's how this got made."
+ */
+export function ProcessSection({ piece }: { piece: WorkPiece }) {
+  const stills = piece.process
+  if (!stills || stills.length === 0) return null
+
+  const items = stills.map((still, i) => processLightboxItem(piece, still, i))
+
+  return (
+    <section className="mt-10 max-w-2xl">
+      <h2 className="font-brand text-xs uppercase tracking-[0.3em] text-muted-foreground">process</h2>
+      <div className="mt-4 space-y-8">
+        {stills.map((still, i) => (
+          <figure key={still.src}>
+            <ImageLightbox items={items} initialIndex={i} className="rounded-xl">
+              <div className="aspect-[16/10] w-full overflow-hidden">
+                <WorkPlaceholder item={items[i]} />
+              </div>
+            </ImageLightbox>
+            {still.caption && (
+              <figcaption className="mt-3 space-y-2 text-pretty text-sm leading-relaxed text-muted-foreground">
+                {still.caption.split('\n\n').map((para, p) => (
+                  <p key={p}>{para}</p>
+                ))}
+              </figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </section>
   )
 }
 

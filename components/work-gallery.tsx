@@ -33,7 +33,7 @@ import {
   type WorkCollection,
   type WorkItem,
 } from '@/lib/work'
-import { aspectStyleFor, CollectionStack, VerseBlock, WorkPlaceholder } from '@/components/work-visuals'
+import { aspectStyleFor, CollectionStack, UnfinishedMark, VerseBlock, WorkPlaceholder } from '@/components/work-visuals'
 import { MediaBadges } from '@/components/media-player'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
@@ -197,7 +197,10 @@ function TextCard({ item }: { item: WorkItem }) {
             strokeWidth={1.5}
             aria-hidden="true"
           />
-          <TagPill>{formFor(item)}</TagPill>
+          <div className="flex flex-col items-end gap-2">
+            {item.unfinished && <UnfinishedMark />}
+            <TagPill>{formFor(item)}</TagPill>
+          </div>
         </div>
 
         <VerseBlock text={excerpt} context="card" className="mt-3 text-lg text-foreground" />
@@ -238,7 +241,10 @@ function HybridCard({ item }: { item: WorkItem }) {
               strokeWidth={1.5}
               aria-hidden="true"
             />
-            <TagPill>{formFor(item)}</TagPill>
+            <div className="flex flex-col items-end gap-2">
+              {item.unfinished && <UnfinishedMark />}
+              <TagPill>{formFor(item)}</TagPill>
+            </div>
           </div>
 
           <VerseBlock text={excerpt} context="card" className="mt-3 text-lg text-foreground" />
@@ -332,6 +338,7 @@ function ImageCard({ item }: { item: WorkItem }) {
       </Link>
 
       <MediaBadges item={item} />
+      {item.unfinished && <UnfinishedMark className="absolute left-3 top-3 z-20" />}
 
       <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end p-4">
         <div className="sticky bottom-4 mx-auto flex w-full max-w-[min(85%,20rem)] items-end justify-between gap-3 rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">

@@ -19,6 +19,19 @@ are restored here rather than lost.
 §9's booth/setup gap turns out to be partly fillable, and §11 is unblocked and
 specified — it was deferred, and is not any more.
 
+**2026-08-29, later:** the `science` gap behind §1 and §2 now has a decided
+shape — **coding explorations**, live runnable sketches filed under
+`science` with a new piece-page layout. Fully specced in
+[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md);
+both sections stay open until the first exploration is actually in
+`lib/work.ts`, since the spec is design, not content.
+
+**2026-08-29, later still: §4, §5, §6, §11, and the inktober-17 half of §9
+shipped** — `tsc --noEmit` clean, `next build` clean, 202 static pages (down
+from 204: `hand-study` and `waterfowl-and-motherhood` no longer get their own
+route). §7's bounce easing turned out to already be shipped (found while
+touching an adjacent file) — the description below was stale, not the code.
+
 ---
 
 ## 1. The home page's science panel still shows fabricated content — **blocked on Beck**
@@ -31,8 +44,14 @@ Visualizations" with a made-up "Contrast passing AA: 100%" stat — because
 there is no real science work in `lib/work.ts` to promote in its place. Same
 root cause as §2.
 
-- [ ] **Beck:** the science panel's real content — a project, a stat, or a
-      different framing entirely.
+**Decided 2026-08-29:** the panel becomes a **live sketch miniature** — a
+fourth object type on the corkboard, replacing the `stat` treatment that only
+ever existed to make invented metrics look substantial. See
+[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md) §8.
+
+- [ ] **Beck:** the first coding exploration itself, plus replacement copy for
+      the panel's caption ("Talks and studies where design meets research —
+      curiosity, made presentable" was written for fabricated content).
 - [ ] Once that lands, delete `lib/content.ts` entirely (it's down to just
       `PROJECTS` now — `ARTWORKS`, `POEMS`, and `ESSAYS` were fabricated
       scaffold content and are gone, along with the orphaned PNGs they
@@ -54,6 +73,13 @@ is — don't prune the dead tags, don't hide zero-count chips, don't re-frame
 the homepage's three-discipline structure around a temporarily
 two-discipline dataset. See "Content model" in ARCHITECTURE.md.
 
+**Decided 2026-08-29: the first science work is coding explorations** —
+live runnable sketches, tagged `science` + a new `code` field tag, rendered
+by a new sketch layout inside `/work`. Fully specced in
+[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md);
+that spec is buildable now, but this section only closes when real
+explorations are in `lib/work.ts`.
+
 - [ ] **Beck:** add science work to `lib/work.ts`. That closes this, and it's
       the same blocker as §1.
 
@@ -65,14 +91,16 @@ the tag vocabulary in §2 changes.
 
 ## 4. Media loose ends
 
-- [ ] `PieceView` in `app/work/[slug]/page.tsx` returns early for a
-      text-forward standalone piece without ever calling `PieceMedia`, so a
-      poem that carried an animation or speedpaint would render no media at
-      all. No such piece exists today. Recorded so it isn't rediscovered as a
-      mystery — the fix is to call `PieceMedia` in that branch too, not to
-      special-case it later.
+**`PieceView`'s text-forward branch fixed 2026-08-29** — it now calls
+`PieceMedia` (and `ProcessSection`, added alongside it for §11) rather than
+returning early, so a poem carrying an animation or speedpaint would render
+it.
+
 - [ ] The two near-identical Presidential Pardon sources (reel 39.12s vs.
       carousel-embedded 39.00s) were never diffed. The reel is what shipped.
+      Still true: only the reel exists in the tree today, so there's nothing
+      local to diff against — this needs the carousel source sourced before
+      it's actionable.
 
 ## 5. Small correctness gaps
 
@@ -83,20 +111,24 @@ the tag vocabulary in §2 changes.
       the first top-level hybrid *art* piece carrying `text` would be labelled
       "essay" by `HybridCard`. Unreachable today (zero top-level hybrids), so
       it lands the moment `HybridCard` becomes reachable.
-- [ ] **`app/page.tsx:92`'s `|| '/placeholder.svg'` fallback is now a trap.**
-      With image optimization enabled, SVG through `next/image` returns 400
-      unless `dangerouslyAllowSVG` is set. Dead today — the featured piece
-      always has a real image — but it would fail loudly rather than fall
-      back. Drop the fallback, or point it at a raster.
-- [ ] `AboutTabs` switched to `useLayoutEffect` to kill the `/about#food` tab
-      flash, which is correct — but `useLayoutEffect` can emit a React SSR
-      warning in a prerendered client component. The build was silent; worth
-      one dev-console check to confirm it's clean at runtime too.
 
-## 6. Leftover asset
+**`app/page.tsx:92`'s fallback fixed 2026-08-29** — repointed at
+`/placeholder.jpg` (a raster, so it can't hit the SVG-through-`next/image`
+400) instead of dropping it. That leaves `placeholder.svg` with no
+references anywhere, so it's deleted — see §6.
 
-- [ ] `public/placeholder.jpg` is referenced by nothing. (`placeholder.svg`
-      survives only as the dead fallback in §5 — if that goes, it can go too.)
+**`AboutTabs`'s `useLayoutEffect` checked 2026-08-29** — drove `/about#food`
+in a real browser (Puppeteer against local Chrome) and read the devtools
+console directly: no SSR warning, no hydration-mismatch warning, nothing
+beyond Next's routine LCP-image notices. Confirmed clean at runtime, not just
+at build time.
+
+## 6. Leftover asset — **resolved 2026-08-29**
+
+Resolved in the other direction than expected: `placeholder.svg` turned out
+to be the dead one (§5's fallback now points at `placeholder.jpg` instead)
+and has been deleted. `placeholder.jpg` is referenced again, so nothing here
+is leftover any more.
 
 ## 7. About tab glyphs want to become small illustrations — **in progress: Beck is drawing the set**
 
@@ -136,9 +168,12 @@ rediscovering them:
       trailing space. `lib/brand-icons.ts` already `.trim()`s it so nothing is
       broken — worth cleaning if that file is being edited anyway.
 
-Separable and not blocked on any of the above: the badge's swap easing is
-`cubic-bezier(0.22, 1, 0.36, 1)` — ease-out expo, **zero overshoot**. A
-back-out curve would give the bounce Beck asked for, as a one-line change.
+**Already shipped, this description was stale:** the badge's swap easing was
+described here as `cubic-bezier(0.22, 1, 0.36, 1)` — ease-out expo, zero
+overshoot — with a back-out curve proposed as the fix. Checked 2026-08-29:
+`components/tab-glyph.tsx` already uses `cubic-bezier(0.34, 1.56, 0.64, 1)`
+with a comment explaining the overshoot, landed in `6a430af` before this
+pass started. The code was right; this file hadn't caught up to it.
 
 ## 8. Gallery filter changes snap rather than animate — **blocked on a MasonryGrid rewrite**
 
@@ -196,11 +231,15 @@ for the full build record and where it diverged from the spec.
       content for this essay — decide whether they render inline as more of the
       same image slots, or get their own treatment. Don't design that before
       seeing them.
-- [ ] **`inktober-17` is a fourth import worth re-checking**, not covered by
-      this workstream. The archive's `projects/inktober-2017.md` carries
-      per-image alt text via `{% galleryImage %}` (Swift, Divided, Poison, …)
-      and a `<small>` "(Last updated 20 January 2023.)" line, not yet audited
-      against `lib/work.ts`.
+
+**`inktober-17` audited 2026-08-29.** Fetched the archive's
+`projects/inktober-2017.md` and compared: its `{% galleryImage %}` per-image
+alt text is just each image's word (Swift, Divided, Poison, …), which
+`lib/work.ts`'s `inktober-17` already matches — `WorkPlaceholder` renders
+`alt={item.title}`, and each piece's `title` is that same word. No gap. The
+archive's closing `<small>` "(Last updated 20 January 2023.)" line was
+deliberately not carried over, by Beck's call — it's commentary on the old
+site's edit history, not meaningful on this one.
 
 ## 10. Single-piece view and the lightbox look like the same thing — **shipped 2026-08-28**
 
@@ -212,7 +251,7 @@ in `components/image-lightbox.tsx`. See
 [history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
 for the full build record.
 
-## 11. Three WIP screenshots are shipping as standalone finished pieces — **decided 2026-08-29, ready to build**
+## 11. Three WIP screenshots are shipping as standalone finished pieces — **shipped 2026-08-29**
 
 Three files in `public/art/portfolio-22/` are in-progress captures — app chrome,
 tool palettes, layer panels, reference photos in frame — but ship as finished
@@ -227,91 +266,44 @@ idea of pairing a WIP with its finished piece as a two-item `WorkCollection` is
 dropped — it promotes a footnote into co-equal work and moves the finished
 piece's URL for no gain.
 
-That leaves two genuinely different cases.
+That leaves two genuinely different cases, both built as specified.
 
-### Case 1 — the WIP has a finished parent
+**Case 1 — the WIP has a finished parent.** `ProcessStill`
+(`{ src; caption?; alt? }`) is added to `WorkPiece` as `process?: ProcessStill[]`.
+`hand-study` and `waterfowl-and-motherhood` are no longer top-level `WORK`
+entries — they're now the sole `process` still on `desire-and-distance` and
+`child-not-adult` respectively, each keeping its original caption
+("Studying hands, hearts, and progress." / "Apparently I'm on a bird kick.").
+`ProcessSection` (`components/work-visuals.tsx`) renders the section: a stack
+of `<figure>`s below the writeup, each opening in the ordinary
+`ImageLightbox`. The lightbox call needed a `WorkPiece`-shaped item to satisfy
+its existing type, so each still gets one built on the fly — never added to
+`WORK`, existing only for that call — with `title` set to the still's own
+`alt` (falling back to the parent's title) so the opened lightbox announces
+the still's accessibility text instead of repeating the parent's title for
+every still. `PieceView`'s text-forward branch now calls both `PieceMedia`
+and `ProcessSection`, closing the §4 gap in the same pass rather than
+inheriting it.
 
-- [ ] Add `process?: ProcessStill[]` to `WorkPiece`, where a still is
-      `{ src: string; caption?: string; alt?: string }`. Minimal on purpose —
-      enough to be documentation, not enough to grow back into a piece.
-- [ ] `hand-study` is the WIP for `desire-and-distance`.
-      `public/art/portfolio-22/hand-study.webp` is a screenshot of the drawing
-      app with the tool palette and layer panel still in frame; the hand in it is
-      the same hand, same pose, as the finished `desire-and-distance.webp`.
-      Beck's name for it is "the anatomy of a hand".
-- [ ] `waterfowl-and-motherhood` is the WIP for `child-not-adult`. Same story:
-      app chrome, layer panel, and two mallard reference photos around an
-      in-progress duck that is the finished duck at the right of
-      `child-not-adult.webp`.
-- [ ] Both stop being top-level `WORK` entries when they move.
+- [ ] **Open — Beck:** whether the process section also gets one shared intro
+      note above the stills, separate from the per-still captions.
+      `FigureRow`'s shape (one caption for a row) or `PieceLink`'s (per-item)
+      would both be cheap to add. Not built until a piece actually needs it.
 
-**Placement: its own labeled `process` section after the writeup**, stills
-opening in the existing lightbox — not inline in `PieceMedia`. The reason is
-worth keeping: `PieceMedia`'s existing label stack ("finished animation" /
-"speedpaint") disambiguates two media that are both *of the finished work*. A
-WIP screenshot is a different register, and directly under the finished image it
-invites being read as another artwork. Below the words, under its own heading, it
-reads as "here's how this got made".
+**Case 2 — the WIP has no finished piece yet.** `security-camera` carries the
+new `unfinished: true` flag, surfaced as an "in progress" eyebrow (hourglass
+icon) above the title on its own page, and a matching corner badge
+(`UnfinishedMark`) on its gallery card — wired into all three top-level card
+shapes (`TextCard`, `HybridCard`, `ImageCard`), not just the one
+`security-camera` happens to render as today, so a future unfinished
+text/hybrid piece doesn't rediscover the same gap §4 recorded. `why-be-afraid`
+is a separate, finished piece that happens to share the surveillance/halftone
+subject — thematically related, deliberately not attached as `security-camera`'s
+parent.
 
-- [ ] Note that `PieceView` currently returns early for text-forward pieces
-      without calling `PieceMedia` (§4) — whatever renders the process section
-      should not inherit that gap.
-
-#### Captions are real content, not labels
-
-Decided 2026-08-29: **a process still can carry its own caption**, and the
-caption is authored content — the note about what stage this is and what
-changed after it — not a one-line alt-text stand-in.
-
-- [ ] `caption` is a plain string on the same terms as `writeup`: paragraphs
-      split on `\n\n`, rendered through `Prose`. That's the point of choosing
-      this rung of the ladder — a caption can start as four words and grow to
-      two paragraphs with no schema change and no MDX pipeline. If a process
-      story ever outgrows that, the signal is that it belongs in the piece's
-      `writeup` or its own essay, **not** that `process` should learn MDX.
-- [ ] `alt` is separate from `caption` and stays separate. A caption is
-      commentary shown to everyone; alt text describes the image to someone who
-      can't see it. They are frequently not the same sentence, and collapsing
-      them is the usual way image a11y quietly regresses.
-- [ ] Layout follows from captions being prose: the process section is a
-      stack of `<figure>`s (image + `<figcaption>`), not a bare thumbnail
-      grid. `FigureRow` in `components/essay.tsx` is the existing precedent for
-      the markup; the stills still open in the lightbox.
-- [ ] **Where the caption text comes from is Beck's call, and it is Beck's
-      words** — not generated description of what's visible in the screenshot.
-      Two already exist and must not be paraphrased away in the demotion:
-      `hand-study` carries "Studying hands, hearts, and progress." and
-      `waterfowl-and-motherhood` carries "Apparently I'm on a bird kick." If the
-      original Instagram captions for these captures still exist, those are the
-      better source; the demoted copy is the floor, not the target.
-
-**Open — Beck:** whether the process section also gets one shared intro note
-above the stills, separate from the per-still captions. `FigureRow` already has
-that shape (one caption for a row) and `PieceLink` has the per-item shape, so
-either is cheap. Not built until a piece actually needs it.
-
-### Case 2 — the WIP has no finished piece yet
-
-`security-camera` is a WIP for a piece **Beck hasn't finished** (confirmed
-2026-08-29). It has no parent to attach to, so case 1 cannot hold it.
-`why-be-afraid` is a *separate, finished* piece that happens to share the
-surveillance/halftone subject — related by theme, **not** its parent. Do not
-attach them.
-
-**Decided: keep it visible, marked as in-progress.** Not parked, not hidden —
-flagged honestly. Its existing description already reads that way: "Finally
-getting around to this project that's been on my to do list for maybe a year
-now."
-
-- [ ] Add a way to mark a `WorkPiece` as unfinished, and surface it in the
-      gallery and on the piece page. This is a recurring case, not a
-      one-off — it's the "still making this" state, and it should be worth
-      shipping work in.
-- [ ] The two cases must compose: when the finished security-camera piece
-      lands, its WIP should migrate from case 2 to case 1 — the piece drops the
-      in-progress flag and the still becomes a `process` entry on it. Keeping
-      the `process` shape minimal is what makes that a one-line move instead of
-      data surgery.
+When the finished `security-camera` piece lands: drop its `unfinished` flag
+and give it a `process` entry for the WIP still — the one-line move the
+minimal `process` shape was chosen to allow.
 
 ## 12. The gallery has no sort at all — **shipped 2026-08-28**
 

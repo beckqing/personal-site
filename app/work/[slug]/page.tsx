@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, BookOpen, Layers } from 'lucide-react'
+import { ArrowLeft, BookOpen, Hourglass, Layers } from 'lucide-react'
 import {
   collectionLayout,
   getWorkItem,
@@ -22,6 +22,7 @@ import {
   categoryLabel,
   ChapbookContents,
   PieceTile,
+  ProcessSection,
   Prose,
   TagLinks,
   VerseBlock,
@@ -160,10 +161,18 @@ function PieceView({ piece }: { piece: WorkPiece }) {
     </p>
   )
 
+  const unfinishedFlag = piece.unfinished && (
+    <div className="flex items-center gap-2 text-muted-foreground">
+      <Hourglass className="h-4 w-4" aria-hidden="true" />
+      <span className="font-brand text-xs uppercase tracking-[0.3em]">in progress</span>
+    </div>
+  )
+
   // Text-forward pieces lead with the words; everything else leads with the image.
   if (textForward) {
     return (
       <article className="mt-6">
+        {unfinishedFlag}
         <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
           {piece.title}
         </h1>
@@ -174,6 +183,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         >
           <VerseBlock text={piece.text ?? ''} className="text-xl text-foreground" />
         </div>
+        <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto mt-8 max-w-3xl shadow-sm" />
         {Body ? (
           <EssayBody className="mt-8">
             <Body />
@@ -181,6 +191,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         ) : (
           piece.writeup && <Prose text={piece.writeup} className="mt-8" />
         )}
+        <ProcessSection piece={piece} />
         <TagLinks tags={piece.tags} className="mt-10" />
       </article>
     )
@@ -190,6 +201,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
     <article className="mt-6">
       <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto max-w-3xl shadow-sm" />
       <div className="mx-auto mt-8 max-w-2xl">
+        {unfinishedFlag}
         <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
           {piece.title}
         </h1>
@@ -205,6 +217,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         ) : (
           piece.writeup && <Prose text={piece.writeup} className="mt-6" />
         )}
+        <ProcessSection piece={piece} />
         <TagLinks tags={piece.tags} className="mt-8" />
       </div>
     </article>
