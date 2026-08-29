@@ -3,8 +3,8 @@
 Open work only. Design decisions, structure, and the record of what's already
 built live in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-Last reconciled against the tree 2026-08-28. `tsc --noEmit` clean; `next
-build` clean, 204 static pages, TypeScript validated during the build.
+Last reconciled against the tree 2026-08-29; the 2026-08-28 pass's build state
+still holds (`tsc --noEmit` clean; `next build` clean, 204 static pages).
 
 Almost everything from the previous pass is closed. §1 and §2 were always
 blocked on Beck rather than on code; §4–§6 are small items that were dropped
@@ -13,8 +13,11 @@ are restored here rather than lost.
 
 **2026-08-28: §9, §10, and §12 shipped**, built from the spec now at
 [history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
-— see that file for where the build diverged. §11 is still deferred by Beck;
-see that section below.
+— see that file for where the build diverged.
+
+**2026-08-29**, with Beck: §7 is now active work rather than a backlog item,
+§9's booth/setup gap turns out to be partly fillable, and §11 is unblocked and
+specified — it was deferred, and is not any more.
 
 ---
 
@@ -95,18 +98,20 @@ the tag vocabulary in §2 changes.
 - [ ] `public/placeholder.jpg` is referenced by nothing. (`placeholder.svg`
       survives only as the dead fallback in §5 — if that goes, it can go too.)
 
-## 7. About tab glyphs want to become small illustrations — **Beck draws this**
+## 7. About tab glyphs want to become small illustrations — **in progress: Beck is drawing the set**
 
 `TabGlyph` (`components/tab-glyph.tsx`) currently places one or two doodles in
 disjoint sub-regions of a 32×32 badge, all in a single `currentColor` accent.
 Beck wants them **larger, in several colours, with the outlines overlapping** —
 closer to a small illustration or profile icon than an icon.
 
-**The visual authoring is Beck's** — which doodles pair, their placement,
-rotation, and per-doodle colour. Beck drew the set and may draw more. Recorded
-here rather than mocked up.
+**Beck is actively drawing this as an illustration set** (2026-08-29) — not a
+backlog item waiting on a decision. The visual authoring is Beck's: which
+doodles pair, their placement, rotation, and per-doodle colour. Nothing should
+be mocked up here; the code side's job is to be ready to render whatever the
+set turns out to be.
 
-Two mechanism findings from 2026-08-28, so the drawing work isn't blocked on
+Mechanism findings from 2026-08-28, so the drawing work isn't blocked on
 rediscovering them:
 
 - [ ] **A body fill is nearly free.** The doodles are hand-inked *outlines with
@@ -175,14 +180,22 @@ all three match the archive prose word for word. See
 [history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
 for the full build record and where it diverged from the spec.
 
-- [ ] **Beck:** source the booth/setup photos for `first-art-fair` from
-      Instagram, if they still exist — `[ when a woman ]`,
-      `[ photos of setup sketch and practice ]`, `[ photos of actual setup ]`,
-      `[ photos of my sketched setup ]`, `[ photos of my setup ]`, and
-      `[ flyer contest ]` all shipped omitted (no asset ever existed in the
-      archive). `mother earth` and `fire protection` needed no new upload —
-      they're cross-linked to `hthtpw/01-mama-earth` and
-      `april-colors-19/10-fire-protection`, which were already in the tree.
+- [ ] **Beck:** source the booth/setup images for `first-art-fair`. Confirmed
+      2026-08-29: **the set was partially documented on Instagram** — so some
+      of the omitted slots can be filled, but not all of them, and which ones
+      survive has to be established by going through the account. Beck also has
+      **schematics for the booth setup** to add, which the archive never had at
+      all. Slots currently shipping omitted (no asset ever existed in the
+      archive): `[ when a woman ]`, `[ photos of setup sketch and practice ]`,
+      `[ photos of actual setup ]`, `[ photos of my sketched setup ]`,
+      `[ photos of my setup ]`, and `[ flyer contest ]`. `mother earth` and
+      `fire protection` needed no new upload — they're cross-linked to
+      `hthtpw/01-mama-earth` and `april-colors-19/10-fire-protection`, which
+      were already in the tree.
+- [ ] Open question once the assets exist: the schematics are a *new* kind of
+      content for this essay — decide whether they render inline as more of the
+      same image slots, or get their own treatment. Don't design that before
+      seeing them.
 - [ ] **`inktober-17` is a fourth import worth re-checking**, not covered by
       this workstream. The archive's `projects/inktober-2017.md` carries
       per-image alt text via `{% galleryImage %}` (Swift, Divided, Poison, …)
@@ -199,38 +212,106 @@ in `components/image-lightbox.tsx`. See
 [history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
 for the full build record.
 
-## 11. Three WIP screenshots are shipping as standalone finished pieces — **deferred by Beck**
+## 11. Three WIP screenshots are shipping as standalone finished pieces — **decided 2026-08-29, ready to build**
 
-> Direction is process-stills on the finished piece; details to be talked
-> through. Sketch and open questions in
-> [history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
-> workstream D. **Don't implement it yet.**
+Three files in `public/art/portfolio-22/` are in-progress captures — app chrome,
+tool palettes, layer panels, reference photos in frame — but ship as finished
+standalone pieces in the gallery. All three confirmed by opening the files
+2026-08-28; the sweep across all 24 standalone images is done, so this list is
+complete.
 
-Both confirmed by opening the files 2026-08-28 — these aren't near-duplicates,
-they're in-progress captures of pieces that also ship finished.
+**Decided: a WIP is not a collection and not a `WorkPiece`.** It is
+documentation tied to one particular art piece. It gets no slug, no page, no
+tags, and never enters the gallery, the tag vocabulary, or search. The earlier
+idea of pairing a WIP with its finished piece as a two-item `WorkCollection` is
+dropped — it promotes a footnote into co-equal work and moves the finished
+piece's URL for no gain.
 
-- [ ] **`hand-study` is the WIP for `desire-and-distance`.**
+That leaves two genuinely different cases.
+
+### Case 1 — the WIP has a finished parent
+
+- [ ] Add `process?: ProcessStill[]` to `WorkPiece`, where a still is
+      `{ src: string; caption?: string; alt?: string }`. Minimal on purpose —
+      enough to be documentation, not enough to grow back into a piece.
+- [ ] `hand-study` is the WIP for `desire-and-distance`.
       `public/art/portfolio-22/hand-study.webp` is a screenshot of the drawing
-      app with the tool palette and layer panel still in frame; the hand in it
-      is the same hand, same pose, as the finished `desire-and-distance.webp`.
+      app with the tool palette and layer panel still in frame; the hand in it is
+      the same hand, same pose, as the finished `desire-and-distance.webp`.
       Beck's name for it is "the anatomy of a hand".
-- [ ] **`waterfowl-and-motherhood` is the WIP for `child-not-adult`.** Same
-      story: app chrome, layer panel, and two mallard reference photos around
-      an in-progress duck that is the finished duck at the right of
+- [ ] `waterfowl-and-motherhood` is the WIP for `child-not-adult`. Same story:
+      app chrome, layer panel, and two mallard reference photos around an
+      in-progress duck that is the finished duck at the right of
       `child-not-adult.webp`.
-- [ ] **There is no process-still slot to fold them into.** `WorkPiece` has one
-      `image`, plus `speedpaintSrc`/`animationSrc` for video — and both of these
-      finished pieces already carry a speedpaint. Options: add a
-      `process`/`stills` field, make each finished piece a small collection, or
-      simply drop the WIPs. Whichever it is, the fix is the same shape as the
-      duplicate handling this file has otherwise avoided needing.
-- [ ] **A third: `security-camera`.** Found by sweeping all 24 standalone
-      images 2026-08-28 — also an in-app capture (toolbar, perspective-grid
-      guides, red construction lines, canvas cropped at the right edge). Its
-      surveillance/halftone subject is close to `why-be-afraid` but the
-      composition isn't obviously the same, so **whose WIP it is, is a question
-      for Beck.** Those three are the only standalone images carrying app
-      chrome — the sweep is done, the list is complete.
+- [ ] Both stop being top-level `WORK` entries when they move.
+
+**Placement: its own labeled `process` section after the writeup**, stills
+opening in the existing lightbox — not inline in `PieceMedia`. The reason is
+worth keeping: `PieceMedia`'s existing label stack ("finished animation" /
+"speedpaint") disambiguates two media that are both *of the finished work*. A
+WIP screenshot is a different register, and directly under the finished image it
+invites being read as another artwork. Below the words, under its own heading, it
+reads as "here's how this got made".
+
+- [ ] Note that `PieceView` currently returns early for text-forward pieces
+      without calling `PieceMedia` (§4) — whatever renders the process section
+      should not inherit that gap.
+
+#### Captions are real content, not labels
+
+Decided 2026-08-29: **a process still can carry its own caption**, and the
+caption is authored content — the note about what stage this is and what
+changed after it — not a one-line alt-text stand-in.
+
+- [ ] `caption` is a plain string on the same terms as `writeup`: paragraphs
+      split on `\n\n`, rendered through `Prose`. That's the point of choosing
+      this rung of the ladder — a caption can start as four words and grow to
+      two paragraphs with no schema change and no MDX pipeline. If a process
+      story ever outgrows that, the signal is that it belongs in the piece's
+      `writeup` or its own essay, **not** that `process` should learn MDX.
+- [ ] `alt` is separate from `caption` and stays separate. A caption is
+      commentary shown to everyone; alt text describes the image to someone who
+      can't see it. They are frequently not the same sentence, and collapsing
+      them is the usual way image a11y quietly regresses.
+- [ ] Layout follows from captions being prose: the process section is a
+      stack of `<figure>`s (image + `<figcaption>`), not a bare thumbnail
+      grid. `FigureRow` in `components/essay.tsx` is the existing precedent for
+      the markup; the stills still open in the lightbox.
+- [ ] **Where the caption text comes from is Beck's call, and it is Beck's
+      words** — not generated description of what's visible in the screenshot.
+      Two already exist and must not be paraphrased away in the demotion:
+      `hand-study` carries "Studying hands, hearts, and progress." and
+      `waterfowl-and-motherhood` carries "Apparently I'm on a bird kick." If the
+      original Instagram captions for these captures still exist, those are the
+      better source; the demoted copy is the floor, not the target.
+
+**Open — Beck:** whether the process section also gets one shared intro note
+above the stills, separate from the per-still captions. `FigureRow` already has
+that shape (one caption for a row) and `PieceLink` has the per-item shape, so
+either is cheap. Not built until a piece actually needs it.
+
+### Case 2 — the WIP has no finished piece yet
+
+`security-camera` is a WIP for a piece **Beck hasn't finished** (confirmed
+2026-08-29). It has no parent to attach to, so case 1 cannot hold it.
+`why-be-afraid` is a *separate, finished* piece that happens to share the
+surveillance/halftone subject — related by theme, **not** its parent. Do not
+attach them.
+
+**Decided: keep it visible, marked as in-progress.** Not parked, not hidden —
+flagged honestly. Its existing description already reads that way: "Finally
+getting around to this project that's been on my to do list for maybe a year
+now."
+
+- [ ] Add a way to mark a `WorkPiece` as unfinished, and surface it in the
+      gallery and on the piece page. This is a recurring case, not a
+      one-off — it's the "still making this" state, and it should be worth
+      shipping work in.
+- [ ] The two cases must compose: when the finished security-camera piece
+      lands, its WIP should migrate from case 2 to case 1 — the piece drops the
+      in-progress flag and the still becomes a `process` entry on it. Keeping
+      the `process` shape minimal is what makes that a one-line move instead of
+      data surgery.
 
 ## 12. The gallery has no sort at all — **shipped 2026-08-28**
 
