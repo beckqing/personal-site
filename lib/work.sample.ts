@@ -8,6 +8,31 @@ import type { WorkItem } from './work'
  */
 export const SAMPLE_WORK: WorkItem[] = [
   {
+    // A fixture for previewing the code-demo layout (CodeDemoFrame, the
+    // `code` chip, the runnable badge) — a reference implementation of the
+    // §5 runtime contract, not a real piece. Pairs with
+    // public/code-demos/_preview/. Fabricated placeholder like everything
+    // else in this file: not Beck's work, dev-only, excluded from production
+    // regardless of SHOW_SAMPLE_WORK.
+    slug: 'preview-code-demo',
+    title: 'preview code demo',
+    year: '2026',
+    description:
+      'A fixture, not a piece — the reference demo, wired up so the layout can be looked at before there is real work in it.',
+    tags: ['science', 'code'],
+    // No `image`: this fixture has no poster, so it falls back to the tinted
+    // placeholder. That is legal and worth seeing — a real code demo should
+    // carry a still capture instead.
+    imageAspect: '16/10',
+    codeDemo: {
+      src: '/code-demos/_preview/index.html',
+      aspect: '16/10',
+      seedable: true,
+    },
+    writeup:
+      'The frame above is running a reference demo: it reads the theme from its boot URL, repaints when the site toggles, stops its loop when the page pauses it, and takes a new seed from the reseed control. Everything the runtime contract asks for, and nothing else.\n\nThe write-up is here to stand on its own. A reader who never presses run — because they asked for reduced motion, or because the demo failed — should still learn what the thing does from these paragraphs, which is why nothing here says "press play above."',
+  },
+  {
     slug: 'lunar-studies',
     title: 'Lunar Studies',
     year: '2024',

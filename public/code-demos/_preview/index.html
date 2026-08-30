@@ -1,0 +1,125 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>preview code demo</title>
+<!--
+  A REFERENCE CODE DEMO, not a piece of work. It exists to preview
+  CodeDemoFrame and to show the runtime contract
+  (docs/specs/2026-08-coding-explorations.md §5) implemented correctly — copy
+  this file as the starting point for a real one, then delete this folder.
+
+  It reads ?theme= at boot, repaints on code-demo:theme, stops its rAF loop on
+  code-demo:pause, restarts on code-demo:resume, and takes a new seed on
+  code-demo:reseed. It announces code-demo:ready once, when it can accept messages.
+-->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+</style>
+<canvas id="c"></canvas>
+<script>
+  // Palette copied from app/globals.css. An opaque-origin iframe inherits no
+  // CSS custom properties, so the hexes have to live here.
+  const PALETTE = {
+    dark:  { bg: '#080b24', fg: '#ced2cd', a: '#4ba661', b: '#d9aa52', c: '#68bfed' },
+    light: { bg: '#e7eae4', fg: '#080b24', a: '#2f7d45', b: '#97671a', c: '#305789' },
+  }
+
+  const canvas = document.getElementById('c')
+  const ctx = canvas.getContext('2d')
+
+  let theme = new URLSearchParams(location.search).get('theme') === 'light' ? 'light' : 'dark'
+  let running = false
+  let raf = null
+  let seed = 1
+  let t = 0
+
+  // A tiny deterministic PRNG, so `reseed` visibly changes the drawing.
+  function rand(n) {
+    const x = Math.sin(seed * 9301 + n * 49297) * 233280
+    return x - Math.floor(x)
+  }
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = canvas.clientWidth * dpr
+    canvas.height = canvas.clientHeight * dpr
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  }
+
+  function draw() {
+    const p = PALETTE[theme]
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    ctx.fillStyle = p.bg
+    ctx.fillRect(0, 0, w, h)
+
+    const accents = [p.a, p.b, p.c]
+    for (let i = 0; i < 48; i++) {
+      const phase = t * 0.006 + rand(i) * Math.PI * 2
+      const x = w * (0.1 + 0.8 * rand(i + 100)) + Math.cos(phase) * w * 0.06
+      const y = h * (0.1 + 0.8 * rand(i + 200)) + Math.sin(phase * 1.3) * h * 0.06
+      const r = 2 + rand(i + 300) * 6
+      ctx.beginPath()
+      ctx.arc(x, y, r, 0, Math.PI * 2)
+      ctx.fillStyle = accents[i % 3]
+      ctx.globalAlpha = 0.35 + 0.4 * rand(i + 400)
+      ctx.fill()
+    }
+    ctx.globalAlpha = 1
+
+    ctx.fillStyle = p.fg
+    ctx.font = '13px ui-monospace, monospace'
+    ctx.fillText('reference demo · ' + theme + ' · seed ' + seed, 14, h - 16)
+  }
+
+  function frame() {
+    if (!running) return
+    t += 1
+    resize()
+    draw()
+    raf = requestAnimationFrame(frame)
+  }
+
+  function start() {
+    if (running) return
+    running = true
+    frame()
+  }
+
+  function stop() {
+    running = false
+    if (raf) cancelAnimationFrame(raf)
+    raf = null
+  }
+
+  addEventListener('message', (event) => {
+    const message = event.data
+    if (!message || typeof message.type !== 'string') return
+    switch (message.type) {
+      case 'code-demo:theme':
+        theme = message.theme === 'light' ? 'light' : 'dark'
+        // Repaint immediately, so a toggle lands even while paused.
+        resize()
+        draw()
+        break
+      case 'code-demo:pause':
+        stop()
+        break
+      case 'code-demo:resume':
+        start()
+        break
+      case 'code-demo:reseed':
+        seed = Math.floor(Math.random() * 10000)
+        resize()
+        draw()
+        break
+    }
+  })
+
+  resize()
+  draw()
+  start()
+  // Once, when it can accept messages. targetOrigin '*' because this frame's
+  // own origin is opaque.
+  parent.postMessage({ type: 'code-demo:ready' }, '*')
+</script>
