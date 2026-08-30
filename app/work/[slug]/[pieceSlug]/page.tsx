@@ -17,7 +17,7 @@ import {
 } from '@/lib/work'
 import { BookFolio, categoryLabel, Prose, TagLinks, VerseBlock } from '@/components/work-visuals'
 import { EssayBody } from '@/components/essay'
-import { essayBody } from '@/lib/essay-bodies'
+import { mdxBody } from '@/lib/mdx-bodies'
 import { PieceMedia } from '@/components/media-player'
 import { BookPageNav } from '@/components/book-page-nav'
 import { cn } from '@/lib/utils'
@@ -57,7 +57,7 @@ export default async function CollectionPiecePage({
   const hybrid = isHybrid(piece)
   const chapbook = isChapbook(collection)
   const lightboxSlice = imageLightboxSlice(collection, piece)
-  const Body = essayBody(piece.slug)
+  const Body = mdxBody(piece.slug)
 
   if (chapbook) {
     // A book's first page has no previous page, and its last has no next —

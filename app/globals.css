@@ -265,6 +265,38 @@
     transform: rotate(var(--hr));
   }
 
+  /* Shiki's dual-theme output (see components/excerpt.tsx). Rendered with
+     `defaultColor: false`, so every span carries --shiki-light and
+     --shiki-dark and no `color` of its own — this is what picks between
+     them. It has to key off [data-theme], not prefers-color-scheme: the
+     site's toggle sets an attribute, and the media-query version of this
+     pattern would ignore it entirely. The block's own background comes from
+     the container's Tailwind classes, not from the theme. */
+  .excerpt-block .shiki,
+  .excerpt-block .shiki span {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style, normal);
+    background-color: transparent;
+  }
+  [data-theme='dark'] .excerpt-block .shiki,
+  [data-theme='dark'] .excerpt-block .shiki span {
+    color: var(--shiki-dark);
+    font-style: var(--shiki-dark-font-style, normal);
+    background-color: transparent;
+  }
+  .excerpt-block .shiki {
+    font-family: var(--font-recursive), ui-monospace, monospace;
+    font-variation-settings: 'MONO' 1, 'CASL' 0, 'slnt' 0;
+    line-height: 1.6;
+  }
+  /* Never wrap code — the container scrolls instead. */
+  .excerpt-block .shiki code {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    white-space: pre;
+  }
+
   /* A speedpaint's persistent timeline (see SpeedpaintPlayer) — a real,
      continuous seek bar, since the video underneath is now real footage
      rather than sampled stages. Reads as distinct from a stock video seek

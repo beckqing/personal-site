@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<head>
+<title>🌊🐠 delirium | interactive art</title>
+<!--
+  Transcribed from Beck's own https://beckqing.github.io/whims/delirium
+  (source: https://github.com/beckqing/whims), which is a later revision than
+  the CodePen pen at https://codepen.io/beckqing/pen/GRQmvYV — d3 v6 rather
+  than v3, a setup() that calls noCanvas(), viewport-relative particle radii,
+  and a guard against a negative circle radius.
+
+  The art and the code below are Beck's, unchanged. Three things were added
+  for this site, all additive and marked "site wiring" where they appear:
+
+    1. The two illustrations are served from this folder instead of the
+       DeviantArt CDN. The originals were signed URLs carrying an expiring
+       JWT, so the piece would have gone blank on its own eventually.
+       surface.webp = the coloured scene; beneath.webp = what the cursor
+       reveals. Both are the full 2160x2160, re-encoded from PNG (8.6 MB
+       together) to webp (0.56 MB) with no resizing.
+    2. d3 and p5 are vendored beside this file rather than fetched from
+       d3js.org and cdnjs. Provisional — see docs/TODO.md.
+    3. The page/demo message contract from
+       docs/specs/2026-08-coding-explorations.md §5, so the frame around this
+       page can pause it off-screen and resume it. `code-demo:theme` is
+       deliberately ignored: this piece has one palette, which is Beck's, and
+       there is no light-mode variant to switch to.
+-->
+<script src="./d3.v6.min.js"></script>
+<script src="./p5.0.9.0.min.js"></script>
+<style>
+body,
+.bgImage {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.bgImage {
+  position: absolute;
+  background-image: url(./surface.webp);
+  background-size: cover;
+  background-position: top;
+  z-index: -1;
+}
+
+.blobCont {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+}
+</style>
+<body>
+<div class="bgImage"></div>
+<svg class="blobCont">
+		<image xlink:href="./beneath.webp" mask="url(#mask)" width="100%" height="100%" preserveAspectRatio="xMidYMin slice" />
+      <defs>
+      <filter id="gooey" height="130%">
+				<feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur" />
+				<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+    	</filter>
+    </defs>
+			<mask id="mask" x="0" y="0">
+				<g id="particleGroup" style="filter: url(#gooey)">
+        </g>
+			</mask>
+	</svg>
+</body>
+<script>
+  let pointerMoved = false;
+  let animation = true;
+
+  function pointerMove(e){
+     pointerMoved = true
+     clientX = e.clientX
+     clientY = e.clientY
+
+  }
+  onmousemove = pointerMove;
+  ontouchmove = pointerMove;
+
+  function click(e){
+     animation = !animation;
+     if (animation==true) {
+        loop()
+     } else {
+        noLoop()
+     }
+  }
+  onclick = click;
+
+  function setup(){
+    noCanvas()
+  }
+
+  let particles = new Array();
+  let particleGroup = d3.select('#particleGroup')
+  let minWinDim = Math.min(window.innerWidth, window.innerHeight)
+
+  function draw() {
+    if(particles.length < 200){
+       particles.push(new Particle())
+    }
+    for(let i = 0; i < particles.length; i++) {
+      particles[i].move();
+    }
+  }
+
+  class Vector {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+    }
+
+    add(v) {
+      this.x += v.x;
+      this.y += v.y;
+    }
+  }
+
+  class Particle {
+    constructor(pos, vel, r, lifespan, color) {
+      if(pos != undefined) {
+        this.pos = pos;           // (x, y) position
+        this.vel = vel;           // (x, y) velocity
+        this.r = r;               // radius
+        this.lifespan = lifespan; // how long particle is alive
+        this.circle = particleGroup.append('circle')
+           .attr('cx', pos.x)
+           .attr('cy', pos.y)
+           .attr('r', r)
+           .attr('fill', 'white')
+      } else {
+        this.randomize();
+      }
+    }
+
+    randomize() {
+      if (pointerMoved == false){
+         this.pos = new Vector(window.innerWidth/2, window.innerHeight/2);
+      } else {
+         this.pos = new Vector(mouseX, mouseY); // p5, mouse is touch compatible
+      }
+      this.vel = new Vector(Math.random() - .5, Math.random() - .5);
+      this.r = Math.random() * minWinDim/8;
+      this.lifespan = Math.random() * 20 + 160;
+      this.circle = particleGroup.append('circle')
+           .attr('cx', this.pos.x)
+           .attr('cy', this.pos.y)
+           .attr('r', this.r)
+           .attr('fill', 'white')
+    }
+
+    move() {
+      if(this.lifespan <= 0 || this.r - this.r/this.lifespan < 0) {
+        this.circle.remove()
+        this.randomize();
+      } else {
+        this.pos.add(this.vel);
+        this.r = this.r - this.r/this.lifespan;
+        this.lifespan--;
+        this.circle.attr('cx', this.pos.x)
+           .attr('cy', this.pos.y)
+           .attr('r', this.r)
+      }
+    }
+  }
+  </script>
+<!-- <> CREDIT
+svg gooey masking - https://codepen.io/cassie-codes/pen/zWJxXj
+ >> modifications
+      - align images top center, removed filters
+
+cursor particles  - https://codepen.io/jackiejoe4/pen/bGbemQW
+ >> modifications
+      - create circle shapes within an svg instead of using canvas
+      - start at the center of the window until pointer is tracked
+      - toggle animation on click
+-->
+<script>
+  // ---- site wiring, not part of the original piece ----------------------
+  // The page/demo contract from docs/specs/2026-08-coding-explorations.md §5.
+  // Everything above this point is Beck's, untouched.
+  //
+  // `animation` above is the piece's own click-to-toggle state. The frame's
+  // pause/resume is kept in the same variable so the two can't disagree about
+  // whether the loop is running.
+  addEventListener('message', (event) => {
+    const message = event.data
+    if (!message || typeof message.type !== 'string') return
+    switch (message.type) {
+      case 'code-demo:pause':
+        animation = false
+        noLoop()
+        break
+      case 'code-demo:resume':
+        animation = true
+        loop()
+        break
+      // 'code-demo:theme' is intentionally unhandled — one palette, no variant.
+    }
+  })
+
+  // minWinDim is read once at load, but this page is framed and can be
+  // resized (entering fullscreen changes it by a lot). Recomputing keeps new
+  // particles scaled to the box they're actually in; existing ones live out
+  // their lifespan at the old scale, which is what the piece already does.
+  addEventListener('resize', () => {
+    minWinDim = Math.min(window.innerWidth, window.innerHeight)
+  })
+
+  parent.postMessage({ type: 'code-demo:ready' }, '*')
+</script>
+</html>

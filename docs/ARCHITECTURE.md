@@ -21,9 +21,11 @@ holds both the data (30 top-level items — 9 collections and 21 standalone
 pieces — with 163 pieces inside the collections) and the vocabulary that
 describes it.
 
-**The vocabulary is deliberately wider than the data.** Ten of its tags
-currently match nothing: `science` (the discipline itself), `oil`, all four
-`field` tags, and four of the six `theme` tags.
+**The vocabulary is deliberately wider than the data.** Eleven of its tags
+currently match nothing: `science` (the discipline itself), `oil`, all five
+`field` tags (`biology`, `neuroscience`, `material science`, `dataviz`, and
+`code`), and four of the six `theme` tags. `code` was added 2026-08-29 ahead
+of the work that will carry it — see "Code demos" below.
 
 `science` is the load-bearing one — the hero copy and the homepage's third
 panel both link to `/work?tags=science`, which renders the empty state today.
@@ -88,7 +90,11 @@ Three essays needed more than paragraphs: headings, emoji-bullet lists,
 blockquotes, centred verse blocks, and external links. Rather than grow
 `writeup` into a markup dialect, those bodies live as MDX in
 `content/essays/<slug>.mdx` and render through the components in
-`components/essay.tsx`.
+`components/essay.tsx`. A code demo's write-up takes the same rung of that
+ladder from `content/code-demos/<slug>.mdx`; both directories resolve through
+the one map in `lib/mdx-bodies.ts`. `components/essay.tsx` and `EssayBody`
+keep their names — they are the essay *typography*, and a demo's write-up
+wants exactly that typography.
 
 **Why MDX and not a richer string or a typed block union:** the source of
 truth for all three is Markdown in the archived 11ty site, so MDX keeps the
@@ -98,12 +104,16 @@ the "imported content is never rewritten" rule below). Hand-transcribing them
 into a TS block union would have reintroduced exactly that transcription step.
 
 **The server/client boundary is load-bearing.** `lib/work.ts` is imported by
-three client components (`work-gallery`, `image-lightbox`, `media-player`), so
-it stays plain serializable data — no component references, ever. The MDX map
-lives in `lib/essay-bodies.ts`, imported only by the two server page files.
-`lib/work.ts` carries `MDX_ESSAY_SLUGS`, a list of plain strings, so the
-client-side `hasWriteup()` can still badge an essay without importing the MDX
-runtime; `lib/essay-bodies.ts` asserts the two agree at build time.
+four client components (`work-gallery`, `image-lightbox`, `media-player`,
+`code-demo-frame`), so it stays plain serializable data — no component
+references, ever. The MDX map lives in `lib/mdx-bodies.ts`, imported only by
+the two server page files. `lib/work.ts` carries `MDX_BODY_SLUGS`, a list of
+plain strings, so the client-side `hasWriteup()` can still badge an essay
+without importing the MDX runtime; `lib/mdx-bodies.ts` asserts the two agree
+at build time.
+
+That constraint is also why a code demo is `{ src, aspect }` plain data over
+an iframe rather than a component reference — see "Code demos" below.
 
 `mdx-components.tsx` at the repo root is required by `@next/mdx` under the App
 Router, and in Next 16 its `useMDXComponents` **takes no arguments** — older
@@ -123,6 +133,7 @@ its tags and fields rather than set by a `type` column:
 
 | Predicate | Means |
 |---|---|
+| `isCodeDemo` | carries `codeDemo` — its subject is a thing that runs, so the page leads with the running thing. Checked *before* the image branch: a code demo also carries `image` (its poster), so a later branch would silently render it as a plain image piece |
 | `isTextForward` | carries `text` and no `image` — renders as a quote card, leads with words |
 | `isHybrid` | carries both `text` and `image` — both load-bearing, neither a caption for the other |
 | `isTextOnly` | a text-forward piece, or a collection made entirely of them |
@@ -152,8 +163,15 @@ hybrid pieces in the tree are Mindtober's, and they render through
 standalone piece that carries both `text` and `image` — not dead code to be
 swept up. The predicate that reaches it (`isHybrid`) fires the moment such a
 piece is added, with no other change. Anything doing a dead-code pass should
-skip it; the same goes for `lib/work.sample.ts` and `SHOW_SAMPLE_WORK`, kept
-for testing filters and card layouts against a larger, more varied dataset.
+skip it.
+
+`lib/work.sample.ts` and `SHOW_SAMPLE_WORK` were kept alongside it for the
+same reason — testing filters and card layouts against a larger, more varied
+dataset. **That decision was reversed 2026-08-29 (Beck): both are deleted.**
+They were the last of the fabricated v0 scaffold content, following `ARTWORKS`,
+`POEMS`, and `ESSAYS` out of `lib/content.ts`, and the real dataset now spans
+all three disciplines. `WORK` is simply `REAL_WORK`, with no environment
+branch in front of it.
 
 **Images carry their own aspect ratio.** `imageAspect` is applied as an inline
 style that overrides a card's default shape, so real artwork renders uncropped
@@ -574,7 +592,16 @@ circle" above) and `app/icon.svg` was added alongside `app/favicon.ico` and
   and `PieceTile` (dispatching to `TextTile` / `ImageTile` / `IllustratedTile`
   for a collection page's own grid, the same way `WorkCard` dispatches at the
   top level).
-- **`media-player.tsx`** — everything video (below).
+- **`media-player.tsx`** — everything video (below), plus `MediaBadges`, the
+  tile indicators for video *and* for a runnable code demo.
+- **`code-demo-frame.tsx`** — the client island a code demo runs in: the
+  workbench chrome, the sandboxed iframe, the autorun/pause policy, and the
+  page↔demo message contract (see "Code demos").
+- **`excerpt.tsx`** — SERVER ONLY. Shiki-highlighted code excerpts for an MDX
+  body. Kept out of `essay.tsx` (and so out of `mdx-components.tsx`'s global
+  map) so only the bodies that actually show code pull the highlighter into
+  their graph; import it from the `.mdx` file, like `<Item>` and
+  `<MarketHeader>`.
 - **`image-lightbox.tsx`** — full-screen viewing with prev/next across a
   supplied list, so a piece opened from a collection can be paged through in
   place. It renders whatever list it's handed; **scoping that list to pieces
@@ -812,6 +839,171 @@ DOM level while React state read `0`.
 mount-time effect as a fallback, and also listens for `onDurationChange` as a
 second event-based path. Don't remove either; each covers a case the other
 misses.
+
+---
+
+## Code demos
+
+Built 2026-08-29 from
+[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md)
+(the filename keeps the spec's original working title), which stays in
+`specs/` rather than moving to `history/` because its §8 — the home page's
+science panel — is deferred until Beck's first code demo exists. Read that spec for the reasoning; this section records the shape.
+
+A **code demo** is a `WorkPiece` carrying one extra field, `codeDemo`. It is
+the fourth kind of piece the site renders, and it is defined by what it leads
+with: an image piece leads with the finished image, a text-forward piece with
+the words, a hybrid with both, and a code demo with **a thing that runs**. It
+is not a new "project" concept — search, tags, sort, the collection machinery,
+metadata, the sitemap, and `?tags=science` deep links all work with no
+special-casing.
+
+**The first one is `delirium`** (2026-08-29) — Beck's underwater illustration
+with a gooey SVG cursor that reveals a second painting underneath it, d3 and
+p5 driving particles through an SVG mask. Transcribed from Beck's own
+`github.com/beckqing/whims`, which was a later revision than the CodePen pen
+it also exists as. Two things were changed bringing it in, both recorded in
+the file's own header comment: the two illustrations were pulled off
+DeviantArt's CDN (the URLs carried expiring JWTs, so the piece would have gone
+blank on its own) and re-encoded PNG→webp, 8.6 MB down to 0.56 MB at full
+2160×2160; and d3/p5 were vendored beside it rather than fetched from a CDN,
+which is provisional — see TODO §2.
+
+It carries `art` as well as `science` and `code`, which the spec advised
+against. That was Beck's call: the piece is their own illustration, and the
+denim tone is honest about that even though it costs the emerald that would
+flag science finally having work in it. `primaryDiscipline()` was **not**
+changed — it still iterates `DISCIPLINES` in its own order, so `art` wins from
+any tag position, and `first-art-fair` is unaffected.
+
+**The name is `code demo`, decided by Beck 2026-08-29.** The spec drafted these
+as "coding explorations" whose runnable artifact was a "sketch"; both are gone.
+"Sketch" was the worse of the two on a site where the same word means a pencil
+drawing — `lib/work.ts` still contains Beck's own writeups about pencil
+sketches and sketchbooks, and the collision was real.
+
+**A code demo is a sandboxed iframe over a self-contained file in
+`public/code-demos/`, not a React component.** Four reasons, in order of how
+load-bearing they are:
+
+1. `lib/work.ts` may never hold a component reference (see "The server/client
+   boundary is load-bearing"). `{ src, aspect }` is plain data and needs no
+   parallel-list indirection at all — unlike `MDX_BODY_SLUGS`, which exists
+   purely as a workaround for that same constraint.
+2. Exploratory code is exactly the code that deserves a real boundary. An
+   infinite loop or a stray `document.body` mutation takes the page down if it
+   shares the document.
+3. Demos bring their own libraries (p5, three, a shader loader). In an
+   iframe each loads its own dependencies lazily and the site bundle never
+   grows.
+4. Authoring stays one HTML file, and the artifact stays portable — the
+   standalone link in the frame's state rail is just the file.
+
+The cost is that a demo inherits none of the page's theme tokens, which is
+what the handshake below is for.
+
+**The poster reuses `image` / `imageAspect`.** A demo's `image` is a still
+capture of it running, so every existing card, placeholder, aspect helper,
+lightbox slice, and OG image path works unchanged. `codeDemo.aspect` is separate
+and required: the frame reserves its box from it before the iframe exists, so
+booting a demo never shifts the page. The two are normally equal — kept
+apart because a card is showing a picture and the frame is reserving a canvas,
+and a cropped poster is allowed to diverge.
+
+**`CodeDemoFrame` is `PlayerFrame`'s sibling, not a copy of it.** A video is
+a recording you watch; a code demo is a machine you switch on, so the chrome reads
+as a workbench: a state rail above (tone dot, entry filename in the mono axis,
+standalone link), the surface between, a control rail below (run/pause,
+reseed when `codeDemo.seedable`, fullscreen). Controls are real `<button>`s in
+the rails and never overlaid on the surface — the surface belongs to the
+demo, and an overlay would swallow its own interactions.
+
+**Fullscreen uses the native Fullscreen API on the frame wrapper, not a
+dialog.** `ImageLightbox` can be a dialog because an image has no state to
+lose; reparenting an iframe into a portal *reboots* the demo and throws away
+whatever it has drawn. Requesting fullscreen on the existing wrapper keeps the
+same iframe alive.
+
+### The runtime contract
+
+`sandbox="allow-scripts"` and nothing else — deliberately **without**
+`allow-same-origin`, since with both flags a same-origin iframe can reach
+`parent.document` and the boundary is fiction. The consequence is real and is
+not an oversight: the demo runs in an opaque origin, so it has no
+`localStorage` and cannot `fetch` its own data files. A demo needing data
+inlines it. Adding a flag reopens the decision; it is not a quiet fix.
+
+Messages use `postMessage` with `targetOrigin: '*'` — required, because an
+opaque origin never matches a specific one. Page → demo: `code-demo:theme`,
+`code-demo:pause`, `code-demo:resume`, `code-demo:reseed`. Demo → page:
+`code-demo:ready`, once. A demo that never sends `ready` still works — the
+frame reveals itself after a 2s timeout — and one that ignores `pause` just
+burns its own cycles.
+
+**Theme is delivered twice**, as a `?theme=` query param at boot *and* as a
+message on every toggle. Same belt-and-braces shape as `SpeedpaintPlayer`'s
+duration fallback, for the same reason: the param is what a demo reads
+before it has a listener attached (and what themes the standalone URL), the
+message is what keeps a running demo in sync. The iframe's `src` is frozen at
+boot and never recomputed — changing it would reboot the demo.
+
+**Autorun**: run on first intersection (~25% visible), pause on leaving, pause
+on `document.hidden`. `codeDemo.manual` opts out. `prefers-reduced-motion:
+reduce` suppresses every autorun regardless of `manual` — the poster is a
+complete experience for that reader, and the run control is still there.
+
+### Tiles deliberately do not run
+
+`WorkCard` gains no `CodeDemoCard`: a demo's poster is an `image`, so
+`ImageCard` already renders it correctly. The only thing missing is the signal
+that it runs, which is a third `MediaBadges` pill (lucide `Binary`, sharing
+the top-right corner row with the speedpaint pill). Thirty tiles would
+otherwise be thirty iframes and thirty rAF loops, and content that boots
+asynchronously would make the masonry heights depend on it — exactly the
+layout instability `MasonryGrid` exists to avoid. Hover-to-run on a single
+tile was considered and rejected: no touch equivalent, and an iframe's boot
+cost lands as a stutter right at the moment of hover.
+
+### Annotated excerpts
+
+Opt-in per piece and interleaved with the prose, never a section the layout
+reserves. There is no `excerpts: []` schema — a piece that wants code writes
+an MDX body and imports `<Excerpt>` from `components/excerpt.tsx`, the same
+rung of the ladder essays already climbed. **The annotation is the surrounding
+prose**, not a prop.
+
+Highlighting is Shiki at build time, in the server component, shipping zero
+client JS. **The theme is built from the site's own tokens** rather than a
+stock one — keywords goldenrod, strings terracotta, numbers/constants denim,
+function names emerald, comments muted-foreground, the rest foreground —
+because a "GitHub Dark" block would be the one imported-looking object on a
+page where every colour is a declared token with a recorded reason. Those
+hexes are copied literally into `components/excerpt.tsx`: a TextMate theme
+emits inline colours and cannot read a CSS custom property, so they must be
+kept in sync with `globals.css` by hand.
+
+**The light/dark split is the hero icon collage's swap, run backwards**
+(decided with Beck, 2026-08-29). Each brand hue has a standard value and a
+brighter alt — denim/sky, emerald/spring-green, pumpkin/goldenrod. The hero
+icons take the alt in light mode and the standard in dark; code takes the
+opposite, because a code block is dense small text rather than a big
+watermark glyph, and the standard hues land near 2:1 against `#080b24`. So
+dark mode uses `--sky` for numbers and `--spring-green` for function names,
+where light mode uses `--denim` and the deepened `--science`.
+
+**Strings are the one exception.** `--terracotta` is the only brand hue with
+no alt — it holds `#8c3623` in both themes, at 2.32:1 on midnight. Rather
+than mint a terracotta alt, **dark mode borrows `--writing` (pumpkin,
+`#bf712c`, 4.88:1)** for strings; light mode keeps terracotta. Decided by
+Beck 2026-08-29, choosing an existing token over a new brand value. The
+tradeoff accepted: pumpkin sits at hue 28° and goldenrod keywords at 39°, so
+strings and keywords are closer neighbours in dark mode than elsewhere.
+
+Rendered with Shiki's dual-theme output (`defaultColor: false`), which emits
+`--shiki-light` / `--shiki-dark` per span; `globals.css` picks between them on
+`[data-theme]`. It has to be the attribute, not `prefers-color-scheme` — the
+site's toggle sets an attribute, so the media-query version of this pattern
+would ignore it entirely.
 
 ---
 

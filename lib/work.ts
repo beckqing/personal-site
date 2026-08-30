@@ -1,5 +1,3 @@
-import { SAMPLE_WORK } from './work.sample'
-
 /**
  * A single piece of work. Collections are pieces that contain other pieces,
  * so a collection and a standalone piece share the same shape and page layout.
@@ -78,6 +76,43 @@ export type WorkPiece = {
    * screenshot into `process` instead.
    */
   unfinished?: boolean
+  /**
+   * A runnable code demo — the piece's subject is a thing that runs, and
+   * this is how to run it. Its `image` is the poster (a still capture of the
+   * demo running), which is why there's no separate poster field: every
+   * card, aspect helper, lightbox slice, and OG image path keeps working
+   * unchanged. See docs/specs/2026-08-coding-explorations.md.
+   */
+  codeDemo?: CodeDemo
+}
+
+/**
+ * A runnable code demo: a self-contained page that this piece embeds and runs.
+ * Plain data on purpose — `lib/work.ts` is imported by client components and
+ * may never hold a component reference, and an iframe over a `public/` file
+ * is a real boundary around exploratory code besides. See "Why an iframe" in
+ * docs/specs/2026-08-coding-explorations.md.
+ */
+export type CodeDemo = {
+  /** The demo's own HTML entry, e.g. '/code-demos/flow-field/index.html'. */
+  src: string
+  /**
+   * The canvas's aspect ratio ('4/3', '1/1', '16/9'). Required: the frame
+   * reserves its box before the iframe exists, so booting a demo never
+   * shifts the page. Normally equal to `imageAspect`, but kept separate —
+   * the card is showing a picture and the frame is reserving a canvas, and a
+   * cropped poster is allowed to diverge.
+   */
+  aspect: string
+  /**
+   * Skip auto-run on scroll-into-view — show the poster and wait for a
+   * press. For demos heavy enough that starting unasked is rude.
+   */
+  manual?: boolean
+  /** The demo responds to a reseed message; shows the reseed control. */
+  seedable?: boolean
+  /** Public source, if there is any. Rendered as a header link. */
+  repo?: string
 }
 
 /**
@@ -131,15 +166,16 @@ export function isCollection(item: WorkItem): item is WorkCollection {
 }
 
 /**
- * Pieces whose write-up is an MDX body in content/essays/ rather than the
- * plain `writeup` string. Kept here (as plain strings) because hasWriteup()
- * runs in client components and must not import the MDX map. The keys of
- * lib/essay-bodies.ts must match this list exactly.
+ * Pieces whose write-up is an MDX body (content/essays/ for essays,
+ * content/code-demos/ for code demos) rather than the plain `writeup`
+ * string. Kept here (as plain strings) because hasWriteup() runs in client
+ * components and must not import the MDX map. The keys of lib/mdx-bodies.ts
+ * must match this list exactly.
  */
-export const MDX_ESSAY_SLUGS = ['chinese-emoji-poetry', 'first-art-fair', 'note-systems'] as const
+export const MDX_BODY_SLUGS = ['chinese-emoji-poetry', 'first-art-fair', 'note-systems'] as const
 
 export function hasWriteup(item: WorkPiece): boolean {
-  return Boolean(item.writeup) || (MDX_ESSAY_SLUGS as readonly string[]).includes(item.slug)
+  return Boolean(item.writeup) || (MDX_BODY_SLUGS as readonly string[]).includes(item.slug)
 }
 
 /** Every top-level item gets its own page at /work/[slug]. */
@@ -171,6 +207,16 @@ export function isHybrid(item: WorkItem): boolean {
 export function isTextForward(item: WorkItem): boolean {
   if (isCollection(item)) return false
   return Boolean(item.text) && !item.image
+}
+
+/**
+ * A piece whose subject is a thing that runs. Checked *before* the image
+ * branch everywhere a layout is chosen: a code demo carries `image` and no
+ * `text`, so without an earlier branch it renders as a plain image piece and
+ * the failure is silent.
+ */
+export function isCodeDemo(item: WorkItem): boolean {
+  return !isCollection(item) && Boolean(item.codeDemo)
 }
 
 /**
@@ -237,7 +283,7 @@ export const DISCIPLINE_FACETS: Record<Discipline, Facet> = {
   writing: { name: 'form', tags: ['poem', 'essay', 'blog'] },
   science: {
     name: 'field',
-    tags: ['biology', 'neuroscience', 'material science', 'dataviz'],
+    tags: ['biology', 'neuroscience', 'material science', 'dataviz', 'code'],
   },
 }
 
@@ -1904,18 +1950,33 @@ const REAL_WORK: WorkItem[] = [
     text:
       "I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
   },
+  {
+    slug: 'delirium',
+    title: '🌊🐠 delirium',
+    // From the commit that created delirium.html in github.com/beckqing/whims
+    // (2022-05-21, with an interactivity fix the next day) — not stated by
+    // Beck. The illustration itself may predate the interactive version.
+    year: '2022',
+    // `art` first is not what picks the tone — primaryDiscipline() iterates
+    // DISCIPLINES in its own order, so `art` would win from any position.
+    // Carrying it is deliberate (decided with Beck 2026-08-29): this is Beck's
+    // own illustration made interactive, and the denim tone is honest about
+    // that even though it costs the emerald that would flag `science` finally
+    // having work in it.
+    tags: ['art', 'science', 'code'],
+    // The demo's own coloured layer, doing double duty as the poster — one
+    // file, two uses, and it is a true still of the piece at rest.
+    image: '/code-demos/delirium/surface.webp',
+    imageAspect: '1/1',
+    codeDemo: {
+      src: '/code-demos/delirium/index.html',
+      aspect: '1/1',
+      repo: 'https://github.com/beckqing/whims',
+    },
+  },
 ]
 
-/**
- * The fake dataset (lib/work.sample.ts) can be mixed in outside production
- * for a bigger, more varied set to test filters and card layouts against.
- * Flip back to true when that's useful again — always excluded from
- * production builds regardless of this flag.
- */
-const SHOW_SAMPLE_WORK = false
-
-export const WORK: WorkItem[] =
-  process.env.NODE_ENV === 'production' || !SHOW_SAMPLE_WORK ? REAL_WORK : [...REAL_WORK, ...SAMPLE_WORK]
+export const WORK: WorkItem[] = REAL_WORK
 
 /**
  * How selected tags combine. Shared with the little venn toggle:

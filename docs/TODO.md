@@ -3,8 +3,10 @@
 Open work only. Design decisions, structure, and the record of what's already
 built live in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-Last reconciled against the tree 2026-08-29; the 2026-08-28 pass's build state
-still holds (`tsc --noEmit` clean; `next build` clean, 204 static pages).
+Last reconciled against the tree 2026-08-29, after the code-demo build and
+the first real code demo landing (`tsc --noEmit` clean; `next build` clean,
+203 static pages — 202 plus `/work/delirium`; a scratch `/excerpt-preview`
+route makes it 204 until that folder is deleted).
 
 Almost everything from the previous pass is closed. §1 and §2 were always
 blocked on Beck rather than on code; §4–§6 are small items that were dropped
@@ -20,17 +22,32 @@ are restored here rather than lost.
 specified — it was deferred, and is not any more.
 
 **2026-08-29, later:** the `science` gap behind §1 and §2 now has a decided
-shape — **coding explorations**, live runnable sketches filed under
-`science` with a new piece-page layout. Fully specced in
+shape — live runnable things filed under `science` with a new piece-page
+layout. (Called "coding explorations" at this point; renamed to **code demos**
+later the same day — see the last entry.) Fully specced in
 [specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md);
-both sections stay open until the first exploration is actually in
-`lib/work.ts`, since the spec is design, not content.
+both sections stay open until the first one is actually in `lib/work.ts`,
+since the spec is design, not content.
 
 **2026-08-29, later still: §4, §5, §6, §11, and the inktober-17 half of §9
 shipped** — `tsc --noEmit` clean, `next build` clean, 202 static pages (down
 from 204: `hand-study` and `waterfowl-and-motherhood` no longer get their own
 route). §7's bounce easing turned out to already be shipped (found while
 touching an adjacent file) — the description below was stale, not the code.
+
+**2026-08-29, last: the code-demo machinery shipped**, §2–§7 and §9 of
+[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md)
+— the `code` field tag, `CodeDemo` / `isCodeDemo`, `CodeDemoFrame`, the
+runnable badge, the `mdx-bodies` rename, and `<Excerpt>`. **These are called
+"code demos"**, decided by Beck 2026-08-29; the spec drafted them as "coding
+explorations" with a "sketch" field, and both names are retired ("sketch"
+collided with Beck's own writeups about pencil sketches).
+
+**§8 (the home page's science panel) is deliberately not built**: it needs a
+real code demo to point at and replacement caption copy, both of which are
+Beck's to supply. `tsc --noEmit` clean, `next build` clean, still 202 static
+pages — a code demo adds no route of its own, only the piece page its
+`WorkPiece` already gets.
 
 ---
 
@@ -44,20 +61,35 @@ Visualizations" with a made-up "Contrast passing AA: 100%" stat — because
 there is no real science work in `lib/work.ts` to promote in its place. Same
 root cause as §2.
 
-**Decided 2026-08-29:** the panel becomes a **live sketch miniature** — a
+**Decided 2026-08-29:** the panel becomes a **live code-demo miniature** — a
 fourth object type on the corkboard, replacing the `stat` treatment that only
 ever existed to make invented metrics look substantial. See
 [specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md) §8.
 
-- [ ] **Beck:** the first coding exploration itself, plus replacement copy for
-      the panel's caption ("Talks and studies where design meets research —
-      curiosity, made presentable" was written for fabricated content).
+The machinery for the panel exists as of 2026-08-29 — `CodeDemoFrame` is
+built and verified — but the panel itself was **deliberately left unbuilt**,
+because a `kind: 'code-demo'` card with no demo to point at would be a
+fallback branch the spec doesn't describe, and the replacement caption is
+Beck's to write.
+
+- [x] ~~**Beck:** the first code demo itself~~ — `delirium` landed 2026-08-29.
+- [ ] **Beck:** replacement copy for the panel's caption ("Talks and studies
+      where design meets research — curiosity, made presentable" was written
+      for fabricated content). **This is now the only thing blocking §8** —
+      there is real work to point the panel at.
+- [ ] Then build spec §8: swap the science panel's `kind: 'stat'` for
+      `kind: 'code-demo'`, reusing `CodeDemoFrame`'s autorun policy (one iframe on
+      the home page, and only one). **Verify in a browser** that booting it
+      doesn't disturb `HeroWordScatter`'s hover sync or the tilt transitions —
+      the panel is inside a tilted `overflow-hidden` card in the hover-collage
+      context, and the spec flags this as the part most likely to need
+      adjusting on contact. Fallback if it does: poster plus badge, no boot.
 - [ ] Once that lands, delete `lib/content.ts` entirely (it's down to just
       `PROJECTS` now — `ARTWORKS`, `POEMS`, and `ESSAYS` were fabricated
       scaffold content and are gone, along with the orphaned PNGs they
       referenced).
 
-## 2. `science` is a discipline with zero work in it — **content, not design**
+## 2. `science` is a discipline with zero work in it — **mostly closed**
 
 The hero copy's `science` word and the homepage's third discipline panel both
 go to `/work?tags=science` (the footer's copy of this link was removed
@@ -73,15 +105,46 @@ is — don't prune the dead tags, don't hide zero-count chips, don't re-frame
 the homepage's three-discipline structure around a temporarily
 two-discipline dataset. See "Content model" in ARCHITECTURE.md.
 
-**Decided 2026-08-29: the first science work is coding explorations** —
-live runnable sketches, tagged `science` + a new `code` field tag, rendered
-by a new sketch layout inside `/work`. Fully specced in
-[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md);
-that spec is buildable now, but this section only closes when real
-explorations are in `lib/work.ts`.
+**Decided 2026-08-29: the first science work is code demos** — live runnable
+things, tagged `science` + a new `code` field tag, rendered by a new code-demo
+layout inside `/work`. Fully specced in
+[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md).
 
-- [ ] **Beck:** add science work to `lib/work.ts`. That closes this, and it's
-      the same blocker as §1.
+**Built 2026-08-29:** the `code` tag is now in the `field` facet, and the
+whole code-demo layout exists and is verified — so adding one is now six
+lines in `lib/work.ts` plus a folder in `public/code-demos/`. Eleven tags
+match nothing today rather than ten; that is expected and stays.
+
+- [x] ~~**Beck:** add science work to `lib/work.ts`~~ — **done 2026-08-29.**
+      `delirium` (`art` + `science` + `code`) is the first, so
+      `/work?tags=science` renders real work instead of the empty state and
+      `code` has a non-zero count. Nine tags still match nothing; that is
+      expected and stays.
+
+### Still open on `delirium` itself
+
+- [ ] **Beck:** a `description` (the editorial gloss) and a `writeup`. Without
+      the write-up the piece fails the spec's own §9 rule — "a code demo is
+      never the only path to the content; the write-up must stand on its own
+      for a reader who never runs it." `metaDescription()` also returns an
+      empty string today, so the page ships no meta description.
+- [ ] **Beck:** confirm `year: '2022'`. It was taken from the commit that
+      created `delirium.html` in `github.com/beckqing/whims` (2022-05-21), not
+      stated by Beck — and the underlying illustration may well predate the
+      interactive version, in which case `year` should be the older one.
+- [ ] **Decide for real: vendored libraries vs CDN.** d3 v6 (264 KB) and p5
+      0.9.0 (461 KB) are currently copied into
+      `public/code-demos/delirium/`, chosen provisionally 2026-08-29 so the
+      piece is self-contained and survives d3js.org reorganising (which
+      already moved this pen from v3 to v6). The alternative is loading both
+      from a CDN as the original pen does. Either works — `sandbox=
+      "allow-scripts"` does not block subresource loads, only `fetch`,
+      storage, and same-origin access.
+- [x] ~~The frame's mono label reads `index.html`~~ — fixed 2026-08-29
+      (Beck): `entryName()` falls back to the containing folder when the entry
+      is an `index.*`, so the rail reads `delirium`.
+- [ ] `delirium` is appended at the end of `REAL_WORK`, so it sorts last under
+      "in my order". Move it wherever Beck actually wants it.
 
 ## 3. No lint or test setup
 

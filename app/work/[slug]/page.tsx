@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, BookOpen, Hourglass, Layers } from 'lucide-react'
+import { ArrowLeft, BookOpen, ExternalLink, Hourglass, Layers } from 'lucide-react'
 import {
   collectionLayout,
   getWorkItem,
   isChapbook,
   isCollection,
   isHybrid,
+  isCodeDemo,
   isTextForward,
   itemTags,
   metaDescription,
@@ -28,8 +29,9 @@ import {
   VerseBlock,
 } from '@/components/work-visuals'
 import { EssayBody } from '@/components/essay'
-import { essayBody } from '@/lib/essay-bodies'
+import { mdxBody } from '@/lib/mdx-bodies'
 import { PieceMedia } from '@/components/media-player'
+import { CodeDemoFrame } from '@/components/code-demo-frame'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
 
@@ -147,9 +149,10 @@ function CollectionView({ item }: { item: WorkCollection }) {
 
 function PieceView({ piece }: { piece: WorkPiece }) {
   const tone = toneFor(piece)
+  const codeDemo = isCodeDemo(piece)
   const textForward = isTextForward(piece)
   const hybrid = isHybrid(piece)
-  const Body = essayBody(piece.slug)
+  const Body = mdxBody(piece.slug)
 
   const meta = (
     <p className="font-brand mt-2 flex flex-wrap items-center gap-2 text-sm lowercase" style={{ color: tone }}>
@@ -158,6 +161,22 @@ function PieceView({ piece }: { piece: WorkPiece }) {
       <span>{primaryDiscipline(piece) ?? 'work'}</span>
       <span className="text-muted-foreground/50">·</span>
       <span>{piece.year}</span>
+      {/* Metadata about the piece, not a call to action — a button here would
+          make the page about the source instead of the demo. */}
+      {piece.codeDemo?.repo && (
+        <>
+          <span className="text-muted-foreground/50">·</span>
+          <a
+            href={piece.codeDemo.repo}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded underline decoration-transparent underline-offset-2 outline-none transition-colors hover:decoration-current focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            source
+            <ExternalLink className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
+          </a>
+        </>
+      )}
     </p>
   )
 
@@ -167,6 +186,38 @@ function PieceView({ piece }: { piece: WorkPiece }) {
       <span className="font-brand text-xs uppercase tracking-[0.3em]">in progress</span>
     </div>
   )
+
+  // A code demo leads with the thing that runs — every other piece page leads
+  // with its subject, and a code demo's subject is the running thing. Checked
+  // before the image branch: a code demo carries `image` and no `text`, so it
+  // would otherwise render as a plain image piece and the failure would be
+  // silent. The frame is allowed to be wider than the prose below it.
+  if (codeDemo && piece.codeDemo) {
+    return (
+      <article className="mt-6">
+        <CodeDemoFrame piece={piece} codeDemo={piece.codeDemo} className="mx-auto max-w-3xl shadow-sm" />
+        <div className="mx-auto mt-8 max-w-2xl">
+          {unfinishedFlag}
+          <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
+            {piece.title}
+          </h1>
+          {meta}
+          {piece.description && (
+            <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">{piece.description}</p>
+          )}
+          {Body ? (
+            <EssayBody className="mt-6">
+              <Body />
+            </EssayBody>
+          ) : (
+            piece.writeup && <Prose text={piece.writeup} className="mt-6" />
+          )}
+          <ProcessSection piece={piece} />
+          <TagLinks tags={piece.tags} className="mt-8" />
+        </div>
+      </article>
+    )
+  }
 
   // Text-forward pieces lead with the words; everything else leads with the image.
   if (textForward) {
