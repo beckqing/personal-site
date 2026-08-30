@@ -163,15 +163,8 @@ hybrid pieces in the tree are Mindtober's, and they render through
 standalone piece that carries both `text` and `image` — not dead code to be
 swept up. The predicate that reaches it (`isHybrid`) fires the moment such a
 piece is added, with no other change. Anything doing a dead-code pass should
-skip it.
-
-`lib/work.sample.ts` and `SHOW_SAMPLE_WORK` were kept alongside it for the
-same reason — testing filters and card layouts against a larger, more varied
-dataset. **That decision was reversed 2026-08-29 (Beck): both are deleted.**
-They were the last of the fabricated v0 scaffold content, following `ARTWORKS`,
-`POEMS`, and `ESSAYS` out of `lib/content.ts`, and the real dataset now spans
-all three disciplines. `WORK` is simply `REAL_WORK`, with no environment
-branch in front of it.
+skip it; the same goes for `lib/work.sample.ts` and `SHOW_SAMPLE_WORK`, kept
+for testing filters and card layouts against a larger, more varied dataset.
 
 **Images carry their own aspect ratio.** `imageAspect` is applied as an inline
 style that overrides a card's default shape, so real artwork renders uncropped

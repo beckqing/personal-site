@@ -697,9 +697,3 @@ zero layout shift across boot; `sandbox="allow-scripts"` and the `title` /
 `loading="lazy"` attributes; and under `prefers-reduced-motion: reduce`,
 nothing autorunning while the run control still works. The excerpt's colours
 were checked in both themes against the literal token values.
-
-- **`lib/work.sample.ts` is gone** (Beck, 2026-08-29), along with
-  `SHOW_SAMPLE_WORK` and the environment branch in front of `WORK`. Unrelated
-  to this spec, but it reverses a decision ARCHITECTURE recorded, so it is
-  written down here too: the fabricated sample dataset was the last of the v0
-  scaffold content, and the real dataset now covers all three disciplines.

@@ -1,3 +1,5 @@
+import { SAMPLE_WORK } from './work.sample'
+
 /**
  * A single piece of work. Collections are pieces that contain other pieces,
  * so a collection and a standalone piece share the same shape and page layout.
@@ -1976,7 +1978,16 @@ const REAL_WORK: WorkItem[] = [
   },
 ]
 
-export const WORK: WorkItem[] = REAL_WORK
+/**
+ * The fake dataset (lib/work.sample.ts) can be mixed in outside production
+ * for a bigger, more varied set to test filters and card layouts against.
+ * Flip back to true when that's useful again — always excluded from
+ * production builds regardless of this flag.
+ */
+const SHOW_SAMPLE_WORK = false
+
+export const WORK: WorkItem[] =
+  process.env.NODE_ENV === 'production' || !SHOW_SAMPLE_WORK ? REAL_WORK : [...REAL_WORK, ...SAMPLE_WORK]
 
 /**
  * How selected tags combine. Shared with the little venn toggle:
