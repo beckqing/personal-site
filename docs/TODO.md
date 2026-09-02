@@ -927,3 +927,74 @@ The spec is **deliberately split, and the halves have different blockers**:
 - [ ] Watch for: 🐐 in the costume piece's title would slip past
       `scripts/check-emoji-subset.mjs`, which only scans `<Item emoji="…">`
       attributes, and fall back to platform colour emoji. Spec §6.
+
+## 20. The hero's "currently" line has no history — **built 2026-09-02**
+
+Specced in [specs/2026-09-now-page.md](specs/2026-09-now-page.md) and built
+the same day. `/now` holds that line's present tense and its past;
+`lib/now.ts` is the single source of truth that `app/page.tsx` also renders
+from, so the hero is no longer a second copy of copy that had been rewritten
+for four years with no record kept.
+
+**The backfill is complete** — ten entries, 2022-04 → 2026-08, recovered from
+the archived 11ty site plus Beck's own recollection. Worth knowing why that
+mattered: the archive's copy trailed the truth by up to **fifteen months**
+(the line it shipped in 2024-04 was Beck's 2023-01 state), which is the entire
+reason `since` records when a thing was true rather than when it was
+published. Spec §1 and §3.
+
+**Scope narrowed 2026-09-02:** the hero's `open to …` line is **not** tracked
+(Beck) — it stays hardcoded in `app/page.tsx`. That removed the spec's
+snapshot machinery along with it; §5 records what went and when to bring it
+back, so a later session recovers the design rather than reinventing it.
+
+**Three live decisions from Beck, after the spec was written:**
+
+- **Footer (§11.G): no.** `/now` is not in `MORE_LINKS` — the hero line is
+  the only door in.
+- **G3: the `2022-04` entry is real.** Kept as written; not a stale-launch
+  artifact to drop.
+- **Line 1 dropped from `/now`, on the day of build** — a live call from
+  Beck that reverses §0/§5/§11.F's "yes, as the page's h1." The page's `h1`
+  is just `now`; `forever a student of art, science, and humanity` does not
+  appear there. `STUDENT_OF`'s two-rendering plan in §11.C is moot as a
+  result — the export still exists in `lib/now.ts` for the hero, unused by
+  `/now`.
+
+**Two more asks, both outside the spec's "what not to build" (§10), taken
+live from Beck rather than re-litigated:**
+
+- A `since {month year}` label above the current entry, styled like the
+  history rows' date labels. §10 rejected a "last updated" badge on the
+  premise it conflicts with §3 (`since` means when it became true, not when
+  the site said so) — this reuses `since` itself rather than adding
+  publish-date framing, so it doesn't reopen that conflict.
+- A subtle "this is a /now page" link to nownownow.com at the foot of the
+  page. §10 also rejected this outright ("nobody asked") — asked for
+  2026-09-02.
+
+- [x] **Beck, G4 — threads (spec §6).** Beck asked whether repeating and
+      continuing focuses can be highlighted; they can, but **not by string
+      matching** — exact equality finds three of the nine real continuities
+      and would mark `rock climbing` across two adjacent months while showing
+      `partner dancing` → `partner acrobatics` as unrelated. So threads are
+      Beck's editorial judgment, recorded as substring annotations over the
+      verbatim `text`. Needed: a thread id for ~20 of the ~29 items. §6 has a
+      six-thread proposal to react to. **Still deferred — the page shipped
+      without it.**
+- [x] Backfilled text is **transcribed verbatim** — `the Chinese vegan scene`
+      keeps its capital, `gaining experience in` is not normalized to today's
+      `focused on`, and short entries are not padded to match long ones. The
+      one live edit is the current (`2026-08`) entry, updated in place at
+      Beck's request to add `vibe coding`.
+- [x] Watch for: do not dedupe items that recur (`partner acrobatics` returns
+      at `2024-11` after three entries without it), and do not space rows
+      proportionally to elapsed time — the seventeen-month 2025 stretch is
+      content, not a gap to dramatise. Spec §4 and §10.
+- [x] **Audited against the tree 2026-09-02 — spec §11** has the file-by-file
+      touchpoints plus the four traps found: `sitemap.ts` has a hardcoded
+      `staticRoutes` array `/now` must be added to; `CategoryWord` throws
+      outside `HeroWordScatter` so `/now` can't reuse it; a `lowercase` class
+      anywhere near entry text silently breaks the verbatim rule (`the
+      Chinese vegan scene`); and `new Date('2024-11')` renders as October
+      west of Greenwich. All four addressed.

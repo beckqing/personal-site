@@ -9,6 +9,7 @@ import { HeroWordScatter, IconScatterField, CategoryWord, useCollage } from '@/c
 import type { IconCategory } from '@/lib/brand-icons'
 import { PROJECTS } from '@/lib/content'
 import { getWorkItem, getCollectionPiece } from '@/lib/work'
+import { NOW_PREFIX, NOW_ENTRIES } from '@/lib/now'
 import { cn } from '@/lib/utils'
 
 const featuredArt = getWorkItem('rabbit-in-the-moon')!
@@ -177,7 +178,9 @@ export default function HomePage() {
               <CategoryWord category="sci">science</CategoryWord>, and{' '}
               <CategoryWord category="hu">humanity</CategoryWord>
               <br />
-              currently focused on home improvement and interactive art
+              <Link href="/now" className="underline-offset-4 hover:underline">
+                {NOW_PREFIX} {NOW_ENTRIES.at(-1)!.text}
+              </Link>
               <br />
               open to roles in automation, biotech, and food
             </p>
