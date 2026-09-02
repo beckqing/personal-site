@@ -91,6 +91,18 @@ art-fair emoji now center vertically on the whole item (`items-center`, was
 `items-baseline`), per Beck after seeing the larger emoji live. See §16's
 "in three passes" and §15's centering note below.
 
+**2026-09-02, last of the day: the heading scale went up one more step, and
+collapsible sections are specced as §19.** Beck asked for all headings a
+little bigger; raising the whole ladder turned out to *recover* the two levels
+the 16px body-text floor had flattened — `h3`/`h4`/`h5` were all sitting at
+`text-base`, told apart by weight and colour alone. The scale is now
+30/24/20/18/16, five distinct sizes, `h1` responsive (`text-2xl sm:text-3xl`)
+so a 46-character title doesn't set three lines on a phone. **Shipped**;
+ARCHITECTURE.md's "Headings" section was stale (it still documented the
+14px/12px staircase the floor rule had already overridden) and is corrected.
+§19 is the design that hangs off it — `<Section>`, `<Fold>`, `<Log>` — specced
+with Beck, not built.
+
 ---
 
 ## 1. The home page's science panel still shows fabricated content — **blocked on Beck**
@@ -828,3 +840,90 @@ about essay `FigureRow`s, so this is a new consumer of that machinery rather
 than something it already covers. Building it first means one paging
 implementation instead of two; building it now means inventing a second one
 and reconciling them later.
+
+---
+
+## 18. `eye-studies` promises a guessing game that doesn't exist — **specced 2026-09-02, not built**
+
+The collection's own `description` has said "a guessing game is coming; for
+now, titles are placeholders" since 2026-08-27. Eight paintings withhold their
+subjects, four captions are deliberately blank because the original Instagram
+text named the animal, and the answer key exists only as a code comment at
+[lib/work.ts:1285](../lib/work.ts#L1285). Nothing renders any of it.
+
+**Fully specced in [specs/2026-09-guessing-game.md](specs/2026-09-guessing-game.md).**
+Both levels Beck described — spoilered text, and a checked textbox with
+hints — ship as one component: the spoiler is the native
+`<details>`/`<form>` substrate the enhanced version is built on, so level 1
+is what the page *is* with JavaScript off rather than a second thing to
+write.
+
+Decided with Beck 2026-09-02: the game lives on the collection page **and**
+the piece pages sharing one state; answers are stored **plaintext** (the site
+is statically exported, so hashing buys obscurity, not secrecy); a solve
+reveals the animal's name plus **a new note Beck writes**, not the withheld
+archive caption. The mechanism is a `guess` field any `WorkPiece` can carry —
+`april-colors-24/05-colors-from-a-bird` is already a hand-written guessing
+game in its own description and is the second customer, deliberately not
+converted in this pass.
+
+**2026-09-02, later: the hints and `08`'s answer are settled.** Hints are
+**per collection, not per piece** — one two-rung ladder shared by all eight,
+because they're about the set. Rung 1 is itself a question, deliberately
+unanswered ("what do all these animals have in common?"); rung 2 answers it
+("all of these are farmed animals"). That makes rung 2 a *thematic* spoiler,
+not just an answer aid — it's what turns eight studies into an argument, and
+it's why the ladder renders in the collection header and not only inside a
+piece page. `08` is a **tuna**, with `fish` also accepted; it's the one piece
+where a class word passes, which is safe only because it's the one fish (three
+of the eight are birds, so `bird` could never work the same way).
+
+**2026-09-02, last: the answer table is reviewed, the reveal notes are
+postponed, and the reveal gains the reference photos.** Each eye reveals the
+Unsplash photograph Beck painted it from, shown beside the study so you can
+see the distance between them — which is what makes postponing the notes
+safe: the photo *is* the payoff, and the panel is specced to read as finished
+without any prose. Credit is required (photographer + Unsplash links), not
+because the licence demands it but because `lib/work.ts:827` shows Beck
+already crediting photographers by hand, and a reference photo is provenance.
+
+- [ ] **Blocked on Beck for content**, and only on that — the design is
+      settled. Needed: **eight reference photos** (1:1 `.webp`, at
+      `public/art/eye-studies/reference/`, **filenames numbered not named** —
+      spec §6 explains why), **a credit per photo** collected at download
+      time, a `prompt`, and replacement copy for the collection description.
+      The hints, the answers, and the notes are all off this list.
+- [ ] Note this would be the site's **first use of `localStorage`** — spec §5
+      has the hydration and failure rules, since there's no existing pattern
+      to copy.
+- [ ] ARCHITECTURE's "titles stay `01`–`08`" decision is **not** superseded
+      by this; spec §7 explains why the game vindicates it.
+
+## 19. Long writing pieces have no way to fold or reorder sections — **specced 2026-09-02, not built**
+
+Fully specced in
+[specs/2026-09-sections-folding-logs.md](specs/2026-09-sections-folding-logs.md).
+Three primitives: `<Section>` (owns its heading, derives its level from
+nesting depth, optionally folds), `<Fold>` (a "read more" tail inside content,
+no heading, always starts closed), and `<Log>` (reverses dated entries).
+
+The spec is **deliberately split, and the halves have different blockers**:
+
+- [ ] **`<Section>` and `<Fold>` (spec §2–§4) are blocked on nothing.** They
+      close the last of §16's root cause — §16 fixed the *sizes*, but authors
+      can still pick a heading level by hand and still do (`first-art-fair.mdx`
+      has four author-chosen levels; `note-systems.mdx` uses `#####` as a bold
+      label inside a blockquote). A level derived from nesting depth cannot be
+      mistyped. `MarketHeader` is deleted in this pass and becomes a `Section`.
+- [ ] **`<Log>` (spec §5) is blocked on content** — it exists for Beck's
+      costume-design piece (faun, v1 2016 → v4 2023), which is unfinished and
+      not in `lib/work.ts`. **The art fair essay is explicitly not
+      reorderable** (Beck, 2026-09-02); it folds, its order stays fixed, and
+      its narrative interludes stay between markets.
+- [ ] **Beck:** whether `note-systems.mdx`'s `##### Digital:` / `##### Analog:`
+      become `<strong>` labels or a definition list. Post-scale-change they
+      render at body size inside a blockquote, so the distinction is weak now
+      as well as semantically wrong.
+- [ ] Watch for: 🐐 in the costume piece's title would slip past
+      `scripts/check-emoji-subset.mjs`, which only scans `<Item emoji="…">`
+      attributes, and fall back to platform colour emoji. Spec §6.
