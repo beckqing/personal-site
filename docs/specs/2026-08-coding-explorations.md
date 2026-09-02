@@ -9,17 +9,23 @@
 > as "code demo"; the design is unchanged, only the noun. The filename keeps
 > the original working title so existing links don't rot.
 >
-> **Status: built 2026-08-29, except §8.** §2–§7 and §9 are shipped and
-> verified. **§8 (the home page's science panel) is deliberately not built** —
-> it needs a real exploration to point at and replacement caption copy, both
-> listed in §12 as Beck's to supply, and a `kind: 'sketch'` card with no
-> sketch would be a fallback branch this spec doesn't describe. This file
-> therefore stays in `docs/specs/` rather than moving to `docs/history/`;
-> move it once §8 lands. Where the build diverged is recorded in §13 below.
+> **Status: built 2026-08-29, except §8 — and §8 was dropped 2026-09-02.**
+> §2–§7 and §9 are shipped and verified. **§8 (the home page's science panel
+> as a live code-demo miniature) will not be built**: the three home cards
+> were respecced wholesale with Beck, and the mechanism they landed on — a
+> pile of tucked-under objects — has no place for a running iframe. See
+> [2026-09-home-discipline-cards.md](2026-09-home-discipline-cards.md) §7 for
+> the reasoning, and §8 below for the superseded design. Nothing built by this
+> spec is deleted; `CodeDemoFrame` and its autorun policy keep serving
+> `/work/delirium`. **Move this file to `docs/history/` once the new spec
+> ships** — §8 was the only thing keeping it in `specs/`. Where the build
+> diverged is recorded in §13 below.
 >
-> Closes [TODO.md](../TODO.md) **§1** (the home page's fabricated science
-> panel) and **§2** (`science` is a discipline with zero work in it). Both
-> were always blocked on this content existing, not on code.
+> Closes [TODO.md](../TODO.md) **§2** (`science` is a discipline with zero
+> work in it), which was always blocked on this content existing, not on code.
+> It was also written to close **§1** (the home page's fabricated science
+> panel) — it no longer does; §1 was respecced and now hangs off
+> [2026-09-home-discipline-cards.md](2026-09-home-discipline-cards.md).
 
 A **coding exploration** is a piece of work whose subject is a thing that
 runs. It files under `science`, it lives in `/work` beside everything else,
@@ -503,7 +509,14 @@ target already goes to the page where the thing runs.
 
 ---
 
-## 8. The home page's science panel (TODO §1)
+## 8. The home page's science panel (TODO §1) — **superseded 2026-09-02**
+
+> Kept as written, for the record. The design below was never built and will
+> not be; the home cards were respecced as a set in
+> [2026-09-home-discipline-cards.md](2026-09-home-discipline-cards.md). Two
+> things changed under it: `transformation` landed, so science is no longer a
+> discipline whose only work is one code demo, and Beck chose one mechanism
+> for all three cards rather than a fourth object type for this one.
 
 The panel's `kind: 'stat'` treatment exists only to make invented metrics
 ("Contrast passing AA: 100%") look substantial. With real work to point at,

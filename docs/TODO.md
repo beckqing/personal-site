@@ -103,45 +103,91 @@ ARCHITECTURE.md's "Headings" section was stale (it still documented the
 §19 is the design that hangs off it — `<Section>`, `<Fold>`, `<Log>` — specced
 with Beck, not built.
 
+**2026-09-02, also: the tag vocabulary was pruned and §1 was respecced.** The
+"vocabulary is deliberately wider than the data" rule is **reversed** — eight
+dead tags are gone, and every tag now matches at least one item (§2, shipped).
+And §1 stopped being a science-panel problem: all three home cards show
+exactly one work each, which is the actual defect. Respecced with Beck around
+"the implication of more" as
+[specs/2026-09-home-discipline-cards.md](specs/2026-09-home-discipline-cards.md)
+— **not built**. Its §8 predecessor (the science panel as a live code-demo
+miniature) is dropped, not deferred.
+
 ---
 
-## 1. The home page's science panel still shows fabricated content — **blocked on Beck**
+## 1. The home page's three discipline cards each show one work — **respecced 2026-09-02, not built**
 
-`app/page.tsx`'s art and writing discipline panels now point at real
-`lib/work.ts` content (`rabbit-in-the-moon`, and the poem `lost` from
-`love-worth-heartbreak`). The science panel still promotes `lib/content.ts`'s
-invented `PROJECTS` — a talk titled "Designing Color-Blind-Friendly Data
-Visualizations" with a made-up "Contrast passing AA: 100%" stat — because
-there is no real science work in `lib/work.ts` to promote in its place. Same
-root cause as §2.
+`app/page.tsx:23` declares three panels, each rendering a different hand-built
+object: a `polaroid` (`rabbit-in-the-moon`), a `quote` card (the poem `lost`),
+and a `stat` block. Each shows exactly one piece of work.
 
-**Decided 2026-08-29:** the panel becomes a **live code-demo miniature** — a
+The `stat` block is also still fabricated — it promotes `lib/content.ts`'s
+invented `PROJECTS`, a talk titled "Designing Color-Blind-Friendly Data
+Visualizations" with a made-up "Contrast passing AA: 100%" metric. That was
+this section's original complaint (2026-08-27), and it was blocked on §2 —
+there was no real science work to promote instead. **§2 closed**; `delirium`
+and `transformation` are both real science work. The fabricated stat is now
+just the loudest symptom of the larger problem below, and it goes either way.
+
+~~**Decided 2026-08-29:** the panel becomes a **live code-demo miniature** — a
 fourth object type on the corkboard, replacing the `stat` treatment that only
 ever existed to make invented metrics look substantial. See
-[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md) §8.
+[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md)
+§8.~~ **Dropped 2026-09-02** — see the new spec below. The `CodeDemoFrame`
+machinery stays exactly where it is and keeps serving `/work/delirium`;
+nothing is deleted, §8 is just not built.
 
-The machinery for the panel exists as of 2026-08-29 — `CodeDemoFrame` is
-built and verified — but the panel itself was **deliberately left unbuilt**,
-because a `kind: 'code-demo'` card with no demo to point at would be a
-fallback branch the spec doesn't describe, and the replacement caption is
-Beck's to write.
+**Respecced 2026-09-02, with Beck — and the scope grew.** Working on the
+science panel surfaced that this was never only a science problem: *all
+three* cards show exactly one piece of work, so a reader who never scrolls
+past the fold sees one painting, one poem, and one statistic and concludes
+that is the site. Behind them sit 26 top-level art items (112 pieces, 97 with
+images), 6 writing items, and 2 science items.
+
+Beck's framing: **"I just want the implication of more."** Not an inventory —
+the implication. Decided mechanism is a **tucked-under peek**: one piece on
+top, two to four others poking out from behind it at loose angles, clipped by
+the card's existing `overflow-hidden` so the crop does as much work as the
+count. Collection stacks and a bleeding contact sheet were both considered
+and dropped (reasons recorded in the spec's §1).
+
+Fully specced in
+[specs/2026-09-home-discipline-cards.md](specs/2026-09-home-discipline-cards.md).
+Two findings from that pass worth surfacing here, because both are traps:
+
+- **The peeks must open on `.tilt-card-active`, not `:hover`.** Copying
+  `CollectionStack`'s `.group:hover .deck-card` selector would give a card
+  that tilts flat when you hover the hero's "art" word but whose peeks stay
+  shut — half a gesture. Spec §4.
+- **Both science pieces are also claimed by another discipline**
+  (`transformation` is `writing`, `delirium` is `art`), so the same corner
+  could legitimately appear on two adjacent cards. Spec §7 makes "no piece
+  appears on two cards" a rule.
 
 - [x] ~~**Beck:** the first code demo itself~~ — `delirium` landed 2026-08-29.
-- [ ] **Beck:** replacement copy for the panel's caption ("Talks and studies
-      where design meets research — curiosity, made presentable" was written
-      for fabricated content). **This is now the only thing blocking §8** —
-      there is real work to point the panel at.
-- [ ] Then build spec §8: swap the science panel's `kind: 'stat'` for
-      `kind: 'code-demo'`, reusing `CodeDemoFrame`'s autorun policy (one iframe on
-      the home page, and only one). **Verify in a browser** that booting it
-      doesn't disturb `HeroWordScatter`'s hover sync or the tilt transitions —
-      the panel is inside a tilted `overflow-hidden` card in the hover-collage
-      context, and the spec flags this as the part most likely to need
-      adjusting on contact. Fallback if it does: poster plus badge, no boot.
-- [ ] Once that lands, delete `lib/content.ts` entirely (it's down to just
-      `PROJECTS` now — `ARTWORKS`, `POEMS`, and `ESSAYS` were fabricated
-      scaffold content and are gone, along with the orphaned PNGs they
-      referenced).
+- [ ] **Beck:** replacement copy for the science card's caption ("Talks and
+      studies where design meets research — curiosity, made presentable" was
+      written for fabricated content and describes talks that do not exist).
+      **Still the one blocker with no workaround** — spec §6/§11.
+- [ ] **Beck:** pick three art peeks and three writing peeks from the
+      shortlists in spec §5.
+- [ ] Build spec §2–§6: the peek component, the geometry table, the
+      activation selector, and the art and writing cards. **Depends on
+      nothing** — don't hold it for the science illustration.
+- [ ] Build spec §7: the science card — `transformation` featured with
+      `delirium` peeking. Honest at 2 by decision; a visibly thinner card is
+      true.
+- [ ] **Beck:** the science illustration, whenever it's drawn. It becomes the
+      science card's feature and demotes both current pieces to peeks. Not a
+      blocker.
+- [ ] Delete `lib/content.ts` entirely in the same change (it's down to just
+      `PROJECTS` — `ARTWORKS`, `POEMS`, and `ESSAYS` were fabricated scaffold
+      content and are gone, along with the orphaned PNGs they referenced).
+      After this **no fabricated content remains anywhere in the site's
+      data**, which is worth saying in ARCHITECTURE.md when it lands.
+- [ ] Move [specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md)
+      to `docs/history/` once this ships — its §8 was the only thing keeping
+      it in `specs/`.
 
 ## 2. `science` is a discipline with zero work in it — **mostly closed**
 
