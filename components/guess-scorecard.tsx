@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type SyntheticEvent } from 'react'
+import { RotateCcw } from 'lucide-react'
 import { isGuessable, toneFor, type WorkCollection } from '@/lib/work'
 import { guessStatusFor } from '@/lib/guess-storage'
 import { useGuessProgressContext } from '@/components/guess-provider'
@@ -103,8 +104,9 @@ export function GuessScorecard({ collection }: { collection: WorkCollection }) {
           <button
             type="button"
             onClick={() => setConfirmingReset(true)}
-            className="font-brand text-sm lowercase text-muted-foreground underline decoration-transparent underline-offset-2 hover:text-foreground hover:decoration-current"
+            className="font-brand inline-flex items-center gap-1 text-sm lowercase text-muted-foreground underline decoration-transparent underline-offset-2 hover:text-foreground hover:decoration-current"
           >
+            <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
             reset
           </button>
         ))}

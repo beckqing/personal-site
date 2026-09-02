@@ -21,6 +21,9 @@ outstanding since 2026-08-27.
 | Question | Decision | Who |
 | --- | --- | --- |
 | Where the game lives | **Collection page *and* piece page**, sharing one reveal state | Beck, 2026-09-02 |
+| Whether the grid tiles take guesses | **Yes — the grid is where it's played.** Reverses the first draft's "the tiles do not take guesses"; see §3 | Beck, 2026-09-02 |
+| What a tile shows on a solve | **The answer word, not the reveal.** The photo pair stays on the piece page | §3 below |
+| Hints and give-up on a tile | **Neither.** Hints live in the header, reveal lives on the piece page | §3 below |
 | Whether the two levels stage | **No — both ship together.** The spoiler is level 2's no-JS fallback, not a separate milestone | Beck, 2026-09-02 |
 | How hidden the answers are | **Plaintext, honor system.** No hashing, no encoding | Beck, 2026-09-02 |
 | What a solve reveals | **The name, the Unsplash reference photo Beck painted from, and (later) a written note** | Beck, 2026-09-02 |
@@ -445,7 +448,9 @@ Revisit only if the pair proves too small to read at all.
 
 ### The collection page
 
-`/work/eye-studies`. Two additions, both small.
+`/work/eye-studies`. Three additions: a scorecard and a per-tile mark in the
+header and the grid, and — the one that isn't small — a guess row on every
+guessable tile, specced separately below.
 
 **A scorecard in the header**, under the `8 pieces · 2022` line, only when
 `hasGuessablePieces(item)`:
@@ -477,15 +482,168 @@ piece gets a corner mark, matching the existing `WriteupMark` /
 - solved → a ✓ mark in the collection tone
 - revealed → the open-eye mark, muted
 
-**The tiles do not take guesses.** A text input in a masonry cell is a bad
-input target, it fights the lightbox trigger that owns the same rectangle,
-and eight simultaneous forms is a form of noise. The tile shows state and
-links through, exactly as it does today. This mirrors §6's "tiles deliberately
-do not run" in the code-demo spec — the grid is an index, not a workspace.
+**The tiles take guesses.** *Reversed 2026-09-02, after the first build.*
+The first draft of this section said they didn't, on three grounds: a text
+input in a masonry cell is a bad target, it fights the lightbox trigger that
+owns the same rectangle, and eight simultaneous forms is noise. The first is
+answered by putting the input in the caption block instead of over the
+artwork; the second by the two never sharing a rectangle at all; the third is
+real, and holding the tile to a single row is the job of "Guessing from the
+tile" below.
 
-**The solved tile does not print the answer.** It shows the ✓ and the title
-stays `03`. Printing eight answers across the grid would spoil a revisit and
-undo the point of §7's title decision.
+What the first draft got wrong was the traffic. **Clicking an eye opens the
+lightbox, not the piece page** (`ImageTile`, `components/work-visuals.tsx:800`
+— the image is a lightbox trigger, only the caption is a link). So the
+natural way to look at all eight — click one, arrow through the rest, dismiss
+— passes the game by completely, and the panel that holds the game sits on
+eight pages a browsing visitor never opens. A grid where every image is a
+question and none of them can be answered is the wrong shape. The rule this
+replaces was written as if the grid were an index; it is the gallery.
+
+**The solved tile prints the answer** — also reversed. The old rule kept a
+revisit from being spoiled by tiles the visitor hadn't reached, which only
+made sense for a grid that couldn't be played: an unsolved tile still prints
+nothing, and a solved one names a piece *this visitor already named*. Hiding
+the word back behind a ✓ the moment it's typed correctly is a lie about what
+just happened. §7's title decision is untouched — the tile's title is still
+`03`, and the answer is a separate line beneath it.
+
+### Guessing from the tile
+
+The grid is what a visitor actually browses, so the grid takes input.
+Everything below is subordinate to one constraint: **the tile is still a
+tile.** It grows one row, not a panel.
+
+```
+  ┌───────────────────────┐     ┌───────────────────────┐
+  │  ┌─────────────┐  (?) │     │  ┌─────────────┐  (✓) │
+  │  │   the eye   │      │     │  │   the eye   │      │
+  │  │  [lightbox] │      │     │  │  [lightbox] │      │
+  │  └─────────────┘      │     │  └─────────────┘      │
+  │  03           ← link  │     │  03           ← link  │
+  │  The lashes on this   │     │  The lashes on this   │
+  │  one are so lovely.   │     │  one are so lovely.   │
+  │  ┌──────────┐┌──────┐ │     │  ✓ cow                │
+  │  │what anim…││guess │ │     │                       │
+  │  └──────────┘└──────┘ │     │                       │
+  └───────────────────────┘     └───────────────────────┘
+        unsolved                        solved
+```
+
+**Three targets, stacked, never overlapping.** The old objection was that a
+form "fights the lightbox trigger that owns the same rectangle." It doesn't,
+because the tile is already two disjoint regions and the form is a third,
+below both:
+
+| Region | Does |
+| --- | --- |
+| the image | opens the lightbox (unchanged) |
+| the title/description block | links to the piece page (unchanged) |
+| **the guess row** | **takes the guess** |
+
+The card itself must not become clickable, and its `hover:-translate-y-1`
+lift stays. A visitor reaching for the input must never risk opening the
+lightbox, which is the entire reason the row lives under the caption rather
+than as an overlay on the artwork.
+
+**One structural change this forces.** The caption is currently a single
+`<Link>` wrapping title *and* description
+(`components/work-visuals.tsx:806-816`). HTML forbids interactive content
+inside an `<a>`, so the form cannot be nested in it — it is a **sibling**
+after the link, and the card's `p-4` splits into `px-4 pt-4` on the link and
+`px-4 pb-4 pt-3` on the guess row. The link's own hit area is otherwise
+unchanged; do not shrink it to the title alone.
+
+**The row is one row.** No dashed border, no panel background, no heading.
+The prompt is not printed as a label — the corner `?` mark already asks the
+question, and eight printed prompts down a column is exactly the noise the
+first draft was right to fear. Instead:
+
+- the piece's `prompt` (default `what animal is this?`) becomes an **sr-only
+  `<label>`** bound to the input, so screen readers get the real question;
+- the input's `placeholder` is the short form, `what animal?`, and a
+  placeholder is never the only label;
+- the submit is a real `<button type="submit">` reading `guess`, sized to the
+  row. Enter submits, as on the panel.
+
+**No hints and no reveal on the tile.** Both are deliberate, and for
+different reasons.
+
+*Hints* stay in the collection header, one ladder in one place. A hint about
+what the eight animals have in common, printed eight times down a grid, is
+the same sentence eight times.
+
+*Reveal* — the give-up control — stays on the piece page. Eight of them in a
+grid invites one sweep down the column that ends the game in ten seconds, and
+a reveal cannot be undone short of a full reset (§5). Giving up should cost a
+click through to the piece. The tile therefore has exactly two outcomes:
+right, or try again.
+
+**Wrong on a tile behaves as it does on the panel.** One `guess-shake` (a
+no-op under `prefers-reduced-motion`, `app/globals.css:283-295`), text kept
+and selected, focus held in the input, `not quite` in a tile-scoped
+`aria-live="polite"` region. Only one form can be submitted at a time, so
+eight live regions announce one thing.
+
+**Solved, on the tile.** The form is replaced in place by `✓ ` +
+`accepts[0]`, in the collection tone, and the corner mark flips to ✓ — both
+already read from the same provider, so the header ring updates in the same
+frame. What the tile does **not** show is the reveal's payoff:
+
+- **no reference photo, and no side-by-side.** The pair of 1:1 images is the
+  piece page's job and only reads at that size. It also keeps the collection
+  page's network quiet — an unopened `<details>` on eight tiles would
+  otherwise become eight photo requests the moment the grid was played
+  through (§6).
+- when the piece has a `reference`, the answer line gains one muted trailing
+  link, `see the photo`, pointing at the piece page. With every `reference`
+  absent today it renders nothing — the line reads complete as `✓ cow`, same
+  rule as the panel's missing `note`.
+- a revealed (given-up) piece shows the open-eye mark and the bare word, no
+  ✓ — identical to the panel's distinction.
+
+**Focus after a solve is not optional.** The form unmounts, so a keyboard
+visitor's focus would fall to `<body>` and their next Tab would restart at
+the top of the document. Focus moves to the answer line (`tabIndex={-1}`),
+exactly as `GuessPanel` does with `answerRef`.
+
+**Reserve the row's height.** `MasonryGrid` deals tiles round-robin into
+independent flex columns, so a tile that changes height shifts everything
+below it *in its own column* — including, on a solve, tiles the visitor is
+mid-guess on. The guess row gets a `min-height` equal to the input's, so the
+form → answer-line swap is a swap inside a stable box and not a reflow. The
+same box absorbs the post-mount swap described next.
+
+**No-JS: a link, not a disabled input.** The panel can render its form
+server-side because its `<details>` reveal still works with JS off (§6) — the
+tile has no `<details>`, so a permanently `disabled` input there would be a
+dead end with nothing behind it. The tile's guess row therefore renders, on
+the server and on the first client render, as a **link to the piece page**
+styled to the row (`▸ name this one`), and the live form replaces it after
+mount. A no-JS visitor is routed to the surface where level 1 works, which is
+better than what the panel's own pattern would give them here. This does not
+weaken §6: the piece page's markup is unchanged, and it remains the surface
+that works without scripts.
+
+**Tab stops.** An unsolved guessable tile costs four (image, caption, input,
+submit); a solved one costs two, because the answer line isn't focusable. The
+grid gets quieter as it is played, which is the right direction.
+
+**Payload, stated plainly.** All eight answers already ship inside
+`/work/eye-studies`'s client payload — `GuessTileMark` receives whole
+`piece` and `collection` objects today, so `accepts` is in that document
+whether or not the tiles are playable. Making the grid playable requires
+`accepts` client-side anyway (no server, §10), so this changes nothing about
+what is readable; §0's honor system covers it. One cheap tidy while touching
+these components: pass the tile's own `piece` and the collection's `slug` and
+tone, not the whole `WorkCollection` — eight copies of all eight pieces is
+payload weight with no reader.
+
+**Which tiles.** `guess` is general (§1), so this belongs to the shared
+caption region, not to `ImageTile` alone: one `GuessTileForm` component
+mounted at the same position in all three `PieceTile` branches. Only
+`ImageTile` has a guessable customer today; `IllustratedTile` and `TextTile`
+should get it for free rather than needing a second decision later.
 
 ---
 
@@ -622,6 +780,11 @@ Further rules:
   coy alt (`"a reference photograph"`); that would degrade the reveal for
   exactly one group of visitors.
 - The shake honours `prefers-reduced-motion` — colour and text only.
+- **The grid tile's no-JS state is a link to the piece page, not a disabled
+  input** (§3). The tile has no `<details>` behind it, so the panel's
+  "render it disabled" pattern would strand a no-JS visitor with nothing to
+  open; routing them to the surface where level 1 works is the honest move.
+  The piece page's own markup is unchanged.
 - Focus stays in the input after a wrong guess and moves to the revealed
   answer after a correct one.
 - The submit button is a real `<button type="submit">`; Enter submits.
@@ -725,6 +888,29 @@ the answer can't be edited to fit the game without breaking it.
 - [ ] A wrong guess shakes once, announces politely, keeps focus and text.
 - [ ] After solving `03`, the collection page reads `1 of 8` and tile `03`
       shows ✓ — **on reload, and in a second tab opened before the solve.**
+- [ ] **Typing `cow` into tile `03` on `/work/eye-studies` solves it without
+      leaving the page**: the form becomes `✓ cow`, the corner mark flips, and
+      the header ring advances to `1 of 8` in the same frame.
+- [ ] Clicking a tile's *image* still opens the lightbox and clicking its
+      *title* still opens the piece page — neither is intercepted by the form,
+      and no click lands on the wrong one of the three.
+- [ ] A tile solved from the grid shows solved on its piece page, and vice
+      versa, after a reload.
+- [ ] A wrong guess on a tile shakes that tile's input only, keeps its text
+      selected, and announces `not quite` once.
+- [ ] Solving a tile mid-column does **not** shift the tile below it — the
+      guess row's reserved height absorbs the swap. Same on hydration for a
+      returning visitor with solves already stored.
+- [ ] After a solve from the grid, Tab moves to the *next tile*, not to the
+      top of the document.
+- [ ] No tile shows a hint control or a reveal control. Hints appear only in
+      the header; give-up only on the piece page.
+- [ ] No tile renders a reference photo, and playing the whole grid through
+      makes **no** request for `/art/eye-studies/reference/*`.
+- [ ] With JavaScript disabled, each guessable tile shows `▸ name this one`
+      linking to its piece page — no disabled input, no dead control.
+- [ ] `tsc --noEmit` still clean with `GuessTileForm` mounted in all three
+      `PieceTile` branches, including the two with no guessable customer.
 - [ ] Revealing `05` shows the note, marks it revealed, and the scorecard
       still reads `1 of 8` — reveals don't count.
 - [ ] Reset asks first, then returns everything to `0 of 8`.
@@ -770,7 +956,10 @@ shipped and the shape has been used in anger.
 - **Scoring, streaks, timers, difficulty.** Eight questions, no ceremony.
 - **Sharing a result.** No emoji-grid, no "I named 6 of 8" card. Attractive,
   and a genuinely different feature with its own OG-image work.
-- **Guessing inside the lightbox** (§6) and **guessing from the tile** (§3).
+- **Guessing inside the lightbox** (§6). Guessing *from the tile* was here in
+  the first draft and is now in scope — see §3.
+- **The reveal on a tile.** The tile names the answer; the study-and-photo
+  pair, the credit, and the note stay on the piece page (§3).
 - **A cross-collection global scorecard.** The storage shape in §5 permits it
   later; nothing renders it now.
 - **Fuzzy or AI-assisted matching** (§4).

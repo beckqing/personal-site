@@ -23,6 +23,7 @@ import {
   type WorkPiece,
 } from '@/lib/work'
 import { GuessTileMark } from '@/components/guess-mark'
+import { GuessTileForm } from '@/components/guess-tile-form'
 import { ImageLightbox } from '@/components/image-lightbox'
 import { MediaBadges } from '@/components/media-player'
 import { cn } from '@/lib/utils'
@@ -762,7 +763,10 @@ function TextTile({ collection, piece }: { collection: WorkCollection; piece: Wo
     <div className="relative w-full overflow-hidden rounded-xl border border-border transition-transform hover:-translate-y-1">
       <Link
         href={piecePath(collection, piece)}
-        className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={cn(
+          'block text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          isGuessable(piece) ? 'px-4 pt-4' : 'p-4',
+        )}
       >
         <Quote
           className="h-6 w-6 shrink-0 -scale-x-100"
@@ -773,6 +777,14 @@ function TextTile({ collection, piece }: { collection: WorkCollection; piece: Wo
         <VerseBlock text={excerpt} context="card" className="mt-3 text-base text-foreground" />
         <p className="mt-3 font-brand text-sm lowercase tracking-wide text-muted-foreground">{piece.title}</p>
       </Link>
+      {isGuessable(piece) && (
+        <GuessTileForm
+          piece={piece}
+          collectionSlug={collection.slug}
+          tone={toneFor(collection)}
+          pieceHref={piecePath(collection, piece)}
+        />
+      )}
       {hasWriteup(piece) && (
         <div className="absolute right-3 top-3">
           <WriteupMark />
@@ -780,7 +792,7 @@ function TextTile({ collection, piece }: { collection: WorkCollection; piece: Wo
       )}
       {isGuessable(piece) && (
         <div className="absolute left-3 top-3">
-          <GuessTileMark collection={collection} piece={piece} />
+          <GuessTileMark piece={piece} collectionSlug={collection.slug} tone={toneFor(collection)} />
         </div>
       )}
     </div>
@@ -805,7 +817,10 @@ function ImageTile({ collection, piece }: { collection: WorkCollection; piece: W
       </ImageLightbox>
       <Link
         href={piecePath(collection, piece)}
-        className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={cn(
+          'block text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          isGuessable(piece) ? 'px-4 pt-4' : 'p-4',
+        )}
       >
         <p className="font-brand text-sm font-bold lowercase leading-tight text-foreground/80 text-balance">
           {piece.title}
@@ -814,6 +829,14 @@ function ImageTile({ collection, piece }: { collection: WorkCollection; piece: W
           <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{piece.description}</p>
         )}
       </Link>
+      {isGuessable(piece) && (
+        <GuessTileForm
+          piece={piece}
+          collectionSlug={collection.slug}
+          tone={toneFor(collection)}
+          pieceHref={piecePath(collection, piece)}
+        />
+      )}
       {hasWriteup(piece) && (
         <div className="absolute left-3 top-3">
           <WriteupMark />
@@ -821,7 +844,7 @@ function ImageTile({ collection, piece }: { collection: WorkCollection; piece: W
       )}
       {isGuessable(piece) && (
         <div className="absolute right-3 top-3">
-          <GuessTileMark collection={collection} piece={piece} />
+          <GuessTileMark piece={piece} collectionSlug={collection.slug} tone={toneFor(collection)} />
         </div>
       )}
     </div>
@@ -857,7 +880,10 @@ export function IllustratedTile({
       </ImageLightbox>
       <Link
         href={piecePath(collection, piece)}
-        className="block p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={cn(
+          'block text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          isGuessable(piece) ? 'px-4 pt-4' : 'p-4',
+        )}
         style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}
       >
         <p className="font-brand text-sm font-bold lowercase leading-tight text-foreground/80 text-balance">
@@ -866,6 +892,14 @@ export function IllustratedTile({
         <VerseBlock text={piece.text ?? ''} context="card" className="mt-2 text-sm text-foreground" />
         <ArrowRight className="ml-auto mt-2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
       </Link>
+      {isGuessable(piece) && (
+        <GuessTileForm
+          piece={piece}
+          collectionSlug={collection.slug}
+          tone={toneFor(collection)}
+          pieceHref={piecePath(collection, piece)}
+        />
+      )}
       {hasWriteup(piece) && (
         <div className="absolute left-3 top-3">
           <WriteupMark />
@@ -873,7 +907,7 @@ export function IllustratedTile({
       )}
       {isGuessable(piece) && (
         <div className="absolute right-3 top-3">
-          <GuessTileMark collection={collection} piece={piece} />
+          <GuessTileMark piece={piece} collectionSlug={collection.slug} tone={toneFor(collection)} />
         </div>
       )}
     </div>

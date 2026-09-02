@@ -6,7 +6,6 @@ import { Check, Eye, HelpCircle, Image as ImageIcon } from 'lucide-react'
 import {
   hintsFor,
   isCorrectGuess,
-  normalizeGuess,
   toneFor,
   type Guess,
   type WorkCollection,
@@ -115,8 +114,8 @@ export function GuessPanel({
 
   const [value, setValue] = useState('')
   const [wrong, setWrong] = useState(false)
-  const [shakeKey, setShakeKey] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
+  const shakeRef = useRef<HTMLDivElement>(null)
   const answerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -125,14 +124,27 @@ export function GuessPanel({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    const normalized = normalizeGuess(value)
-    if (!normalized) return // a mis-press, not a guess
+    // A mis-press is an empty *box*, not input that merely normalizes to
+    // nothing — typing symbols/digits alone ("!!!") is a real (wrong)
+    // guess, not a no-op, so this checks the raw trimmed value rather than
+    // `normalizeGuess(value)`, which would strip it down to '' and get
+    // silently swallowed here before ever reaching the wrong-guess path.
+    if (!value.trim()) return
     if (isCorrectGuess(piece.guess, value)) {
       setWrong(false)
       solve(collection.slug, piece.slug)
     } else {
       setWrong(true)
-      setShakeKey((k) => k + 1)
+      // Restart the shake without remounting this node via a `key` — a
+      // remount would unmount and recreate the <input> inside it, losing
+      // focus at exactly the moment the visitor is meant to retry in one
+      // keystroke.
+      const el = shakeRef.current
+      if (el) {
+        el.classList.remove('guess-shake')
+        void el.offsetWidth
+        el.classList.add('guess-shake')
+      }
       inputRef.current?.focus()
       inputRef.current?.select()
     }
@@ -176,7 +188,7 @@ export function GuessPanel({
               <HelpCircle className="h-4 w-4 shrink-0" style={{ color: tone }} aria-hidden="true" />
               {prompt}
             </label>
-            <div key={shakeKey} className={cn('flex flex-1 gap-2', wrong && 'guess-shake')}>
+            <div ref={shakeRef} className="flex flex-1 gap-2">
               <input
                 ref={inputRef}
                 id={inputId}
