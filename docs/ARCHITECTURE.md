@@ -1159,11 +1159,30 @@ not `h1`.
 together.** `h2` and `h3` both moved up a step from that correction —
 `text-lg` → `text-xl` for `h2`, `text-sm` → `text-base` for `h3` — because
 Beck wanted more size differentiation between levels than the compressed
-version gave. The scale is a real staircase now: `h1` 24px, `h2` 20px, `h3`
-16px, `h4` 14px, `h5` 12px. `h4` stays `text-sm` (14px) — one size below
-`h3`, not tied to it — told apart from `h3` by weight and colour as well as
-size (`font-bold` vs. `font-semibold text-foreground/70`), since it's a
-subsection of `h3`, not a peer.
+version gave, producing a 24/20/16/14/12 staircase.
+
+**That staircase broke a harder rule: a heading never renders smaller than
+the body text it introduces.** Body copy (`EssayBody`) is `text-base` (16px),
+so `h4` (14px) and `h5` (12px) sat *below* their own paragraphs and read as
+captions rather than headings. 16px became the floor for every numbered
+level. But with the ceiling still at 24px there was no room left to keep five
+levels distinct, so `h3`, `h4`, and `h5` all collapsed onto `text-base` and
+were told apart by weight and colour alone — about as far as that
+distinction stretches.
+
+**Final pass, same day: the whole ladder moved up one step**, on Beck's "all
+the headings can also be increased in size a little." Raising the top is what
+bought back the room at the bottom. The scale is five genuinely distinct
+sizes again — `h1` 30px, `h2` 24px, `h3` 20px, `h4` 18px, `h5` 16px — with
+the floor still intact (`h5` sits *at* body size, never under it). The weight
+and colour ladder (`font-bold text-foreground/80` → `font-semibold
+text-foreground/70` → `font-medium text-foreground/60`) is kept as
+reinforcement rather than as the whole signal.
+
+`h1` is the scale's one responsive step, `text-2xl sm:text-3xl`. The longest
+title in `lib/work.ts` is 46 characters ("emoji poetry, translated from
+chinese"), which sets three lines at 30px on a phone, so mobile keeps the
+earlier 24px and only desktop takes the increase.
 
 Two `h1`s are deliberately **not** built from this scale: `beck qing` on the
 home page and "Hi, I'm Beck." on `/about`. Both are display type under a
