@@ -1601,7 +1601,7 @@ const REAL_WORK: WorkItem[] = [
   },
   {
     slug: 'womens-history-month',
-    title: "Women's History Month",
+    title: 'when a woman...',
     year: '2022',
     description:
       "Made for Women's History Month, supplies courtesy of a work event, but not posted until now.",
@@ -2090,6 +2090,29 @@ export function imageLightboxSlice(
 ): { items: WorkPiece[]; index: number } {
   const items = collection.pieces.filter((p) => p.image)
   return { items, index: Math.max(0, items.indexOf(piece)) }
+}
+
+/**
+ * Whether this gallery card opens the lightbox in place rather than
+ * navigating. A code demo is excluded on purpose: its `image` is only a
+ * poster still, and the thing it advertises runs on its own page. A piece
+ * with a speedpaint or animation *is* included — the finished still is the
+ * piece, the video is process, which is the same framing `PieceMedia` uses
+ * when it always offers the still alongside the video.
+ */
+export function opensInGalleryLightbox(item: WorkItem): item is WorkPiece {
+  return (
+    !isCollection(item) &&
+    !isHybrid(item) &&
+    !isTextForward(item) &&
+    !isCodeDemo(item) &&
+    Boolean(item.image)
+  )
+}
+
+/** The ordered lightbox domain for a rendered gallery — the visible cards that open it. */
+export function galleryLightboxItems(items: WorkItem[]): WorkPiece[] {
+  return items.filter(opensInGalleryLightbox)
 }
 
 /** Resolve a piece inside a collection, with its index for prev/next links. */

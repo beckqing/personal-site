@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { forwardRef, type CSSProperties } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, FileText, Hourglass, ImageOff, Layers, Quote } from 'lucide-react'
@@ -24,6 +24,7 @@ import {
 import { ImageLightbox } from '@/components/image-lightbox'
 import { MediaBadges } from '@/components/media-player'
 import { cn } from '@/lib/utils'
+import { headingStyles } from '@/lib/heading-styles'
 
 const ASPECTS = ['aspect-square', 'aspect-[4/5]', 'aspect-[5/4]', 'aspect-[3/4]']
 
@@ -112,19 +113,17 @@ export function CollectionMark({ count, className }: { count: number; className?
  * standing in for it — no fabricated images, just the item's category as a
  * watermark over its discipline tone.
  */
-export function WorkPlaceholder({
-  item,
-  className,
-  quality = 'full',
-  fit = 'cover',
-}: {
-  item: WorkItem
-  className?: string
-  /** 'thumb' prefers the heavily compressed stand-in (see WorkPiece.thumb) — for spots where the image is barely visible, like a collection stack's back cards. Falls back to the full image when there's no thumb. */
-  quality?: 'full' | 'thumb'
-  /** 'contain' shows the whole image uncropped (letterboxing if the box doesn't match its ratio) — for a lightbox/detail view where seeing the full piece matters more than filling the box. Grid tiles want the 'cover' default. */
-  fit?: 'cover' | 'contain'
-}) {
+export const WorkPlaceholder = forwardRef<
+  HTMLImageElement,
+  {
+    item: WorkItem
+    className?: string
+    /** 'thumb' prefers the heavily compressed stand-in (see WorkPiece.thumb) — for spots where the image is barely visible, like a collection stack's back cards. Falls back to the full image when there's no thumb. */
+    quality?: 'full' | 'thumb'
+    /** 'contain' shows the whole image uncropped (letterboxing if the box doesn't match its ratio) — for a lightbox/detail view where seeing the full piece matters more than filling the box. Grid tiles want the 'cover' default. */
+    fit?: 'cover' | 'contain'
+  }
+>(function WorkPlaceholder({ item, className, quality = 'full', fit = 'cover' }, ref) {
   const tone = toneFor(item)
   const src = quality === 'thumb' ? (item.thumb ?? item.image) : item.image
 
@@ -134,10 +133,14 @@ export function WorkPlaceholder({
     // cropping — and any border/shadow in `className` lands on the actual
     // rendered picture instead of a differently-shaped bounding box.
     const [wRatio, hRatio] = (item.imageAspect ?? '16/10').split('/').map(Number)
-    const width = 1600
+    // 2000, not the source ceiling of 1800: the lightbox's naturalWidth
+    // clamp (see ImageLightbox) needs headroom above every current source,
+    // or the cap becomes the candidate width instead of the source width.
+    const width = 2000
     const height = Math.round(width * (hRatio / wRatio))
     return (
       <Image
+        ref={ref}
         src={src}
         alt={item.title}
         width={width}
@@ -194,7 +197,7 @@ export function WorkPlaceholder({
       </span>
     </div>
   )
-}
+})
 
 /** A stanza that is one unbroken run, too long to be a verse line. */
 const PROSE_RUN_MIN = 90
@@ -677,7 +680,7 @@ export function ProcessSection({ piece }: { piece: WorkPiece }) {
 
   return (
     <section className="mt-10 max-w-2xl">
-      <h2 className="font-brand text-xs uppercase tracking-[0.3em] text-muted-foreground">process</h2>
+      <h2 className={headingStyles.eyebrow}>process</h2>
       <div className="mt-4 space-y-8">
         {stills.map((still, i) => (
           <figure key={still.src}>

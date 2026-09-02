@@ -1,6 +1,16 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowDownUp, ArrowRight, Quote, RotateCcw, Search, X } from 'lucide-react'
@@ -12,6 +22,7 @@ import {
   FILTER_MODES,
   filterWork,
   formFor,
+  galleryLightboxItems,
   isCollection,
   isDiscipline,
   isHybrid,
@@ -19,6 +30,7 @@ import {
   mediumFor,
   MODE_LABEL,
   nextMode,
+  opensInGalleryLightbox,
   SORT_LABEL,
   SORT_MODES,
   sortWork,
@@ -32,11 +44,30 @@ import {
   type SortMode,
   type WorkCollection,
   type WorkItem,
+  type WorkPiece,
 } from '@/lib/work'
 import { aspectStyleFor, CollectionStack, UnfinishedMark, VerseBlock, WorkPlaceholder } from '@/components/work-visuals'
+import { ImageLightbox } from '@/components/image-lightbox'
 import { MediaBadges } from '@/components/media-player'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
+
+/**
+ * The gallery's lightbox is URL state; every other lightbox is not (see
+ * ARCHITECTURE.md's Component layers section). `WorkGallery` renders one
+ * `ImageLightbox` in controlled, triggerless mode, opened by `?view=<slug>`.
+ * `ImageCard` reaches this to become a lightbox trigger instead of a plain
+ * link, and to register its image wrapper as a flight-dismiss target — see
+ * `resolveTrigger` on `ImageLightbox`. Null outside a `WorkGallery` (or once
+ * a gallery's tags/query filters a card's item out of the lightbox domain),
+ * which keeps `ImageCard` usable standalone and makes this opt-in rather
+ * than load-bearing.
+ */
+type GalleryLightboxApi = {
+  open: (slug: string) => void
+  registerTile: (slug: string, node: HTMLElement | null) => void
+}
+const GalleryLightboxContext = createContext<GalleryLightboxApi | null>(null)
 
 /** Where each discipline's glow sits, so blends read as distinct light sources. */
 const GRADIENT_ORIGIN: Record<Discipline, string> = {
@@ -290,9 +321,9 @@ function CollectionTile({ item }: { item: WorkCollection }) {
             href={workHref(item)}
             className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
+            <h2 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
               {item.title}
-            </h3>
+            </h2>
             {item.description && (
               <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{item.description}</p>
             )}
@@ -317,25 +348,56 @@ function CollectionTile({ item }: { item: WorkCollection }) {
  * along in the same panel, pinned to its right edge.
  */
 function ImageCard({ item }: { item: WorkItem }) {
+  // Called unconditionally, ahead of the collection early-return below, so
+  // hook order stays fixed regardless of which branch a given instance ends
+  // up taking (isCollection(item) is stable for the lifetime of one mounted
+  // ImageCard, but the rule is enforced statically).
+  const lightbox = useContext(GalleryLightboxContext)
+  const registerTile = useCallback(
+    (node: HTMLDivElement | null) => lightbox?.registerTile(item.slug, node),
+    [lightbox, item.slug],
+  )
+
   if (isCollection(item)) {
     return <CollectionTile item={item} />
   }
 
   const medium = mediumFor(item)
+  // Code demos are the one visual card excluded even when the gallery's
+  // lightbox is live: their `image` is only a poster still, and the thing
+  // they advertise runs on their own page.
+  const opensLightbox = Boolean(lightbox) && opensInGalleryLightbox(item)
 
   return (
     <article className="group relative rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg">
-      <Link
-        href={workHref(item)}
-        className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {/* Blank placeholder image — no fabricated artwork, just a tinted panel.
-            Rounded to `1rem - 1px` so it sits inside the article's border
-            rather than leaving a hairline of square corner outside it. */}
-        <div className="aspect-[5/4] overflow-hidden rounded-[calc(1rem-1px)]" style={aspectStyleFor(item)}>
-          <WorkPlaceholder item={item} />
-        </div>
-      </Link>
+      {opensLightbox ? (
+        <button
+          type="button"
+          onClick={() => lightbox!.open(item.slug)}
+          aria-label={`${item.title} — view full screen`}
+          className="block w-full appearance-none rounded-lg bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {/* Blank placeholder image — no fabricated artwork, just a tinted panel.
+              Rounded to `1rem - 1px` so it sits inside the article's border
+              rather than leaving a hairline of square corner outside it. */}
+          <div
+            ref={registerTile}
+            className="aspect-[5/4] overflow-hidden rounded-[calc(1rem-1px)]"
+            style={aspectStyleFor(item)}
+          >
+            <WorkPlaceholder item={item} />
+          </div>
+        </button>
+      ) : (
+        <Link
+          href={workHref(item)}
+          className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <div className="aspect-[5/4] overflow-hidden rounded-[calc(1rem-1px)]" style={aspectStyleFor(item)}>
+            <WorkPlaceholder item={item} />
+          </div>
+        </Link>
+      )}
 
       <MediaBadges item={item} />
       {item.unfinished && <UnfinishedMark className="absolute left-3 top-3 z-20" />}
@@ -346,9 +408,9 @@ function ImageCard({ item }: { item: WorkItem }) {
             href={workHref(item)}
             className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <h3 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
+            <h2 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
               {item.title}
-            </h3>
+            </h2>
           </Link>
           {medium && <TagPill className="pointer-events-auto">{medium}</TagPill>}
         </div>
@@ -425,7 +487,13 @@ export function WorkGallery() {
 
   const commit = useCallback(
     (
-      changes: { q?: string | null; tags?: string[] | null; mode?: FilterMode | null; sort?: SortMode | null },
+      changes: {
+        q?: string | null
+        tags?: string[] | null
+        mode?: FilterMode | null
+        sort?: SortMode | null
+        view?: string | null
+      },
       historyMode: 'push' | 'replace',
     ) => {
       const sp = new URLSearchParams(Array.from(searchParams.entries()))
@@ -446,6 +514,11 @@ export function WorkGallery() {
         // 'curated' is the default, so it stays out of the URL for clean links.
         if (changes.sort && changes.sort !== 'curated') sp.set('sort', changes.sort)
         else sp.delete('sort')
+      }
+      // No default to omit: `view` is simply present or absent.
+      if ('view' in changes) {
+        if (changes.view) sp.set('view', changes.view)
+        else sp.delete('view')
       }
       const qs = sp.toString()
       const url = qs ? `${pathname}?${qs}` : pathname
@@ -501,6 +574,74 @@ export function WorkGallery() {
     () => sortWork(filterWork(WORK, { query: queryInput, tags: Array.from(selectedTags), mode }), sort),
     [queryInput, selectedTags, mode, sort],
   )
+
+  // The lightbox's domain: the subset of the rendered results that open it,
+  // in the same order they're rendered. `?view=<slug>` is the single source
+  // of truth for *which* piece is open — ImageLightbox's internal index is a
+  // fast local mirror (see its own doc comment).
+  const lightboxItems = useMemo(() => galleryLightboxItems(results), [results])
+  const viewSlug = searchParams.get('view')
+  const viewIndex = lightboxItems.findIndex((p) => p.slug === viewSlug)
+  const lightboxOpen = viewIndex >= 0
+
+  // Whether *this* session pushed the history entry currently open — set the
+  // moment a card is clicked, so Back/the mobile back-swipe can consume it.
+  // A deep link that lands directly on `?view=` never sets this, so closing
+  // it replaces instead of trying to pop an entry this session never pushed.
+  const pushedViewRef = useRef(false)
+  // Every visible tile's image wrapper, keyed by slug, so the dismiss flight
+  // can land on whichever tile the lightbox is currently showing rather than
+  // only the one that opened it.
+  const tilesRef = useRef(new Map<string, HTMLElement>())
+
+  const lightboxApi = useMemo<GalleryLightboxApi>(
+    () => ({
+      open: (slug) => {
+        pushedViewRef.current = true
+        commit({ view: slug }, 'push')
+      },
+      registerTile: (slug, node) => {
+        if (node) tilesRef.current.set(slug, node)
+        else tilesRef.current.delete(slug)
+      },
+    }),
+    [commit],
+  )
+
+  const handleLightboxOpenChange = useCallback(
+    (o: boolean) => {
+      if (o) return
+      if (pushedViewRef.current) router.back()
+      else commit({ view: null }, 'replace')
+      pushedViewRef.current = false
+    },
+    [router, commit],
+  )
+
+  const handleLightboxIndexChange = useCallback(
+    (i: number) => {
+      const p = lightboxItems[i]
+      if (p) commit({ view: p.slug }, 'replace')
+    },
+    [lightboxItems, commit],
+  )
+
+  const resolveLightboxTrigger = useCallback(
+    (piece: WorkPiece) => tilesRef.current.get(piece.slug) ?? null,
+    [],
+  )
+
+  // `?view=` naming a slug not in the domain — filtered out, a collection,
+  // an essay, a code demo, a typo, a deleted slug — closes the lightbox and
+  // strips the param. One rule covers every variant, including the filters
+  // changing out from under an open lightbox via Back/Forward. Runs after
+  // `lightboxItems` is computed above, so a valid deep link on first load is
+  // never stripped before it's had a chance to match.
+  useEffect(() => {
+    if (viewSlug != null && viewIndex === -1) {
+      commit({ view: null }, 'replace')
+    }
+  }, [viewSlug, viewIndex, commit])
 
   const activeDisciplines = useMemo(
     () => DISCIPLINES.filter((d) => selectedTags.has(d)),
@@ -652,11 +793,13 @@ export function WorkGallery() {
 
       {/* Masonry (reads left-to-right, top-to-bottom) or empty state */}
       {results.length > 0 ? (
-        <MasonryGrid className="mt-6">
-          {results.map((item) => (
-            <WorkCard key={item.slug} item={item} />
-          ))}
-        </MasonryGrid>
+        <GalleryLightboxContext.Provider value={lightboxApi}>
+          <MasonryGrid className="mt-6">
+            {results.map((item) => (
+              <WorkCard key={item.slug} item={item} />
+            ))}
+          </MasonryGrid>
+        </GalleryLightboxContext.Provider>
       ) : (
         <div className="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-border px-6 py-16 text-center">
           <div
@@ -683,6 +826,16 @@ export function WorkGallery() {
           </p>
         </div>
       )}
+
+      <ImageLightbox
+        items={lightboxItems}
+        initialIndex={Math.max(0, viewIndex)}
+        open={lightboxOpen}
+        onOpenChange={handleLightboxOpenChange}
+        onIndexChange={handleLightboxIndexChange}
+        resolveTrigger={resolveLightboxTrigger}
+        titleHref={workHref}
+      />
       </div>
     </>
   )

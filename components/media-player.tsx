@@ -10,10 +10,15 @@ import { cn } from '@/lib/utils'
 /**
  * Quiet indicators for a gallery tile carrying extra media — a speedpaint, a
  * finished animation, a runnable code demo, or (rarely) more than one at once.
- * Purely decorative: the tile's own link still does the navigating. Meant to
- * sit inside the same `relative` box that bounds the tile's image (a plain
- * sibling of the image div, or passed as extra children into
- * `ImageLightbox`, which already wraps its children in one).
+ * Purely decorative: the badges themselves do nothing. On a collection-page
+ * tile the surrounding element is still a plain link and does the
+ * navigating; on a top-level gallery `ImageCard`, the image itself is now
+ * the button that opens the lightbox in place (see `opensInGalleryLightbox`
+ * in lib/work.ts) — a code demo is the one exception, since its `image` is
+ * only a poster still and stays a plain navigating link. Meant to sit inside
+ * the same `relative` box that bounds the tile's image (a plain sibling of
+ * the image div, or passed as extra children into `ImageLightbox`, which
+ * already wraps its children in one).
  *
  * The code-demo badge is the *only* signal a tile gives that a piece runs —
  * tiles deliberately don't boot iframes (thirty tiles would be thirty rAF
