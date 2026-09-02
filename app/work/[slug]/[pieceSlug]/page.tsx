@@ -21,6 +21,7 @@ import { mdxBody } from '@/lib/mdx-bodies'
 import { PieceMedia } from '@/components/media-player'
 import { BookPageNav } from '@/components/book-page-nav'
 import { cn } from '@/lib/utils'
+import { headingStyles } from '@/lib/heading-styles'
 
 export function generateStaticParams() {
   return WORK.filter(isCollection).flatMap((item) =>
@@ -108,9 +109,7 @@ export default async function CollectionPiecePage({
             >
               {collection.title}
             </p>
-            <h1 className="font-brand mt-3 text-center text-lg font-bold lowercase text-foreground/80 text-balance sm:text-xl">
-              {piece.title}
-            </h1>
+            <h1 className={cn(headingStyles.h1, 'mt-3 text-center text-balance')}>{piece.title}</h1>
 
             <div className="mx-auto mt-6 h-px w-12" style={{ backgroundColor: `color-mix(in srgb, ${tone} 45%, transparent)` }} />
 
@@ -207,9 +206,7 @@ export default async function CollectionPiecePage({
           className="mx-auto max-w-3xl shadow-sm"
         />
         <div className={cn(!textForward && 'mx-auto mt-8 max-w-2xl')}>
-          <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-            {piece.title}
-          </h1>
+          <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
           <p
             className="font-brand mt-2 flex flex-wrap items-center gap-2 text-sm lowercase"
             style={{ color: tone }}

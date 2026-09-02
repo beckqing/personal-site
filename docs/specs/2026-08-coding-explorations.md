@@ -106,6 +106,14 @@ which carries `art` and `writing` and currently reads as art. Revisit only if
 Beck actively wants dual-discipline sketches, and re-check every existing
 multi-discipline item if so.
 
+> **The first real demo breaks this rule, deliberately.** `delirium` carries
+> `art` as well as `science` and `code` — Beck's call, since the piece is
+> Beck's own illustration made interactive and denim is honest about that. So
+> read the paragraph above as the **default for a demo that isn't also Beck's
+> artwork**, not as an absolute. The consequence it predicted is real and
+> accepted: the emerald `--science` tone still appears nowhere on the site.
+> See §13.
+
 ---
 
 ## 3. Data model
@@ -535,9 +543,23 @@ Non-negotiable, and cheap if done first:
 - **The frame's controls are real buttons** with visible focus rings
   (`focus-visible:ring-2 focus-visible:ring-ring`, matching the rest of the
   site), operable without ever entering the iframe.
-- **A sketch is never the only path to the content.** The write-up must stand
-  on its own for a reader who never runs it — which means `writeup` (or the
-  MDX body) says what the sketch *does*, not "press play above."
+- **A sketch is never the only path to the content** — but a write-up is not
+  how that gets satisfied. **Amended 2026-08-30, Beck:** a code demo may ship
+  with no `writeup` and no `description`, the same as any other piece. Words
+  are optional here; the site already has pieces that are just the thing
+  itself, and a demo is not a special case that owes an explanation.
+
+  What the rule actually requires is that *something* survives the demo not
+  running. The **poster carries that**, which is why §3 says a demo should
+  have one: for `delirium` the poster is Beck's own illustration, so a
+  reduced-motion reader gets the artwork, the title, and the tags — not an
+  empty box. A demo with no poster **and** no words is the case this bullet
+  still forbids.
+
+  The one live consequence to keep an eye on is `metaDescription()`, which
+  falls through `description` → `preview` → `text` and returns `''` when a
+  piece has none of them — so the page ships an empty meta description. That
+  is a metadata gap, not a reason to write a write-up; tracked in `TODO.md` §2.
 - **Pause on `document.hidden`**, not just on scroll. A backgrounded tab
   spinning a rAF loop is the single worst thing this feature can do to
   someone's battery.
@@ -572,8 +594,11 @@ Named so they aren't rediscovered as gaps:
 
 ## 11. Acceptance
 
-- [ ] `next build` clean; page count is **204 + one per exploration added**
-      (sketches add no routes of their own — they are `public/` files).
+- [ ] `next build` clean; page count is **the baseline + one per exploration
+      added**. What adds no route is the demo's HTML — it is a `public/`
+      file. The piece wrapping it is an ordinary `WorkPiece` and gets
+      `/work/<slug>` like any other. The baseline written here (204) went
+      stale before the build; see §13.
 - [ ] `tsc --noEmit` clean.
 - [ ] `/work?tags=science` renders real work instead of the empty state.
 - [ ] The `code` chip appears in the filter panel under `field`, with a
@@ -616,10 +641,21 @@ Recorded rather than smoothed over, per the repo's own convention.
   adjusting on contact. `lib/content.ts` and its `PROJECTS` import survive
   untouched as a consequence — deleting them is part of that same change.
 
-- **§11's page count was stale.** The spec says "204 + one per exploration";
-  the tree has been at **202** since the 2026-08-29 collection pass (see
-  `TODO.md`). The build is at 202, unchanged — the claim the number was
-  making (a sketch adds no route of its own) verified exactly as written.
+- **§11's page count baseline was stale; the acceptance rule itself was
+  right.** The spec's "204" baseline predates the 2026-08-29 collection pass,
+  which took the tree to **202** by demoting `hand-study` and
+  `waterfowl-and-motherhood` out of top-level `WORK`. Against that corrected
+  baseline the rule holds exactly as written: **202 + one per code demo
+  added**, so `delirium` makes it **203**.
+
+  > **Corrected 2026-08-30.** An earlier version of this entry read "the build
+  > is at 202, unchanged — a code demo adds no route of its own," and
+  > `TODO.md` carried the same sentence. That misread §11's parenthetical.
+  > What adds no route is the demo's **HTML file** — it lives in `public/`.
+  > The piece wrapping it is an ordinary `WorkPiece`, so it gets
+  > `/work/<slug>` like every other one: top-level items went 28 → 29 with
+  > `delirium`. The build today reports **204**, which is 203 plus the scratch
+  > `/excerpt-preview` route below.
 
 - **§3 vs §7 on `WorkCard`.** §3 says `isSketch` is checked before the image
   branch "in both `WorkCard` and `PieceView`"; §7 says `WorkCard` gains no new
@@ -682,6 +718,38 @@ Recorded rather than smoothed over, per the repo's own convention.
   the three validated pairs use (#e0725a, 5.84:1) was offered and declined —
   worth revisiting only if the pumpkin/goldenrod proximity turns out to bother
   in a real excerpt.
+
+- **`delirium` carries `art`, which §2 advises against.** Beck's call: the
+  piece is Beck's own illustration made interactive, and the denim tone is
+  honest about that. The cost is the one §2 named — `primaryDiscipline()`
+  iterates `DISCIPLINES` in its own order, so `art` wins from any tag
+  position, and the emerald `--science` tone still appears nowhere on the
+  site. `primaryDiscipline()` was **not** changed, so `first-art-fair` is
+  unaffected. §2's rule stands as the default for a demo that isn't also
+  Beck's artwork; read it alongside this entry rather than as an absolute.
+
+- **A code demo may ship with no `writeup` and no `description`** — decided by
+  Beck 2026-08-30, and it narrows §9's "never the only path to the content"
+  bullet rather than breaking it. See the amended §9; `delirium` is the case
+  that prompted it.
+
+- **Two scratch fixtures ship, on unequal terms** (added 2026-08-29 in
+  `98b9d77`, after the rest of this section was written):
+
+  - `app/excerpt-preview/` — a Shiki palette check for `<Excerpt>`. It is a
+    **real seventh app route**, which is why the build reports 204 rather than
+    203. The App Router has no data-level flag to hide a route behind, so the
+    page gates itself: `notFound()` once `NODE_ENV` is `production`, which
+    fires at prerender, so the shipped HTML is the 404 page rather than the
+    preview. Meant to be deleted; tracked in `TODO.md` §6.
+  - `public/code-demos/_preview/` — a reference implementation of §5's
+    contract, and the file to copy when starting a real demo. It is wired
+    into `lib/work.sample.ts` as `preview-code-demo`, so the *piece* is
+    dev-only on the same terms as the rest of that file. **The HTML itself is
+    not gated at all**: `public/` is copied verbatim into every build, so
+    `/code-demos/_preview/index.html` is reachable in production. Harmless —
+    it is a fixture, not content — but it is not "absent from what ships," and
+    keeping it is a choice rather than an oversight.
 
 ### Verified in a browser
 

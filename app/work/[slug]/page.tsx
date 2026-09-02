@@ -29,6 +29,7 @@ import {
   VerseBlock,
 } from '@/components/work-visuals'
 import { EssayBody } from '@/components/essay'
+import { headingStyles } from '@/lib/heading-styles'
 import { mdxBody } from '@/lib/mdx-bodies'
 import { PieceMedia } from '@/components/media-player'
 import { CodeDemoFrame } from '@/components/code-demo-frame'
@@ -91,9 +92,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
             {chapbook ? 'chapbook' : 'collection'}
           </span>
         </div>
-        <h1 className="font-brand mt-2 text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-          {item.title}
-        </h1>
+        <h1 className={cn(headingStyles.h1, 'mt-2 text-balance')}>{item.title}</h1>
         {item.description && (
           <p
             className={cn(
@@ -130,7 +129,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
 
       {item.writeup && <Prose text={item.writeup} className={cn('mt-8', chapbook && 'mx-auto')} />}
 
-      <h2 className="font-brand mt-12 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+      <h2 className={cn(headingStyles.eyebrow, 'mt-12')}>
         {chapbook ? 'table of contents' : 'in this collection'}
       </h2>
 
@@ -198,9 +197,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         <CodeDemoFrame piece={piece} codeDemo={piece.codeDemo} className="mx-auto max-w-3xl shadow-sm" />
         <div className="mx-auto mt-8 max-w-2xl">
           {unfinishedFlag}
-          <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-            {piece.title}
-          </h1>
+          <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
           {meta}
           {piece.description && (
             <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">{piece.description}</p>
@@ -224,9 +221,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
     return (
       <article className="mt-6">
         {unfinishedFlag}
-        <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-          {piece.title}
-        </h1>
+        <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
         {meta}
         <div
           className="mt-8 max-w-2xl rounded-2xl border-l-2 py-1 pl-6"
@@ -253,9 +248,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
       <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto max-w-3xl shadow-sm" />
       <div className="mx-auto mt-8 max-w-2xl">
         {unfinishedFlag}
-        <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-          {piece.title}
-        </h1>
+        <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
         {meta}
         {hybrid && <VerseBlock text={piece.text ?? ''} className="mt-4 text-lg text-foreground" />}
         {piece.description && (

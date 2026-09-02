@@ -4,6 +4,7 @@ import type { MDXComponents } from 'mdx/types'
 import { getWorkItem, isCollection, piecePath, workHref, type WorkPiece } from '@/lib/work'
 import { WorkPlaceholder } from '@/components/work-visuals'
 import { cn } from '@/lib/utils'
+import { headingStyles } from '@/lib/heading-styles'
 
 /** Wraps a rendered MDX body: sets the measure, vertical rhythm, and base type. */
 export function EssayBody({ children, className }: { children: ReactNode; className?: string }) {
@@ -54,6 +55,13 @@ export function EmojiList({ children }: { children: ReactNode }) {
  * aria-hidden — a screen reader announcing "direct hit, I did it!" is noise.
  * `children` is optional: several rows in the art fair essay are label-only
  * shorthand meaning "same as last market, no notes".
+ *
+ * The emoji sits in its own fixed-width grid column so wrapped prose lines
+ * up under the label rather than running back underneath the marker —
+ * `items-center` centers it on the row's full height, so a multi-line item
+ * gets the emoji centered on the whole paragraph rather than pinned to the
+ * first line. See `.font-emoji` in globals.css for the subsetted monochrome
+ * font this renders through.
  */
 export function Item({
   emoji,
@@ -65,18 +73,28 @@ export function Item({
   children?: ReactNode
 }) {
   return (
-    <li>
-      <span aria-hidden="true">{emoji}</span> <span className="font-brand-italic">{label}</span>
-      {children ? <> {children}</> : null}
+    <li className="grid grid-cols-[1.75rem_1fr] items-center gap-x-2">
+      <span aria-hidden="true" className="font-emoji text-xl leading-none">
+        {emoji}
+      </span>
+      <span>
+        <span className="font-brand-italic">{label}</span>
+        {children ? <> {children}</> : null}
+      </span>
     </li>
   )
 }
 
-/** A market's header block: name over hours-and-date. Art fair essay only. */
+/**
+ * A market's header block: name over hours-and-date. Art fair essay only.
+ * `name` is a real `h3` — it sits between the essay's `##` section heads and
+ * the `####` "+ good" / "Δ for next time" subsections, which otherwise skip
+ * a level.
+ */
 export function MarketHeader({ name, when }: { name: string; when: string }) {
   return (
     <div className="mt-8">
-      <p className="font-brand text-lg font-bold lowercase text-foreground/80">{name}</p>
+      <h3 className={cn(headingStyles.h3, 'mt-0')}>{name}</h3>
       <p className="text-sm text-muted-foreground">{when}</p>
     </div>
   )
@@ -142,18 +160,10 @@ export function FigureRow({ caption, children }: { caption?: string; children: R
 
 /** The base-element map handed to MDX. */
 export const essayComponents: MDXComponents = {
-  h2: (props: HTMLAttributes<HTMLHeadingElement>) => (
-    <h2 className="font-brand mt-10 text-xl font-bold lowercase text-foreground/80" {...props} />
-  ),
-  h3: (props: HTMLAttributes<HTMLHeadingElement>) => (
-    <h3 className="font-brand mt-8 text-lg font-bold lowercase text-foreground/80" {...props} />
-  ),
-  h4: (props: HTMLAttributes<HTMLHeadingElement>) => (
-    <h4 className="font-brand mt-6 text-base font-bold lowercase text-foreground/80" {...props} />
-  ),
-  h5: (props: HTMLAttributes<HTMLHeadingElement>) => (
-    <h5 className="font-brand mt-4 text-sm font-bold lowercase text-foreground/80" {...props} />
-  ),
+  h2: (props: HTMLAttributes<HTMLHeadingElement>) => <h2 className={headingStyles.h2} {...props} />,
+  h3: (props: HTMLAttributes<HTMLHeadingElement>) => <h3 className={headingStyles.h3} {...props} />,
+  h4: (props: HTMLAttributes<HTMLHeadingElement>) => <h4 className={headingStyles.h4} {...props} />,
+  h5: (props: HTMLAttributes<HTMLHeadingElement>) => <h5 className={headingStyles.h5} {...props} />,
   p: (props: HTMLAttributes<HTMLParagraphElement>) => (
     <p className="mt-4 text-pretty leading-relaxed text-foreground/85" {...props} />
   ),

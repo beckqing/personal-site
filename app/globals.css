@@ -4,6 +4,28 @@
 
 @custom-variant dark (&:is([data-theme='dark'] *));
 
+/*
+ * Noto Emoji, subsetted to the exact 19 codepoints used by first-art-fair's
+ * EmojiList — monochrome outline glyphs (not Noto Color Emoji), so they draw
+ * in currentColor like every other doodle on this site instead of importing
+ * a platform's own colour-emoji art style. `unicode-range` limits which
+ * characters even trigger the download, and covers only those 19 — the file
+ * is 7KB. See "Emoji: a subsetted monochrome web font" in ARCHITECTURE.md for
+ * how it was built and how to add a codepoint if a future essay needs one;
+ * `scripts/check-emoji-subset.mjs` fails the moment content uses one this
+ * font doesn't cover.
+ */
+@font-face {
+  font-family: 'Noto Emoji Subset';
+  src: url('/fonts/noto-emoji-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+231A, U+231B, U+1F32C, U+1F37D, U+1F3AA, U+1F3AD, U+1F3AF, U+1F3F7, U+1F441, U+1F446, U+1F44B, U+1F4B3,
+    U+1F4CC, U+1F50D, U+1F58C, U+1F697, U+1F963, U+1F964, U+1FA91;
+}
+
 @theme inline {
   --font-sans: var(--font-noto), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-recursive), ui-monospace, 'Courier New', monospace;
@@ -197,6 +219,15 @@
   .font-brand-italic {
     font-family: var(--font-recursive), ui-monospace, monospace;
     font-variation-settings: 'MONO' 1, 'CASL' 1, 'slnt' -14;
+  }
+  /* The art-fair essay's emoji markers. `font-variant-emoji: text` is a
+     fallback for the case the subset font fails to load — it asks the
+     platform's own font to draw text-style glyphs rather than substitute a
+     colour emoji font, so the failure mode stays monochrome instead of
+     silently reintroducing colour. */
+  .font-emoji {
+    font-family: 'Noto Emoji Subset', sans-serif;
+    font-variant-emoji: text;
   }
 }
 

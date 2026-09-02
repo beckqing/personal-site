@@ -4,11 +4,12 @@ How this site is put together and why. Decisions live here; **what's left to
 do lives in [TODO.md](TODO.md)**.
 
 Next.js 16.3, App Router, Turbopack. Fully static — every route prerenders
-(204 pages at last build, including a generated `sitemap.ts` and
-`opengraph-image.tsx`). No database, no CMS: content is TypeScript, images
+(**203 pages**, including a generated `sitemap.ts` and `opengraph-image.tsx`;
+the build reports 204 while the scratch `/excerpt-preview` route survives —
+see [TODO.md](TODO.md) §6). No database, no CMS: content is TypeScript, images
 are files in `public/`.
 
-Verified against the tree 2026-08-27. Where the code and this document
+Verified against the tree 2026-08-30. Where the code and this document
 disagree, the disagreement is recorded here and tracked in
 [TODO.md](TODO.md) rather than quietly smoothed over.
 
@@ -17,26 +18,29 @@ disagree, the disagreement is recorded here and tracked in
 ## Content model
 
 `lib/work.ts` is the single source of truth for everything on `/work`. It
-holds both the data (30 top-level items — 9 collections and 21 standalone
+holds both the data (29 top-level items — 9 collections and 20 standalone
 pieces — with 163 pieces inside the collections) and the vocabulary that
 describes it.
 
-**The vocabulary is deliberately wider than the data.** Eleven of its tags
-currently match nothing: `science` (the discipline itself), `oil`, all five
-`field` tags (`biology`, `neuroscience`, `material science`, `dataviz`, and
-`code`), and four of the six `theme` tags. `code` was added 2026-08-29 ahead
-of the work that will carry it — see "Code demos" below.
+**The vocabulary is deliberately wider than the data.** Nine of its tags
+currently match nothing: `oil`, four of the five `field` tags (`biology`,
+`neuroscience`, `material science`, `dataviz` — but not `code`), and four of
+the six `theme` tags.
 
-`science` is the load-bearing one — the hero copy and the homepage's third
-panel both link to `/work?tags=science`, which renders the empty state today.
-(The footer carried a third such link until 2026-08-28, when it was simplified
-down to three icon links plus a disclosure of everything else — see "The
-footer" below.) **Decided: the vocabulary stays.** Science is core to what this site is
-about; the work simply hasn't been uploaded yet. Don't prune the tags, don't
-hide the chips, and don't re-frame the three-discipline structure to match a
-temporarily two-discipline dataset — the gap closes by adding work, not by
-narrowing the vocabulary. Tracked in [TODO.md](TODO.md) §2 as content to add,
-not as a design flaw to fix.
+**`science` stopped being one of them 2026-08-29.** `delirium`, the first code
+demo, carries `science` and `code`, so the hero copy's `science` word and the
+homepage's third panel — both of which link to `/work?tags=science` — now
+deep-link into real work rather than the empty state. (The footer carried a
+third such link until 2026-08-28, when it was simplified down to three icon
+links plus a disclosure of everything else — see "The footer" below.)
+
+The decision that got it there is worth keeping even though that particular
+gap is closed: **the vocabulary stays wider than the data.** Don't prune the
+nine dead tags, don't hide zero-count chips, and don't re-frame the
+three-discipline structure around what the dataset happens to cover right
+now — a gap closes by adding work, not by narrowing the vocabulary. Holding
+`science` open through every pass that could have trimmed it is exactly what
+left somewhere for `delirium` to land.
 
 **One shape for pieces and collections.** `WorkCollection` is just
 `WorkPiece & { pieces: WorkPiece[] }`. A collection and a standalone piece
@@ -72,7 +76,24 @@ uniform across items and children.
 whatever words the page shows — a whole poem, or the passage quoted from an
 essay that lives elsewhere. `description` is an editorial gloss and isn't
 guaranteed (e.g. the Mindtober tercets have none — the tercet *is* the
-caption). `preview` is a hand-set, 1–3 line pull quote for compact contexts,
+caption).
+
+**Words are optional on any piece — including a `writeup`.** Decided by Beck
+2026-08-30. A piece may carry no `description` and no `writeup` at all and
+still be finished; some work is just the thing itself, and a piece does not
+owe the reader an explanation of itself. `delirium` is the current example
+(and the code-demo spec's §9 rule was amended to match). Don't file a missing
+write-up as a gap, and don't write one on a piece's behalf — every write-up
+on this site is Beck's own words, which is the same rule as "imported content
+is never rewritten" seen from the other side.
+
+One thing does follow from it mechanically: `metaDescription()` falls through
+`description` → `preview` → `text` and returns `''` when a piece has none, so
+such a page ships an empty `<meta name="description">`. That is a metadata
+gap to close on its own terms (a one-line `description`, or a title
+fallback) — not a reason to require prose. Tracked in [TODO.md](TODO.md) §2.
+
+`preview` is a hand-set, 1–3 line pull quote for compact contexts,
 falling back to `text` then `description`; its length is deliberate, since a
 masonry column gives a taller `preview` more room, and it's never clamped.
 
@@ -91,8 +112,10 @@ blockquotes, centred verse blocks, and external links. Rather than grow
 `writeup` into a markup dialect, those bodies live as MDX in
 `content/essays/<slug>.mdx` and render through the components in
 `components/essay.tsx`. A code demo's write-up takes the same rung of that
-ladder from `content/code-demos/<slug>.mdx`; both directories resolve through
-the one map in `lib/mdx-bodies.ts`. `components/essay.tsx` and `EssayBody`
+ladder from `content/code-demos/<slug>.mdx` — a path the map already resolves,
+though **no demo has an MDX body yet, so that directory does not exist**; the
+first one to need code excerpts creates it. `lib/mdx-bodies.ts` is the one map
+behind both. `components/essay.tsx` and `EssayBody`
 keep their names — they are the essay *typography*, and a demo's write-up
 wants exactly that typography.
 
@@ -201,14 +224,18 @@ already frame a card's text as a quotation.
 | `/work/[slug]/read` | a chapbook's every piece on one page, front matter to last poem — only generated for chapbooks. A static segment beats a dynamic sibling, so this resolves ahead of `[pieceSlug]`; safe only while no piece is slugged `read` |
 
 Both detail routes are generated from `generateStaticParams` over `WORK`.
-Filter state on `/work` lives in the URL (`?tags=…`), which is why the home
-page's discipline panels can deep-link straight into a filtered view. One
-consequence worth naming: a deep link is only as good as the tag behind it,
-and `?tags=science` currently deep-links into an empty gallery (TODO §2 —
-content, not a bug; see "Content model" above).
+Filter state on `/work` lives in the URL (`?tags=…`, and since 2026-09 also
+`?view=<slug>` for the open lightbox — see "The gallery's lightbox is URL
+state" under Component layers), which is why the home page's discipline
+panels can deep-link straight into a filtered view. One
+consequence worth naming: a deep link is only as good as the tag behind it.
+`?tags=science` deep-linked into an empty gallery until 2026-08-29, when
+`delirium` landed; the nine tags listed under "Content model" would still do
+that today.
 
 **`sitemap.ts` and `opengraph-image.tsx`** are generated (added 2026-08-27) —
-the two file conventions judged worth having for a 204-page linked portfolio.
+the two file conventions judged worth having for a linked portfolio of this
+size (see the page count at the top).
 `robots.ts`, `not-found.tsx`, and `error.tsx` are deliberately still absent:
 Next's default `/_not-found` already covers the not-found case, and nothing
 has asked for the other two.
@@ -598,11 +625,79 @@ circle" above) and `app/icon.svg` was added alongside `app/favicon.ico` and
 - **`image-lightbox.tsx`** — full-screen viewing with prev/next across a
   supplied list, so a piece opened from a collection can be paged through in
   place. It renders whatever list it's handed; **scoping that list to pieces
-  that actually carry an image is the caller's job**. `imageLightboxSlice()`
-  (`lib/work.ts`) is that one place — `ImageTile`, `IllustratedTile`, and the
-  piece detail route (`app/work/[slug]/[pieceSlug]/page.tsx`) all call it
-  rather than each re-deriving the filtered list and index (fixed 2026-08-27;
-  the piece detail route used to pass `collection.pieces` unfiltered).
+  that actually carry an image is the caller's job**. There are now two such
+  scoping functions in `lib/work.ts`, and both must stay the only deciders:
+  `imageLightboxSlice()` for a collection's own pieces — `ImageTile`,
+  `IllustratedTile`, and the piece detail route
+  (`app/work/[slug]/[pieceSlug]/page.tsx`) all call it rather than each
+  re-deriving the filtered list and index (fixed 2026-08-27; the piece detail
+  route used to pass `collection.pieces` unfiltered) — and
+  `galleryLightboxItems()`/`opensInGalleryLightbox()` for the top-level
+  `/work` gallery, which carries one extra rule: code demos are excluded (see
+  below). `ImageLightbox` also gained a controlled, triggerless mode (`open`/
+  `onOpenChange`/`onIndexChange`/`resolveTrigger`/`titleHref`) alongside its
+  existing `bare` prop — see "The gallery's lightbox is URL state" below.
+
+  **The gallery's lightbox is URL state; every other lightbox is not.**
+  `/work` renders **one** `ImageLightbox` in a controlled, triggerless mode,
+  opened by `?view=<slug>` rather than by a per-card dialog. Three things
+  forced it and each would have to be given up to reverse it: a card click has
+  to be undoable with Back (and with the mobile back-swipe, which is the
+  instinctive dismiss gesture); an open image has to be a shareable link, the
+  same way a filtered gallery already is; and paging with the arrows has to
+  move between *cards*, which no per-card dialog can know about. Paging writes
+  `view` with `replace`, so ten arrow presses leave one history entry, not ten.
+  The lightbox still keeps its own `index` state — the URL write is inside a
+  `startTransition` and lags a frame, and arrow presses must not.
+
+  Collection pages and piece pages deliberately **did not** follow. Their
+  lightboxes stay ephemeral local state: their domain is one collection, it
+  doesn't move under them, and the pieces already have their own addressable
+  URLs one link away.
+
+  **Which cards open it is one predicate, `opensInGalleryLightbox()`, and it
+  must stay one.** The card's open-vs-navigate branch (`ImageCard`, via
+  `GalleryLightboxContext`) and the arrows' paging domain both read it; if
+  they ever diverge, an arrow lands on a piece whose own card would have
+  navigated. Code demos are excluded — a demo's `image` is only a poster
+  still, and the thing the card advertises runs on its own page. A speedpaint
+  or animation is **not** excluded: the finished still is the piece and the
+  video is process, the framing `PieceMedia` already uses when it offers the
+  still alongside every video.
+
+  **The dismiss flight and Base UI's scroll lock are coupled, and not
+  obviously.** `useScrollLock` (`@base-ui/utils`) clamps `<body>` to `height:
+  100dvh; overflow: hidden` and restores `html.scrollTop` on cleanup, so (a) a
+  tile that was on screen when the lightbox opened measures correctly under
+  the lock — the page is frozen at the position it will return to — and (b)
+  `scrollIntoView()` under the lock is silently undone by that cleanup.
+  Flying to an off-screen tile therefore sets `document.body.scrollTop`
+  itself (the locked `<body>` is the actual overflow container while the lock
+  holds) and re-applies the same value from `Dialog.Root`'s
+  `onOpenChangeComplete`, after the lock has let go.
+
+  **Base UI 1.5's `DialogPopup` swallows arrow keys before they ever reach a
+  `window` listener** — its own `onKeyDown` calls `stopPropagation()` for
+  every key in `COMPOSITE_KEYS` (the arrows, Home, End), evidently to keep
+  composite widgets like menus from leaking arrow presses past their own
+  popup. `ImageLightbox`'s paging listener has to be registered on `window`
+  with `{ capture: true }` — a capture-phase listener runs top-down before
+  that bubble-phase `stopPropagation()` gets a chance to fire. Found by
+  testing in a real browser: a plain bubble-phase listener (what shipped
+  originally) left the prev/next *buttons* working while the arrow *keys*
+  silently did nothing.
+
+  **The lightbox never upscales past its source.** `WorkPlaceholder`'s
+  `contain` branch requests a hardcoded `width={2000}` (headroom above every
+  current source) with `sizes` deliberately left unset, so Next emits an
+  `x`-descriptor srcset rather than a `w`-descriptor one — the browser's
+  chosen candidate is always clamped to the source's real width at any DPR.
+  `ImageLightbox` then clamps the rendered `<img>` to its own `naturalWidth`
+  on load (belt-and-suspenders check for cached images, which may not fire
+  `load`), which is what actually stops a small source from being laid out at
+  2000px. Adding `sizes="100vw"` "for performance" would switch Next to
+  `w`-descriptors and silently break this — the naturalWidth cap would clamp
+  to the browser's viewport-sized candidate instead of the source.
 - **`masonry-grid.tsx`** — JS column distribution rather than CSS
   `columns`, so tiles can keep DOM order per column. Starts at the widest
   layout so server and first client render agree, then corrects on mount.
@@ -816,7 +911,12 @@ tight page-only rect that the pan would break.
   known, currently-unreachable gap.
 - **`MediaBadges`** — the gallery-tile indicators.
 - **`ImageLightbox`** takes a `bare` prop that drops the full-bleed hover scrim
-  and "view" pill, so it can be triggered from a compact link.
+  and "view" pill, so it can be triggered from a compact link. It also has a
+  controlled, triggerless mode (`open`/`onOpenChange`/`onIndexChange`/
+  `resolveTrigger`/`titleHref`) for a caller that derives open state from
+  somewhere else instead of owning a per-tile dialog — used only by the
+  top-level `/work` gallery; see "The gallery's lightbox is URL state" under
+  Component layers.
 
 `PlayerFrame` is shared by both players so they can't drift apart visually.
 
@@ -1030,6 +1130,130 @@ Fonts: Recursive (variable, with `CASL`/`MONO`/`slnt` axes — the `font-brand`
 and `font-brand-italic` utilities) and Noto Sans, both via `next/font/google`.
 
 ---
+
+## Headings
+
+`lib/heading-styles.ts` exports `headingStyles`, one object with a
+`className` string for `eyebrow`, `h1`, `h2`, `h3`, `h4`, and `h5` — the only
+place a heading's size, weight, case, and colour are decided. Before
+2026-09-02 every heading picked its own size at the call site (19 of them),
+which is how `h1` ended up rendering *smaller* than `h2` on a piece-inside-a-
+collection page, and how `/work` ended up with no `h1` or `h2` at all — its
+highest heading was a card title's `h3`.
+
+**`h1` is the title; `h2` is a top-level content heading — not the other way
+around.** The bias behind the old scale was picking a heading level for how
+big it rendered rather than what it meant, reaching for `h3` or `h4` to get a
+smaller heading. The first fix attempt, 2026-09-02, over-corrected: it gave
+`h1` the old `h3`'s exact formatting (`text-lg font-bold lowercase
+text-foreground/80`), on the reading that "the top of the scale" meant the
+`<h1>` tag. Seeing it live, that put a piece's title only 2px above its own
+essay's `## ` section heads — a page title needs to read as clearly dominant
+over the content beneath it, not just technically larger. Corrected the same
+day: `h1` (the piece title) keeps a real display size, `text-2xl`; the old
+`h3` formatting moved to `h2` instead, since a piece's title is `h1` and an
+essay's own top-level `##` section is properly one level *below* it — `h2`,
+not `h1`.
+
+**The scale moved again, same day, once the whole thing was visible
+together.** `h2` and `h3` both moved up a step from that correction —
+`text-lg` → `text-xl` for `h2`, `text-sm` → `text-base` for `h3` — because
+Beck wanted more size differentiation between levels than the compressed
+version gave. The scale is a real staircase now: `h1` 24px, `h2` 20px, `h3`
+16px, `h4` 14px, `h5` 12px. `h4` stays `text-sm` (14px) — one size below
+`h3`, not tied to it — told apart from `h3` by weight and colour as well as
+size (`font-bold` vs. `font-semibold text-foreground/70`), since it's a
+subsection of `h3`, not a peer.
+
+Two `h1`s are deliberately **not** built from this scale: `beck qing` on the
+home page and "Hi, I'm Beck." on `/about`. Both are display type under a
+small tracked eyebrow — the site's nameplates, not document titles — and
+sizing them off this token would take away the site's only two large
+headlines along with the small ones.
+
+**The "eyebrow" is a separate token from any numbered level, on purpose.**
+`text-xs uppercase tracking-[0.3em] text-muted-foreground` was, before this
+pass, written inline wherever a small label needed it — sometimes on a
+literal `<h2>` (`"in this collection"` / `"table of contents"` in
+`app/work/[slug]/page.tsx`, `"process"` in `ProcessSection`), which put a
+section head and a tiny tracked label at the same nominal level with
+nothing connecting their styles on purpose. `headingStyles.eyebrow` is that
+style, decoupled from the scale, applied to whichever tag is structurally
+right — both spots above still render `<h2>` (a correct sibling of the
+essay body's own `<h2>`s), just no longer sharing a class string with them
+by coincidence.
+
+**`MarketHeader` (`components/essay.tsx`) is a real `<h3>`**, not a `<p>`, as
+of this pass. `first-art-fair.mdx` nests `##` section heads directly under
+`####` subsections ("+ things that went well", "Δ for next time"), skipping
+a level — because the thing that belongs at `h3`, the market's name and
+date, was never a heading element at all. Giving it `headingStyles.h3`
+closes the skip without touching a single heading marker in the `.mdx` file.
+
+`/work` gained an `<h1 className="sr-only">Work</h1>` in the same pass — the
+page's own eyebrow span was never a heading, and nothing sat above the
+gallery's card titles. Those titles moved from `h3` to `h2` alongside it,
+since nothing else on the page claims that level.
+
+## Emoji: a subsetted monochrome web font
+
+`first-art-fair.mdx`'s `<EmojiList>`/`<Item>` bullets (`components/essay.tsx`)
+render their marker through `.font-emoji` (`app/globals.css`), a self-hosted
+**"Noto Emoji Subset"** face — 19 glyphs, 7KB — rather than whatever colour
+emoji font the reader's platform ships. Decided with Beck 2026-09-02: Noto
+Emoji (distinct from Google's *Noto Color Emoji*) is a monochrome outline
+family that draws in `currentColor` like ordinary text, so it joins the same
+system as the site's 50 brand doodles and `TabGlyph` instead of importing a
+platform's own illustration style into the middle of an essay — the same
+"ink is a token, not a literal" rule the About tab glyphs work (§7 in
+TODO.md) already established. It also means every reader sees the same
+glyphs, which no amount of `font-family` fallback tuning on a colour emoji
+stack can promise.
+
+**Built from `@fontsource/noto-emoji@5.3.0`, not committed as a dependency.**
+The npm package covers the entire Unicode emoji block, chunked into ~10
+files per weight (~450–560KB *each*) — nowhere near subsetted for the 19
+codepoints one essay actually uses. The subset was built once, by hand, and
+only the 7KB result is committed:
+
+1. Extract every unique `emoji="…"` value from `content/essays/*.mdx` (19
+   codepoints, none of them multi-codepoint ZWJ sequences).
+2. `unicode.json` in the fontsource package maps each of the family's ~10
+   chunk files to the Unicode ranges it covers; look up which chunks contain
+   the 19 target codepoints (7 chunks did, for this set).
+3. Run `pyftsubset` (Python's `fonttools`, OFL-licensed, MIT-licensed tool —
+   not a project dependency, used once from a throwaway virtualenv) on each
+   needed chunk's `-400-normal.woff2`, keeping only the target codepoints
+   present in that chunk, output as a bare TrueType (`--flavor=`).
+4. `pyftmerge` the resulting per-chunk TTFs into one font.
+5. Recompress the merged TTF to WOFF2 (`fontTools.ttLib`, `flavor = 'woff2'`).
+
+The result — `public/fonts/noto-emoji-subset.woff2`, 7KB for all 19 glyphs —
+was checked by rendering each codepoint through the merged font with Pillow
+before shipping it, not assumed correct from the pipeline succeeding.
+`public/fonts/noto-emoji-subset.LICENSE.txt` (Noto's OFL-1.1, copied from the
+fontsource package) travels with it, since the font is redistributed.
+
+**To add a codepoint** (a future essay reusing `<EmojiList>` with a new
+emoji): repeat the process above for the new set of codepoints — there's no
+committed script, on the same reasoning `docs/ARCHITECTURE.md`'s speedpaint
+section gives for encoding settings over a maintained pipeline: this is a
+by-hand asset decision recorded so it's reproducible, not something the build
+redoes. Then update the `unicode-range` in the `'Noto Emoji Subset'`
+`@font-face` block in `app/globals.css` to include the new codepoint(s) — the
+range is what tells the browser to even attempt the download, so an
+uncovered codepoint falls through to the fallback stack (`sans-serif`, plus
+`font-variant-emoji: text` asking the platform not to substitute a colour
+font) rather than failing loudly on its own.
+
+**`scripts/check-emoji-subset.mjs` is that loud failure**, run by hand
+(`node scripts/check-emoji-subset.mjs`), matching
+`scripts/check-essay-fidelity.mjs`'s pattern of a manual, dependency-free
+check rather than a build-time gate. It reads the `unicode-range` out of
+`app/globals.css` as the source of truth and diffs it against every
+`emoji="…"` codepoint actually used across `content/essays/*.mdx`, so adding
+an emoji to an essay without regenerating the font fails here instead of
+silently rendering through the reader's own colour emoji font.
 
 ## Homepage icon collage
 

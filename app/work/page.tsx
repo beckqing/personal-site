@@ -17,6 +17,7 @@ export default function WorkPage() {
           <LayoutGrid className="h-5 w-5" strokeWidth={1.75} />
           <span className="font-brand text-sm uppercase tracking-[0.3em]">work</span>
         </div>
+        <h1 className="sr-only">Work</h1>
       </header>
 
       <div className="mt-6">

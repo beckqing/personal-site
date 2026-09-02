@@ -8,6 +8,7 @@ import { ArrowLeft, BookOpen } from 'lucide-react'
 import { getWorkItem, isChapbook, isCollection, metaDescription, toneFor, WORK } from '@/lib/work'
 import { VerseBlock } from '@/components/work-visuals'
 import { cn } from '@/lib/utils'
+import { headingStyles } from '@/lib/heading-styles'
 
 export function generateStaticParams() {
   return WORK.filter(isCollection)
@@ -53,9 +54,7 @@ export default async function ChapbookReadPage({ params }: { params: Promise<{ s
           <BookOpen className="h-4 w-4" aria-hidden="true" />
           <span className="font-brand text-xs uppercase tracking-[0.3em]">chapbook</span>
         </div>
-        <h1 className="font-brand mt-2 text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-          {collection.title}
-        </h1>
+        <h1 className={cn(headingStyles.h1, 'mt-2 text-balance')}>{collection.title}</h1>
         {collection.description && (
           <p className="font-brand-italic mx-auto mt-3 text-pretty text-lg text-muted-foreground">
             {collection.description}
@@ -69,9 +68,7 @@ export default async function ChapbookReadPage({ params }: { params: Promise<{ s
             <p className="font-brand text-center text-xs tabular-nums text-muted-foreground">
               {String(i + 1).padStart(2, '0')}
             </p>
-            <h2 className="font-brand mt-2 text-center text-lg font-bold lowercase text-foreground/80 text-balance sm:text-xl">
-              {piece.title}
-            </h2>
+            <h2 className={cn(headingStyles.h2, 'mt-2 text-center text-balance')}>{piece.title}</h2>
             <VerseBlock text={piece.text ?? ''} className="mx-auto mt-8 text-base" />
           </article>
         ))}
