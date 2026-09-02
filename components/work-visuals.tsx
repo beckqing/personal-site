@@ -10,6 +10,7 @@ import {
   imageLightboxSlice,
   isChapbook,
   isCollection,
+  isGuessable,
   isHybrid,
   isTextForward,
   isTextOnly,
@@ -21,6 +22,7 @@ import {
   type WorkItem,
   type WorkPiece,
 } from '@/lib/work'
+import { GuessTileMark } from '@/components/guess-mark'
 import { ImageLightbox } from '@/components/image-lightbox'
 import { MediaBadges } from '@/components/media-player'
 import { cn } from '@/lib/utils'
@@ -776,6 +778,11 @@ function TextTile({ collection, piece }: { collection: WorkCollection; piece: Wo
           <WriteupMark />
         </div>
       )}
+      {isGuessable(piece) && (
+        <div className="absolute left-3 top-3">
+          <GuessTileMark collection={collection} piece={piece} />
+        </div>
+      )}
     </div>
   )
 }
@@ -810,6 +817,11 @@ function ImageTile({ collection, piece }: { collection: WorkCollection; piece: W
       {hasWriteup(piece) && (
         <div className="absolute left-3 top-3">
           <WriteupMark />
+        </div>
+      )}
+      {isGuessable(piece) && (
+        <div className="absolute right-3 top-3">
+          <GuessTileMark collection={collection} piece={piece} />
         </div>
       )}
     </div>
@@ -857,6 +869,11 @@ export function IllustratedTile({
       {hasWriteup(piece) && (
         <div className="absolute left-3 top-3">
           <WriteupMark />
+        </div>
+      )}
+      {isGuessable(piece) && (
+        <div className="absolute right-3 top-3">
+          <GuessTileMark collection={collection} piece={piece} />
         </div>
       )}
     </div>

@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpen, ExternalLink, Hourglass, Layers } from 'lucide-rea
 import {
   collectionLayout,
   getWorkItem,
+  hasGuessablePieces,
   isChapbook,
   isCollection,
   isHybrid,
@@ -19,6 +20,8 @@ import {
   type WorkCollection,
   type WorkPiece,
 } from '@/lib/work'
+import { GuessProgressProvider } from '@/components/guess-provider'
+import { GuessScorecard } from '@/components/guess-scorecard'
 import {
   categoryLabel,
   ChapbookContents,
@@ -79,7 +82,8 @@ function CollectionView({ item }: { item: WorkCollection }) {
   const tone = toneFor(item)
   const layout = collectionLayout(item)
   const chapbook = layout === 'book'
-  return (
+  const guessable = hasGuessablePieces(item)
+  const view = (
     <>
       <header className={cn('mt-6', chapbook && 'mx-auto max-w-xl text-center')}>
         <div className={cn('flex items-center gap-2', chapbook && 'justify-center')} style={{ color: tone }}>
@@ -106,6 +110,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
         <p className="font-brand mt-2 text-sm lowercase text-muted-foreground">
           {item.pieces.length} pieces · {item.year}
         </p>
+        {guessable && <GuessScorecard collection={item} />}
         <TagLinks tags={Array.from(itemTags(item))} className={cn('mt-5', chapbook && 'justify-center')} />
         {chapbook && item.pieces.length > 0 && (
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -144,6 +149,8 @@ function CollectionView({ item }: { item: WorkCollection }) {
       )}
     </>
   )
+
+  return guessable ? <GuessProgressProvider>{view}</GuessProgressProvider> : view
 }
 
 function PieceView({ piece }: { piece: WorkPiece }) {

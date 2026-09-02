@@ -7,6 +7,7 @@ import {
   imageLightboxSlice,
   isChapbook,
   isCollection,
+  isGuessable,
   isHybrid,
   isTextForward,
   metaDescription,
@@ -16,6 +17,7 @@ import {
   WORK,
 } from '@/lib/work'
 import { BookFolio, categoryLabel, Prose, TagLinks, VerseBlock } from '@/components/work-visuals'
+import { GuessPanel } from '@/components/guess-panel'
 import { EssayBody } from '@/components/essay'
 import { mdxBody } from '@/lib/mdx-bodies'
 import { PieceMedia } from '@/components/media-player'
@@ -233,6 +235,7 @@ export default async function CollectionPiecePage({
                   {piece.description}
                 </p>
               )}
+              {isGuessable(piece) && <GuessPanel collection={collection} piece={piece} />}
             </>
           )}
 

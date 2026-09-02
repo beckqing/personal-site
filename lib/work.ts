@@ -86,6 +86,11 @@ export type WorkPiece = {
    * unchanged. See docs/specs/2026-08-coding-explorations.md.
    */
   codeDemo?: CodeDemo
+  /**
+   * This piece withholds its own subject and asks you to name it. See
+   * docs/specs/2026-09-guessing-game.md.
+   */
+  guess?: Guess
 }
 
 /**
@@ -115,6 +120,80 @@ export type CodeDemo = {
   seedable?: boolean
   /** Public source, if there is any. Rendered as a header link. */
   repo?: string
+}
+
+/**
+ * A guessing game attached to this piece: the subject is deliberately
+ * withheld, and the page asks the visitor to name it. Optional on any piece;
+ * a collection whose pieces carry it becomes a scorecard.
+ *
+ * Answers are stored in plaintext on purpose. The site is statically
+ * exported with no API, so anything shipped to the browser is readable by
+ * anyone who opens devtools; hashing would buy obscurity, not secrecy, at
+ * the cost of a build step and an unreadable data file. Decided by Beck,
+ * 2026-09-02: it's an honor system, and peeking is the visitor's business.
+ */
+export type Guess = {
+  /**
+   * The question, in Beck's voice. Not a generic "what is this?" — the
+   * phrasing is content. Falls back to `'what animal is this?'` only if
+   * genuinely omitted.
+   */
+  prompt?: string
+  /**
+   * Every answer counted correct, most canonical first. `accepts[0]` is
+   * what the reveal prints, so it is the *answer*, not merely an alias.
+   *
+   * Matching is normalized (see `normalizeGuess`), so don't list case or
+   * article variants — `['cow']` already accepts "Cow", "a cow", and
+   * "  COW  ". Do list real synonyms and the near-misses you're willing to
+   * be generous about: `['cow', 'cattle', 'calf', 'bull', 'ox']`.
+   */
+  accepts: string[]
+  /**
+   * Hints for this piece alone, overriding the collection's shared ladder.
+   * Kept as the escape hatch for a guessable piece with no set behind it —
+   * see `WorkCollection.guessHints`.
+   */
+  hints?: string[]
+  /**
+   * The photograph this painting was studied from, shown on reveal. See
+   * `ReferencePhoto` — this is the reveal's payoff while `note` is
+   * outstanding, not a decoration.
+   */
+  reference?: ReferencePhoto
+  /**
+   * Beck's note, shown once the piece is solved or revealed. New copy, not
+   * the archive caption. Paragraphs split on \n\n and render through
+   * `Prose`, same rung as `writeup`.
+   */
+  note?: string
+}
+
+/**
+ * The photograph a study was painted from, revealed alongside the answer.
+ *
+ * Not `WorkPiece['image']` and not a `ProcessStill`: it isn't Beck's work
+ * and it isn't a screenshot of Beck working. It's someone else's photograph,
+ * shown with credit, and the credit fields are required for that reason.
+ */
+export type ReferencePhoto = {
+  /**
+   * Self-hosted under `public/art/<collection>/reference/`. Named by the
+   * piece's number, never by its subject — `03.webp`, never `cow.webp`. The
+   * `src` is in the page source whether or not the photo has loaded, so a
+   * descriptive filename hands over the answer to anyone who opens
+   * view-source.
+   */
+  src: string
+  /** Describes the photo plainly, subject included. Safe: it lives inside the collapsed reveal. */
+  alt: string
+  /** The photographer's name as they publish it. */
+  photographer: string
+  /** Their Unsplash profile URL. */
+  photographerUrl: string
+  /** The photo's own Unsplash page — not the raw image URL. */
+  sourceUrl: string
 }
 
 /**
@@ -159,9 +238,25 @@ export type WorkCollection = WorkPiece & {
    * for the image-stack case).
    */
   stackPieces?: string[]
+  /**
+   * A hint ladder shared by every guessable piece in this collection, taken
+   * in order. Shared because the hints are about the *set* — knowing them
+   * helps with all eight at once, so unlocking one on any piece unlocks it
+   * everywhere. Hints are allowed to be questions rather than statements.
+   */
+  guessHints?: string[]
 }
 
 export type WorkItem = WorkPiece | WorkCollection
+
+/**
+ * The hint ladder for a piece: its own, if it has one, else the set's.
+ * Per-piece hints are unset everywhere today — this resolves to the
+ * collection's ladder for all eight eyes.
+ */
+export function hintsFor(collection: WorkCollection | undefined, piece: WorkPiece): string[] {
+  return piece.guess?.hints ?? collection?.guessHints ?? []
+}
 
 export function isCollection(item: WorkItem): item is WorkCollection {
   return Array.isArray((item as WorkCollection).pieces)
@@ -219,6 +314,40 @@ export function isTextForward(item: WorkItem): boolean {
  */
 export function isCodeDemo(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.codeDemo)
+}
+
+/** A piece that asks you to name its subject. */
+export function isGuessable(piece: WorkPiece): piece is WorkPiece & { guess: Guess } {
+  return Boolean(piece.guess)
+}
+
+/** A collection with at least one guessable piece — renders a scorecard. */
+export function hasGuessablePieces(item: WorkItem): boolean {
+  return isCollection(item) && item.pieces.some(isGuessable)
+}
+
+/**
+ * Normalize a guess for comparison: lowercase, strip accents, drop a leading
+ * article, collapse whitespace, drop everything that isn't a letter or an
+ * internal space. Deliberately forgiving — the game is "do you recognize the
+ * animal," not "can you type."
+ */
+export function normalizeGuess(input: string): string {
+  return input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/^(a|an|the)\s+/, '')
+    .replace(/[^a-z\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Exact match after normalization — no fuzzy matching, no edit distance. */
+export function isCorrectGuess(guess: Guess, input: string): boolean {
+  const normalized = normalizeGuess(input)
+  if (!normalized) return false
+  return guess.accepts.some((a) => normalizeGuess(a) === normalized)
 }
 
 /**
@@ -1273,15 +1402,18 @@ const REAL_WORK: WorkItem[] = [
     title: 'Eye Studies',
     year: '2022',
     description:
-      'Extreme close-up digital paintings of eyes. The subjects are hidden on purpose — a guessing game is coming; for now, titles are placeholders.',
+      'Extreme close-up digital paintings of eyes. The subjects are hidden on purpose — guess each one below, or check the hints if you get stuck.',
     tags: ['art', 'digital'],
     image: '/art/eye-studies/01.jpg',
     imageAspect: '1/1',
     stackAccent: '#bcb5ac',
+    guessHints: [
+      'What do all these animals have in common?',
+      'All of these are farmed animals.',
+    ],
     pieces: (() => {
       // Process notes from the original posts, subject redacted to keep the
       // guessing game intact — the caption text itself often named the animal.
-      // Order: turkey, pig, cow, sheep, chicken, goose, goat, fish.
       const notes: Record<string, string> = {
         '01': "Leaning into realism and photo studies, something I haven't done in a while. Stopping here for now — hoping to finish an eye a day this week.",
         '02': 'thinking about recognizability & beauty',
@@ -1289,6 +1421,17 @@ const REAL_WORK: WorkItem[] = [
         '04': "Very enjoyable to draw — the first left eye I've done for this series.",
         '05': "hard to believe this isn't where anime eyes came from",
         '08': '❝ Now at last I can look at you in peace, I don’t eat you anymore. ❞ — Franz Kafka',
+      }
+      // Reviewed by Beck, 2026-09-02 — accepts[0] is what the reveal prints.
+      const accepts: Record<string, string[]> = {
+        '01': ['turkey'],
+        '02': ['pig', 'hog', 'boar', 'piglet', 'swine'],
+        '03': ['cow', 'cattle', 'calf', 'bull', 'ox', 'heifer'],
+        '04': ['sheep', 'lamb', 'ewe', 'ram'],
+        '05': ['chicken', 'hen', 'rooster', 'chick'],
+        '06': ['goose', 'geese', 'gosling'],
+        '07': ['goat', 'kid', 'billy goat'],
+        '08': ['tuna', 'fish', 'bluefin', 'bluefin tuna', 'ahi'],
       }
       return Array.from({ length: 8 }, (_, i) => {
         const n = String(i + 1).padStart(2, '0')
@@ -1301,6 +1444,7 @@ const REAL_WORK: WorkItem[] = [
           image: `/art/eye-studies/${n}.jpg`,
           thumb: `/art/eye-studies/thumb/${n}.jpg`,
           imageAspect: '1/1',
+          guess: { accepts: accepts[n] },
         }
       })
     })(),
