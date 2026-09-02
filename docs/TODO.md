@@ -160,6 +160,8 @@ the work just hasn't been uploaded yet. The vocabulary stays exactly as it
 is — don't prune the dead tags, don't hide zero-count chips, don't re-frame
 the homepage's three-discipline structure around a temporarily
 two-discipline dataset. See "Content model" in ARCHITECTURE.md.
+*(The no-pruning half of this was **reversed 2026-09-02** once science had
+work in it — see the last checkbox in this section. The rest still holds.)*
 
 **Decided 2026-08-29: the first science work is code demos** — live runnable
 things, tagged `science` + a new `code` field tag, rendered by a new code-demo
@@ -170,12 +172,27 @@ layout inside `/work`. Fully specced in
 whole code-demo layout exists and is verified — so adding one is now six
 lines in `lib/work.ts` plus a folder in `public/code-demos/`. Eleven tags
 match nothing today rather than ten; that is expected and stays.
+*(Superseded 2026-09-02: eight of them were pruned.)*
 
 - [x] ~~**Beck:** add science work to `lib/work.ts`~~ — **done 2026-08-29.**
       `delirium` (`art` + `science` + `code`) is the first, so
       `/work?tags=science` renders real work instead of the empty state and
-      `code` has a non-zero count. Nine tags still match nothing; that is
-      expected and stays.
+      `code` has a non-zero count. `transformation` (`writing` + `science` +
+      `biology`) followed 2026-09-02.
+- [x] ~~Nine tags still match nothing; that is expected and stays.~~ —
+      **reversed and closed 2026-09-02 (Beck): the dead tags were pruned.**
+      The "vocabulary stays wider than the data" rule quoted above was written
+      while `science` was empty, and it did its job — it held the space
+      `delirium` and `transformation` landed in. With that gap closed, the
+      remaining eight dead tags were headroom for work nobody had imagined,
+      so they came out: `oil` from `medium`; `neuroscience`,
+      `material science`, and `dataviz` from `field`; `nature`, `the body`,
+      `memory`, and `food` from `theme`. Every tag in `ALL_TAGS` now matches
+      at least one item; a new one goes back in when the piece needing it
+      does. See the rewritten "Content model" in ARCHITECTURE.md, and the
+      decision comment above `DISCIPLINE_FACETS` in `lib/work.ts`.
+      `lib/work.sample.ts` still carries the pruned words and was left alone
+      (dev-only scaffolding; unknown tags are dropped, not errors).
 
 ### Still open on `delirium` itself
 

@@ -408,20 +408,33 @@ export type Facet = { name: string; tags: readonly string[] }
 /**
  * Category filters that only make sense inside one discipline. These stay
  * hidden until their discipline is selected, which keeps the panel quiet.
+ *
+ * **Pruned to the data 2026-09-02 (Beck), reversing the earlier "the
+ * vocabulary is deliberately wider than the data" decision.** Eight tags
+ * matching nothing came out: `oil` from `medium`; `neuroscience`,
+ * `material science`, and `dataviz` from `field`; and `nature`, `the body`,
+ * `memory`, and `food` from `theme`. The old rule was written when `science`
+ * itself was empty and holding it open was the point; `delirium` and
+ * `transformation` closed that gap, and what was left was headroom for work
+ * that hasn't been imagined yet rather than for work that exists. Every tag
+ * here now matches at least one item, and a new one goes back in when the
+ * piece that needs it does — vocabulary follows the data now, not ahead of
+ * it.
+ *
+ * `lib/work.sample.ts` still tags its fake items with the pruned words. That
+ * is deliberate: the file is dev-only scaffolding (`SHOW_SAMPLE_WORK`), and
+ * with it on those tags simply stop being filterable — `ALL_TAGS` gates both
+ * the chip list and the `?tags=` parser, so an unknown tag is dropped rather
+ * than erroring.
  */
 export const DISCIPLINE_FACETS: Record<Discipline, Facet> = {
-  art: { name: 'medium', tags: ['watercolor', 'oil', 'digital', 'ink'] },
+  art: { name: 'medium', tags: ['watercolor', 'digital', 'ink'] },
   writing: { name: 'form', tags: ['poem', 'essay', 'blog'] },
-  science: {
-    name: 'field',
-    tags: ['biology', 'neuroscience', 'material science', 'dataviz', 'code'],
-  },
+  science: { name: 'field', tags: ['biology', 'code'] },
 }
 
 /** Categories that apply to every piece regardless of discipline. */
-export const UNIVERSAL_FACETS: Facet[] = [
-  { name: 'theme', tags: ['nature', 'color', 'the body', 'memory', 'language', 'food'] },
-]
+export const UNIVERSAL_FACETS: Facet[] = [{ name: 'theme', tags: ['color', 'language'] }]
 
 export const ALL_TAGS: string[] = [
   ...DISCIPLINES,
@@ -445,7 +458,7 @@ export function primaryDiscipline(item: WorkItem): Discipline | undefined {
   return DISCIPLINES.find((d) => item.tags.includes(d))
 }
 
-/** An art piece's medium (oil, ink, watercolor, digital), if it has one. */
+/** An art piece's medium (ink, watercolor, digital), if it has one. */
 export function mediumFor(item: WorkItem): string | undefined {
   return DISCIPLINE_FACETS.art.tags.find((tag) => item.tags.includes(tag))
 }

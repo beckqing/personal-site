@@ -18,29 +18,38 @@ disagree, the disagreement is recorded here and tracked in
 ## Content model
 
 `lib/work.ts` is the single source of truth for everything on `/work`. It
-holds both the data (29 top-level items — 9 collections and 20 standalone
+holds both the data (30 top-level items — 9 collections and 21 standalone
 pieces — with 163 pieces inside the collections) and the vocabulary that
 describes it.
 
-**The vocabulary is deliberately wider than the data.** Nine of its tags
-currently match nothing: `oil`, four of the five `field` tags (`biology`,
-`neuroscience`, `material science`, `dataviz` — but not `code`), and four of
-the six `theme` tags.
+**The vocabulary matches the data.** Every tag in `ALL_TAGS` is carried by at
+least one item, and a new one goes in when the piece that needs it does.
 
-**`science` stopped being one of them 2026-08-29.** `delirium`, the first code
-demo, carries `science` and `code`, so the hero copy's `science` word and the
-homepage's third panel — both of which link to `/work?tags=science` — now
-deep-link into real work rather than the empty state. (The footer carried a
-third such link until 2026-08-28, when it was simplified down to three icon
-links plus a disclosure of everything else — see "The footer" below.)
+**This reverses an earlier decision, deliberately (2026-09-02, Beck).** The
+vocabulary used to be *deliberately wider than the data* — nine tags matched
+nothing, and the standing rule was not to prune them. That rule was written
+while `science` itself was empty, and holding it open was the whole point:
+`delirium` (2026-08-29, `science` + `code`) and then `transformation`
+(`science` + `biology`) landed in the space it kept. With that gap closed,
+what remained was headroom for work nobody had imagined rather than for work
+that exists, and eight tags came out: `oil` from `medium`; `neuroscience`,
+`material science`, and `dataviz` from `field`; `nature`, `the body`,
+`memory`, and `food` from `theme`. `theme` is down to `color` and
+`language`, `field` to `biology` and `code`.
 
-The decision that got it there is worth keeping even though that particular
-gap is closed: **the vocabulary stays wider than the data.** Don't prune the
-nine dead tags, don't hide zero-count chips, and don't re-frame the
-three-discipline structure around what the dataset happens to cover right
-now — a gap closes by adding work, not by narrowing the vocabulary. Holding
-`science` open through every pass that could have trimmed it is exactly what
-left somewhere for `delirium` to land.
+The pruning is a pure data edit in `lib/work.ts` — `ALL_TAGS` derives from
+the facet tables, and it gates both the filter panel's chip list and the
+`?tags=` URL parser, so nothing else needed touching. Only the three
+discipline words are deep-linked from anywhere (`app/page.tsx`,
+`components/hero-icon-collage.tsx`), and all three survive. (The footer
+carried a third such link until 2026-08-28, when it was simplified down to
+three icon links plus a disclosure of everything else — see "The footer"
+below.)
+
+**`lib/work.sample.ts` still uses the pruned words** and was left alone. It
+is dev-only scaffolding behind `SHOW_SAMPLE_WORK`; with it on, those tags
+just stop being filterable, since an unknown tag is dropped by the parser
+rather than erroring.
 
 **One shape for pieces and collections.** `WorkCollection` is just
 `WorkPiece & { pieces: WorkPiece[] }`. A collection and a standalone piece

@@ -81,9 +81,14 @@ science: {
 One word. `ALL_TAGS` derives from this, so the filter panel, `categoryLabel`,
 and the URL vocabulary all pick it up for free.
 
-- **Don't prune the other four field tags** while adding this one. ARCHITECTURE's
-  "the vocabulary is deliberately wider than the data" decision still stands —
-  `biology`, `neuroscience`, `material science`, and `dataviz` stay, empty.
+- ~~**Don't prune the other four field tags** while adding this one.
+  ARCHITECTURE's "the vocabulary is deliberately wider than the data" decision
+  still stands — `biology`, `neuroscience`, `material science`, and `dataviz`
+  stay, empty.~~ **Superseded 2026-09-02 (Beck): that decision was reversed and
+  the dead tags were pruned.** `field` is now `biology` + `code` — `biology`
+  earned its place when the `transformation` essay landed; `neuroscience`,
+  `material science`, and `dataviz` came out. See ARCHITECTURE's rewritten
+  "Content model" and TODO §2. Nothing in the rest of this spec depends on it.
 - `categoryLabel()` already iterates `DISCIPLINES` then each discipline's
   facet tags, so a piece tagged `['science', 'code']` labels itself **`code`**
   with no change. Verified against `components/work-visuals.tsx:56`.
