@@ -1,5 +1,6 @@
 import type { AnchorHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import Link from 'next/link'
+import { ImageOff } from 'lucide-react'
 import type { MDXComponents } from 'mdx/types'
 import { getWorkItem, isCollection, piecePath, workHref, type WorkPiece } from '@/lib/work'
 import { WorkPlaceholder } from '@/components/work-visuals'
@@ -154,6 +155,22 @@ export function FigureRow({ caption, children }: { caption?: string; children: R
     <figure className="mt-8">
       <div className="flex flex-wrap gap-4">{children}</div>
       {caption && <figcaption className="mt-2 text-sm text-muted-foreground">{caption}</figcaption>}
+    </figure>
+  )
+}
+
+/**
+ * A stand-in for an illustration that hasn't been drawn yet — a dashed box
+ * describing what will go here, so a writeup can be published before its art
+ * is. Distinct from `WorkPlaceholder`'s tinted "this piece has no image"
+ * treatment: that one means the image may never come; this one is a
+ * to-do marker for a specific planned picture, described by `children`.
+ */
+export function Illustration({ children }: { children: ReactNode }) {
+  return (
+    <figure className="mt-8 flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card/40 p-6 text-center">
+      <ImageOff className="h-6 w-6 text-muted-foreground/60" strokeWidth={1.5} aria-hidden="true" />
+      <figcaption className="max-w-md text-sm text-muted-foreground">{children}</figcaption>
     </figure>
   )
 }

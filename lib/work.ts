@@ -269,7 +269,7 @@ export function isCollection(item: WorkItem): item is WorkCollection {
  * components and must not import the MDX map. The keys of lib/mdx-bodies.ts
  * must match this list exactly.
  */
-export const MDX_BODY_SLUGS = ['chinese-emoji-poetry', 'first-art-fair', 'note-systems'] as const
+export const MDX_BODY_SLUGS = ['chinese-emoji-poetry', 'first-art-fair', 'note-systems', 'transformation'] as const
 
 export function hasWriteup(item: WorkPiece): boolean {
   return Boolean(item.writeup) || (MDX_BODY_SLUGS as readonly string[]).includes(item.slug)
@@ -2095,6 +2095,15 @@ const REAL_WORK: WorkItem[] = [
     tags: ['writing', 'essay', 'blog'],
     text:
       "I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
+  },
+  {
+    slug: 'transformation',
+    title: 'transformation',
+    year: '2026',
+    description: 'Explaining heat shock transformation, and finding out that a decades-old, widely used lab protocol still isn\'t mechanistically understood.',
+    tags: ['writing', 'science', 'essay', 'blog', 'biology'],
+    text:
+      "Cold → hot → cold, and somehow, some fraction of your cells end up with your DNA inside them. Somehow. We still somehow don't know how this works.",
   },
   {
     slug: 'delirium',

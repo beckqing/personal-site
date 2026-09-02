@@ -10,12 +10,14 @@ import type { ComponentType } from 'react'
 import ChineseEmojiPoetry from '@/content/essays/chinese-emoji-poetry.mdx'
 import FirstArtFair from '@/content/essays/first-art-fair.mdx'
 import NoteSystems from '@/content/essays/note-systems.mdx'
+import Transformation from '@/content/essays/transformation.mdx'
 import { MDX_BODY_SLUGS, WORK } from '@/lib/work'
 
 const BODIES: Record<string, ComponentType> = {
   'chinese-emoji-poetry': ChineseEmojiPoetry,
   'first-art-fair': FirstArtFair,
   'note-systems': NoteSystems,
+  transformation: Transformation,
 }
 
 const bodyKeys = Object.keys(BODIES).sort()
