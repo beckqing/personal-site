@@ -421,6 +421,12 @@ it, which the overpaint approach never guaranteed.
 | `dark-crescent` | masked | none (page bg) | `#CED2CD` | white |
 | `favicon-moon` | masked, crescent only — no stems, no wedge outline | denim `#305789`, circle | — | white |
 
+These are the artboard exports as drawn — static references, per "Source"
+above. The live `BrandMark` component departs from `dark-crescent.svg`'s
+crescent in one respect: dark mode crescent is denim `#305789`, not literal
+white (see "Assignment, and why" below for why); ink stays `#CED2CD` as
+drawn.
+
 Retired during this pass, superseded by the masked versions above:
 `light-warm`, `dark-pale`, `dark-denim`, `dark-pale-white-crescent`,
 `light-field-nofield`, `favicon-denim-open`, `favicon-denim-crescent`. Their
@@ -442,13 +448,44 @@ ground — not eyeballed at one size and assumed to hold at others.
   anything.
   - *light mode:* **`light-gold`** — goldenrod crescent, wedge and overlap
     left as the page ground. Decided 2026-08-27.
-  - *dark mode:* **`dark-crescent`** — white crescent, pale-slate letterforms.
-    This resolves a real tradeoff measured against the artboard's two dark
-    drafts: `dark-denim` had the white crescent but `#305789` letterforms lost
-    contrast against `#080B24` (muddy at 32px, soft even at 64px); `dark-pale`
-    held contrast but its indigo bowl wasn't a crescent at all — no cut, no
-    moon. `dark-crescent` takes the pale letterforms and adds the mask, so it
-    isn't a compromise between the two, it gets both properties at once.
+  - *dark mode:* **`dark-crescent`** construction (pale-slate letterforms,
+    crescent cut via the mask), **with a denim crescent** rather than the
+    artboard's literal white. `dark-crescent` as drawn resolved a real
+    tradeoff against the artboard's two other dark drafts: `dark-denim` had
+    the white crescent but `#305789` letterforms lost contrast against
+    `#080B24` (muddy at 32px, soft even at 64px); `dark-pale` held contrast
+    but its indigo bowl wasn't a crescent at all — no cut, no moon.
+    `dark-crescent` took the pale letterforms and added the mask, getting
+    both properties at once.
+
+    That fixed contrast against the *background* but left a second problem
+    unmeasured: contrast between the crescent and the ink around it. White
+    `#ffffff` next to pale-slate `#ced2cd` ink is ~1.5:1 — same hue family,
+    barely different lightness — so the moon barely separated from the
+    letterforms at hero size. Found and fixed 2026-09-02 by moving the
+    dark-mode `--brand-crescent` off white (`app/globals.css`). Two
+    replacements were screenshot-compared:
+
+    - **Goldenrod `#d9aa52`** — 9.8:1 off `#080B24`, a clean hue break off
+      `#ced2cd`, and it echoes dark mode's `--primary` (the "see the work"
+      button sits right under the hero mark), the same way `light-gold`'s
+      crescent already echoes light mode's `--brand-crescent`.
+    - **Denim `#305789`** — only ~2.6:1 off `#080B24`, the same contrast
+      number that sank denim as the artboard's `dark-denim` *ink* draft
+      above, now on the crescent instead of the letterforms. Visibly the
+      weaker cut of the two in the screenshot comparison — the moon reads
+      closer to "notch in the background" than a distinct shape.
+
+    **Denim is the shipped choice** — Beck's explicit call, preferring its
+    cooler read against this theme's ground over goldenrod's larger contrast
+    margin. Recorded here so the tradeoff isn't invisible to whoever touches
+    this next: if the crescent ever reads as too faint, this is why, and
+    goldenrod is the higher-contrast fallback already vetted above. Sky
+    `#68bfed` would also clear contrast (9.5:1) but wasn't in the running —
+    it's `--hero-accent-art`'s dark-mode value, the hero copy's "art" word,
+    so a sky crescent would read as claiming that discipline for the mark
+    itself. Letterforms are untouched either way: `--foreground` in both
+    themes, same as before.
 
 ### Favicon: a different glyph, not a smaller mark
 

@@ -163,10 +163,17 @@
   --goldenrod: #d9aa52;
   --terracotta: #8c3623;
   --moon: #ced2cd;
-  /* BrandMark's hero crescent, `dark-crescent` colourway — literal white,
-     since it reads as a highlight rather than vanishing the way --moon's
-     own field colour nearly does against this theme's --background. */
-  --brand-crescent: #ffffff;
+  /* BrandMark's hero crescent, dark mode: denim, not literal white. White
+     read as a highlight but sat only ~1.5:1 off pale-slate ink — same hue
+     family, barely different lightness — so the moon blurred into the
+     letterforms at hero size. Denim is Beck's deliberate pick despite
+     measuring only ~2.6:1 off this theme's #080B24 background (the same
+     contrast the artboard's `dark-denim` *ink* draft failed on, see
+     "Assignment, and why" in ARCHITECTURE.md) — goldenrod cleared contrast
+     better (9.8:1) and was tried first, but denim's cooler read against
+     this theme's ground was preferred over the higher-contrast option. Ink
+     itself is untouched: --foreground in both themes. */
+  --brand-crescent: #305789;
   --sky: #68bfed;
   --spring-green: #aadb6c;
 
