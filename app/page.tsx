@@ -178,8 +178,11 @@ export default function HomePage() {
               <CategoryWord category="sci">science</CategoryWord>, and{' '}
               <CategoryWord category="hu">humanity</CategoryWord>
               <br />
-              <Link href="/now" className="underline-offset-4 hover:underline">
-                {NOW_PREFIX} {NOW_ENTRIES.at(-1)!.text}
+              <Link href="/now">
+                <span className="underline decoration-dotted decoration-2 underline-offset-4">
+                  {NOW_PREFIX}
+                </span>{' '}
+                {NOW_ENTRIES.at(-1)!.text}
               </Link>
               <br />
               open to roles in automation, biotech, and food
