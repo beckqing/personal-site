@@ -1,20 +1,58 @@
-# Spec — the home page's three discipline cards
+# Spec — the home page's three discipline cards (archived)
 
-> **Status: designed 2026-09-02 with Beck, not built.** Nothing in
-> `app/page.tsx` has changed yet; the three cards still render the `polaroid`
-> / `quote` / `stat` treatments described in §1.
+> **This is history, not current documentation. Status: superseded
+> 2026-09-03, before this spec was ever committed.** It was built in full —
+> §2–§11, including §7's science card, with the §11 blockers filled in below
+> — then rejected on sight: the tucked-under peek did not read as intended
+> live, for reasons its replacement spec,
+> [2026-09-home-discipline-columns.md](2026-09-home-discipline-columns.md),
+> catalogs in its own §1 (worth reading — several are real geometry traps,
+> not taste). The mechanism that shipped instead is a loose column with no
+> featured piece; nothing below was ever in `main`. **Current documentation
+> is [../ARCHITECTURE.md](../ARCHITECTURE.md)**, which now describes the
+> column. This file's own §1 — why three cards each showing one work is the
+> actual defect — is still the reason either mechanism exists; that
+> reasoning survives even though the peek did not.
 >
-> Split deliberately: **§2–§6 (the mechanism, the art card, the writing card)
-> depend on nothing** and can ship alone. **§7 (the science card) is partly
-> blocked** — Beck is drawing a science illustration, and the replacement
-> caption copy in §11 has never been written. The mechanism degrades honestly
-> without either, so don't hold the first two cards for it.
+> **What was filled in before it was rejected (for the record):**
 >
-> Closes [TODO.md](../TODO.md) **§1** (the science panel's fabricated
-> content). Supersedes **§8 of
+> - **The featured face, not just the peeks, was unified onto §5's two
+>   derived branches.** §1 called the polaroid frame and the quote mark "fine
+>   objects that answer the wrong question" without saying what replaces
+>   them; decided with Beck during the build to drop them rather than keep
+>   them alongside the new peeks. The art card's white frame, its caption,
+>   and its rotate-on-hover are gone; the writing card's quote mark and "—
+>   from lost" attribution are gone. Both cards now render exactly the same
+>   image-or-type branch a peek does, just larger and not `aria-hidden`.
+> - **§11's three blockers, filled in with Beck:** the science line is
+>   "Semi-technical experiments and explanations of phenomena, mostly biology
+>   and code."; the art peeks are `april-colors-24`, `lady-bird`, and
+>   `projection`; the writing peeks are `note-systems`, `chinese-emoji-poetry`,
+>   and `love-worth-heartbreak`'s `back-to-nature`.
+> - **§3's geometry needed a wrapper the spec doesn't mention.**
+>   `transform: translate(x%, y%)` resolves its two percentages against the
+>   *transformed element's own* width and height respectively — not a shared
+>   axis, and not the parent's width the way the collection stack's
+>   percentage margins do. Built each peek as a square wrapper (side equal to
+>   the feature's own width, via `aspect-ratio: 1` on a `width: 100%` box) so
+>   `--y` scales against that width too, per §3's "never its height" rule;
+>   the visible face is centered inside that wrapper. See the comment on
+>   `PeekPile` in `components/piece-pile.tsx`.
+> - **A peek's own box uses the piece's real `imageAspect` when it has one**
+>   (§2's "nothing has to be normalised, nothing is distorted"), falling back
+>   to a square only for a text peek, which has no native aspect to keep.
+> - **Flagged, not fixed, and this is what got it rejected:** on the two
+>   leftmost desktop cards, the topmost peek (index 0, offset up-and-right)
+>   sat physically underneath the next card in the corkboard's own overlap —
+>   visible again only once that card was hovered to `z-40`, never at rest.
+>   The successor spec's finding 1 names this precisely: a geometry that
+>   radiates in four directions inside a container with one free edge.
+>
+> Never closed [TODO.md](../TODO.md) **§1** (the science panel's fabricated
+> content) — the column did, once it shipped. Would have superseded **§8 of
 > [2026-08-coding-explorations.md](2026-08-coding-explorations.md)**, which
-> specified the science panel as a live code-demo miniature — see §7 below for
-> why that was dropped.
+> specified the science panel as a live code-demo miniature; the column
+> supersedes it instead, for the same reason given in §7 below.
 
 The three cards under the hero are the site's only pitch for its own breadth.
 Each currently shows exactly one piece of work, which makes the site look

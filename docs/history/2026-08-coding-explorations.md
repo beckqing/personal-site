@@ -9,16 +9,17 @@
 > as "code demo"; the design is unchanged, only the noun. The filename keeps
 > the original working title so existing links don't rot.
 >
-> **Status: built 2026-08-29, except §8 — and §8 was dropped 2026-09-02.**
-> §2–§7 and §9 are shipped and verified. **§8 (the home page's science panel
-> as a live code-demo miniature) will not be built**: the three home cards
-> were respecced wholesale with Beck, and the mechanism they landed on — a
-> pile of tucked-under objects — has no place for a running iframe. See
+> **Status: built 2026-08-29, except §8 — and §8 was dropped 2026-09-02,
+> archived to `docs/history/` 2026-09-03.** §2–§7 and §9 are shipped and
+> verified. **§8 (the home page's science panel as a live code-demo
+> miniature) was never built**: the three home cards were respecced
+> wholesale with Beck, and the mechanism they landed on — a pile of
+> tucked-under objects — has no place for a running iframe. See
 > [2026-09-home-discipline-cards.md](2026-09-home-discipline-cards.md) §7 for
-> the reasoning, and §8 below for the superseded design. Nothing built by this
-> spec is deleted; `CodeDemoFrame` and its autorun policy keep serving
-> `/work/delirium`. **Move this file to `docs/history/` once the new spec
-> ships** — §8 was the only thing keeping it in `specs/`. Where the build
+> the reasoning (now shipped itself), and §8 below for the superseded design.
+> Nothing built by this spec was deleted; `CodeDemoFrame` and its autorun
+> policy keep serving `/work/delirium`. Moved here now that the new spec has
+> shipped — §8 was the only thing keeping it in `specs/`. Where the build
 > diverged is recorded in §13 below.
 >
 > Closes [TODO.md](../TODO.md) **§2** (`science` is a discipline with zero

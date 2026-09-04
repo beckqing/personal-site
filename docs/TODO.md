@@ -25,7 +25,7 @@ specified — it was deferred, and is not any more.
 shape — live runnable things filed under `science` with a new piece-page
 layout. (Called "coding explorations" at this point; renamed to **code demos**
 later the same day — see the last entry.) Fully specced in
-[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md);
+[history/2026-08-coding-explorations.md](history/2026-08-coding-explorations.md);
 both sections stay open until the first one is actually in `lib/work.ts`,
 since the spec is design, not content.
 
@@ -36,7 +36,7 @@ route). §7's bounce easing turned out to already be shipped (found while
 touching an adjacent file) — the description below was stale, not the code.
 
 **2026-08-29, last: the code-demo machinery shipped**, §2–§7 and §9 of
-[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md)
+[history/2026-08-coding-explorations.md](history/2026-08-coding-explorations.md)
 — the `code` field tag, `CodeDemo` / `isCodeDemo`, `CodeDemoFrame`, the
 runnable badge, the `mdx-bodies` rename, and `<Excerpt>`. **These are called
 "code demos"**, decided by Beck 2026-08-29; the spec drafted them as "coding
@@ -109,13 +109,48 @@ dead tags are gone, and every tag now matches at least one item (§2, shipped).
 And §1 stopped being a science-panel problem: all three home cards show
 exactly one work each, which is the actual defect. Respecced with Beck around
 "the implication of more" as
-[specs/2026-09-home-discipline-cards.md](specs/2026-09-home-discipline-cards.md)
+[history/2026-09-home-discipline-cards.md](history/2026-09-home-discipline-cards.md)
 — **not built**. Its §8 predecessor (the science panel as a live code-demo
 miniature) is dropped, not deferred.
 
+**2026-09-03: the tucked-peek build was rejected on sight, before it was ever
+committed, and respecced as a loose column.** The peek build matched its spec
+exactly — science caption, art and writing peeks, the dropped polaroid
+frame/quote mark, the whole mechanism — and still didn't read as intended
+live. Beck's reaction surfaced that peeks clipped by the card's own edge (the
+mechanism's central idea) looked like the card was cutting off its own
+content, not implying more of it. Respecced same-day as
+[history/2026-09-home-discipline-columns.md](history/2026-09-home-discipline-columns.md):
+an even column of 2–4 pieces with no featured piece, fading into the CTA
+instead of clipping. Its own §1 catalogs eight concrete failures in the peek
+build, two of which actually mattered: the geometry needed four free
+directions inside a card that only has one, and a hard clip needs to read as
+a promise rather than a rendering mistake, which "clipped by a rounded
+corner, possibly under a neighboring card" never quite managed.
+
+**2026-09-03, later: the first column build was itself rejected, and
+respecced a second time — still same-day.** That build put the column
+inside the existing `.tilt-card` panel, faded each card's column at its own
+bottom, and kept the whole card rotating flat as one object on hover. Beck
+rejected all three. Respecced as
+[history/2026-09-home-discipline-columns.md](history/2026-09-home-discipline-columns.md)
+(overwriting the first pass's version of that same file — its own intro
+banner keeps a diff table of what changed): the card is deleted entirely,
+the three columns stand directly on the page, one shared fade spans all
+three instead of three separate ones, each discipline's CTA moves up into
+its own header (only "see the full gallery" sits in the shared fade), and
+hovering rotates every rung to exactly 0° individually rather than the
+group settling flat as a unit. Science, previously left at an honest two
+pieces, is filled out to four with two of Beck's essays in progress
+(`colony-selection`, `designing-dna`), flagged `unfinished` — not invented,
+and shown with `UnfinishedMark` — so its column reaches the shared fade
+like the other two.
+
+**2026-09-03, last: the second column build shipped.** See §1 below.
+
 ---
 
-## 1. The home page's three discipline cards each show one work — **respecced 2026-09-02, not built**
+## 1. The home page's three discipline cards each show one work — **shipped 2026-09-03 (loose columns, no card)**
 
 `app/page.tsx:23` declares three panels, each rendering a different hand-built
 object: a `polaroid` (`rabbit-in-the-moon`), a `quote` card (the poem `lost`),
@@ -132,7 +167,7 @@ just the loudest symptom of the larger problem below, and it goes either way.
 ~~**Decided 2026-08-29:** the panel becomes a **live code-demo miniature** — a
 fourth object type on the corkboard, replacing the `stat` treatment that only
 ever existed to make invented metrics look substantial. See
-[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md)
+[history/2026-08-coding-explorations.md](history/2026-08-coding-explorations.md)
 §8.~~ **Dropped 2026-09-02** — see the new spec below. The `CodeDemoFrame`
 machinery stays exactly where it is and keeps serving `/work/delirium`;
 nothing is deleted, §8 is just not built.
@@ -145,49 +180,70 @@ that is the site. Behind them sit 26 top-level art items (112 pieces, 97 with
 images), 6 writing items, and 2 science items.
 
 Beck's framing: **"I just want the implication of more."** Not an inventory —
-the implication. Decided mechanism is a **tucked-under peek**: one piece on
-top, two to four others poking out from behind it at loose angles, clipped by
-the card's existing `overflow-hidden` so the crop does as much work as the
-count. Collection stacks and a bleeding contact sheet were both considered
-and dropped (reasons recorded in the spec's §1).
+the implication. First decided mechanism was a **tucked-under peek**: one
+piece on top, two to four others poking out from behind it at loose angles,
+clipped by the card's existing `overflow-hidden` so the crop does as much
+work as the count. Collection stacks and a bleeding contact sheet were both
+considered and dropped before that (reasons recorded in
+[history/2026-09-home-discipline-cards.md](history/2026-09-home-discipline-cards.md)'s
+own §1) — **and the peek itself was considered and dropped too**, after being
+built in full and rejected on sight; see the 2026-09-03 log entry above and
+that file's own status banner.
 
-Fully specced in
-[specs/2026-09-home-discipline-cards.md](specs/2026-09-home-discipline-cards.md).
-Two findings from that pass worth surfacing here, because both are traps:
+**The peek was rejected once; the first column build (still inside a card)
+was rejected too.** Both same-day, both before ever being committed. **What
+actually shipped, on the second try, is a card-free loose column**, fully
+specced in
+[history/2026-09-home-discipline-columns.md](history/2026-09-home-discipline-columns.md):
+no panel, no border, no overlap — each discipline is a header (badge, copy,
+and that discipline's own CTA) plus 2–4 unrelated pieces standing directly on
+the page in normal flow, each tucked under the one above it. All three
+columns dissolve into **one shared fade** near the bottom of the section
+rather than three separate ones, and "see the full gallery" — not any
+per-discipline CTA — sits inside that dissolve. Hovering (or hovering the
+matching word in the hero copy, via the same `.discipline-column-active`
+trap both specs called out) rotates every rung to exactly 0° on its own; the
+group itself never moves, since there's no card left to move as a unit.
 
-- **The peeks must open on `.tilt-card-active`, not `:hover`.** Copying
-  `CollectionStack`'s `.group:hover .deck-card` selector would give a card
-  that tilts flat when you hover the hero's "art" word but whose peeks stay
-  shut — half a gesture. Spec §4.
-- **Both science pieces are also claimed by another discipline**
-  (`transformation` is `writing`, `delirium` is `art`), so the same corner
-  could legitimately appear on two adjacent cards. Spec §7 makes "no piece
-  appears on two cards" a rule.
+Science is now four pieces, not two: `transformation` and `delirium` as
+before, plus two of Beck's essays in progress (`colony-selection`,
+`designing-dna`), flagged `unfinished` and shown with `UnfinishedMark` rather
+than invented — this is what lets science's column reach the shared fade
+like the other two, since "honest at two" stopped being viable once the
+fade became something every column has to reach together. No piece is
+picked for more than one column. `lib/content.ts` and its fabricated
+`PROJECTS` are deleted — **no fabricated content remains anywhere in the
+site's data**, worth saying in ARCHITECTURE.md next time it's touched.
+[history/2026-08-coding-explorations.md](history/2026-08-coding-explorations.md)
+moved to `docs/history/` in the same change as the peek build, its §8 having
+been the only thing keeping it in `specs/`.
 
-- [x] ~~**Beck:** the first code demo itself~~ — `delirium` landed 2026-08-29.
-- [ ] **Beck:** replacement copy for the science card's caption ("Talks and
-      studies where design meets research — curiosity, made presentable" was
-      written for fabricated content and describes talks that do not exist).
-      **Still the one blocker with no workaround** — spec §6/§11.
-- [ ] **Beck:** pick three art peeks and three writing peeks from the
-      shortlists in spec §5.
-- [ ] Build spec §2–§6: the peek component, the geometry table, the
-      activation selector, and the art and writing cards. **Depends on
-      nothing** — don't hold it for the science illustration.
-- [ ] Build spec §7: the science card — `transformation` featured with
-      `delirium` peeking. Honest at 2 by decision; a visibly thinner card is
-      true.
-- [ ] **Beck:** the science illustration, whenever it's drawn. It becomes the
-      science card's feature and demotes both current pieces to peeks. Not a
-      blocker.
-- [ ] Delete `lib/content.ts` entirely in the same change (it's down to just
-      `PROJECTS` — `ARTWORKS`, `POEMS`, and `ESSAYS` were fabricated scaffold
-      content and are gone, along with the orphaned PNGs they referenced).
-      After this **no fabricated content remains anywhere in the site's
-      data**, which is worth saying in ARCHITECTURE.md when it lands.
-- [ ] Move [specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md)
-      to `docs/history/` once this ships — its §8 was the only thing keeping
-      it in `specs/`.
+Three build-time divergences, all verified by measuring the actual rendered
+page rather than by eye, and all recorded in the columns spec's own status
+banner and in ARCHITECTURE.md:
+
+- **`TEXT_RUNG_ASPECT` is `1` (square), not the spec's `3/2` starting
+  point.** At `3/2` the all-text writing column landed 36% shorter than the
+  art column, nowhere near the "~15%" target — its last rung sat entirely
+  above the shared fade line with a hard, undissolved edge, and mostly-text
+  science fell short too.
+- **The bottom fade is `4rem`.** Same number the first (in-card) column
+  build had already landed on for the same reason (a shorter all-text
+  column's last rung needs the fade starting well inside it, not at its very
+  edge) — re-verified after the redesign since the fade moved from
+  per-column to shared.
+- **`UnfinishedMark` sits in normal flow under the excerpt, not as an
+  absolutely-positioned corner.** A corner badge is only ever guaranteed
+  visible on a column's *last* rung — every earlier rung has its bottom
+  covered by the one below it, which hid the mark entirely on
+  `colony-selection` (not the last rung) when it was first placed at a
+  bottom corner, and collided with the top-set excerpt text when moved to a
+  top corner instead.
+
+- [ ] **Beck:** the science illustration, whenever it's drawn. It becomes
+      rung 1 of the science column and pushes the other four down — a
+      change to one `CARDS` entry in `app/page.tsx`, nothing structural. Not
+      a blocker; the column is honest and complete without it.
 
 ## 2. `science` is a discipline with zero work in it — **mostly closed**
 
@@ -212,7 +268,7 @@ work in it — see the last checkbox in this section. The rest still holds.)*
 **Decided 2026-08-29: the first science work is code demos** — live runnable
 things, tagged `science` + a new `code` field tag, rendered by a new code-demo
 layout inside `/work`. Fully specced in
-[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md).
+[history/2026-08-coding-explorations.md](history/2026-08-coding-explorations.md).
 
 **Built 2026-08-29:** the `code` tag is now in the `field` facet, and the
 whole code-demo layout exists and is verified — so adding one is now six
@@ -297,8 +353,8 @@ it.
 
 - [ ] **`formFor` still falls back to `'essay'` for anything without a
       writing-form tag.** Centralising the old hardcoded
-      `isPoem ? 'poem' : 'essay'` into `lib/work.ts` was the right move and it
-      now honours `blog` — but the edge case that motivated the item survives:
+      `isPoem ? 'poem' : 'essay'` into `lib/work.ts` was the right move — but
+      the edge case that motivated the item survives:
       the first top-level hybrid *art* piece carrying `text` would be labelled
       "essay" by `HybridCard`. Unreachable today (zero top-level hybrids), so
       it lands the moment `HybridCard` becomes reachable.

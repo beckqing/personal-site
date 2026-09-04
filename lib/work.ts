@@ -429,7 +429,13 @@ export type Facet = { name: string; tags: readonly string[] }
  */
 export const DISCIPLINE_FACETS: Record<Discipline, Facet> = {
   art: { name: 'medium', tags: ['watercolor', 'digital', 'ink'] },
-  writing: { name: 'form', tags: ['poem', 'essay', 'blog'] },
+  // Form is poem | essay. `blog` was removed 2026-09-03: every item that
+  // carried it also carried `essay`, and since formFor() takes the first
+  // match in this array's order, `blog` never won on any piece — it rendered
+  // as "essay" everywhere while the taxonomy claimed two forms. Beck doesn't
+  // consider any of this writing to be blog posts. Don't re-add it without a
+  // piece that is one and isn't also an essay.
+  writing: { name: 'form', tags: ['poem', 'essay'] },
   science: { name: 'field', tags: ['biology', 'code'] },
 }
 
@@ -463,7 +469,7 @@ export function mediumFor(item: WorkItem): string | undefined {
   return DISCIPLINE_FACETS.art.tags.find((tag) => item.tags.includes(tag))
 }
 
-/** A writing piece's form (poem, essay, blog) — falls back to 'essay' for text-forward work carrying none of those tags. */
+/** A writing piece's form (poem or essay) — falls back to 'essay' for text-forward work carrying neither tag. */
 export function formFor(item: WorkItem): string {
   return DISCIPLINE_FACETS.writing.tags.find((tag) => item.tags.includes(tag)) ?? 'essay'
 }
@@ -2087,7 +2093,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'emoji poetry, translated from chinese',
     year: '2022',
     description: 'An exploration in poetry and a reflection on language.',
-    tags: ['writing', 'essay', 'blog', 'language'],
+    tags: ['writing', 'essay', 'language'],
     text:
       "In my emoji translation, I tried to take into account the character choice of the Mandarin and the meaning behind each glyph — an attempt at a translation that reads the same on any platform.",
   },
@@ -2096,7 +2102,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'my first art fair season',
     year: '2023',
     description: 'Reflecting on what went well and what I would do differently.',
-    tags: ['writing', 'essay', 'blog', 'art'],
+    tags: ['writing', 'essay', 'art'],
     text:
       "Since I am not trying to live off of my art, I frame it as an experience that I am paying for, with the opportunity to break even and even profit.",
   },
@@ -2105,7 +2111,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'note systems',
     year: '2023',
     description: 'My preferred tools and strategies for taking notes, analog and digital.',
-    tags: ['writing', 'essay', 'blog'],
+    tags: ['writing', 'essay'],
     text:
       "I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
   },
@@ -2114,9 +2120,31 @@ const REAL_WORK: WorkItem[] = [
     title: 'transformation',
     year: '2026',
     description: 'Explaining heat shock transformation, and finding out that a decades-old, widely used lab protocol still isn\'t mechanistically understood.',
-    tags: ['writing', 'science', 'essay', 'blog', 'biology'],
+    tags: ['writing', 'science', 'essay', 'biology'],
     text:
       "Cold → hot → cold, and somehow, some fraction of your cells end up with your DNA inside them. Somehow. We still somehow don't know how this works.",
+  },
+  // Two essays Beck has in progress, carrying a title and nothing else on
+  // purpose: `unfinished` is the site's own way of showing work honestly
+  // before it's done (see that field's own doc comment), and inventing a
+  // description or a pull quote for an unwritten essay is exactly what
+  // lib/content.ts's PROJECTS did. A text rung, a gallery card, and a piece
+  // page all fall back to the title when there's no preview/text/description,
+  // so these render as what they are. Fill in `description` and `text` as Beck
+  // finishes them, and drop `unfinished` when they land.
+  {
+    slug: 'colony-selection',
+    title: 'colony selection',
+    year: '2026',
+    tags: ['writing', 'science', 'essay', 'biology'],
+    unfinished: true,
+  },
+  {
+    slug: 'designing-dna',
+    title: 'designing dna',
+    year: '2026',
+    tags: ['writing', 'science', 'essay', 'biology'],
+    unfinished: true,
   },
   {
     slug: 'delirium',

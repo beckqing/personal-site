@@ -34,7 +34,7 @@ type CodeDemoReply = { type: 'code-demo:ready' }
  * rail on `delirium` read `index.html` and told you less than the title above
  * it did. The folder is the demo's real name.
  */
-function entryName(src: string): string {
+export function entryName(src: string): string {
   const segments = src.split('?')[0].split('#')[0].split('/').filter(Boolean)
   const file = segments.pop()
   if (!file) return src

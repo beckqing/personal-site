@@ -984,10 +984,11 @@ misses.
 ## Code demos
 
 Built 2026-08-29 from
-[specs/2026-08-coding-explorations.md](specs/2026-08-coding-explorations.md)
-(the filename keeps the spec's original working title), which stays in
-`specs/` rather than moving to `history/` because its §8 — the home page's
-science panel — is deferred until Beck's first code demo exists. Read that spec for the reasoning; this section records the shape.
+[history/2026-08-coding-explorations.md](history/2026-08-coding-explorations.md)
+(the filename keeps the spec's original working title). Its §8 — the home
+page's science panel as a live code-demo miniature — was dropped rather than
+built; see [history/2026-09-home-discipline-cards.md](history/2026-09-home-discipline-cards.md)
+§7 for why. This section records the shape of what did ship.
 
 A **code demo** is a `WorkPiece` carrying one extra field, `codeDemo`. It is
 the fourth kind of piece the site renders, and it is defined by what it leads
@@ -1330,6 +1331,132 @@ forward — shared through `HeroWordScatter`'s context, so the words, the
 icons, and the panels stay in sync without prop-drilling.
 
 ---
+
+## Discipline columns
+
+Built 2026-09-03 from
+[history/2026-09-home-discipline-columns.md](history/2026-09-home-discipline-columns.md)
+— read that spec's own status banner for where the build diverged (mainly:
+`TEXT_RUNG_ASPECT` tuned to `1`, not the `3/2` starting point, and where
+`UnfinishedMark` actually had to sit). This section records the current
+shape. Two earlier attempts at this same problem were built and rejected
+before this one, both before ever being committed: a "tucked-under peek"
+behind one featured piece, and a first pass at the column that still lived
+inside a card. Both archived specs —
+[history/2026-09-home-discipline-cards.md](history/2026-09-home-discipline-cards.md)
+and this file's own intro banner — point here.
+
+**There is no card.** Each of the three home sections is a header
+(`StampBadge`, a descriptive line, and that discipline's own CTA) plus a
+loose, unbordered column of 2–4 hand-picked pieces standing directly on the
+page — no border, background, shadow, or overlap behind any of it. The whole
+header-plus-column group is one `<Link>` (`DisciplineColumn` in
+`app/page.tsx`); the focus ring lives on the header block via
+`group-focus-visible:ring-2`, not on the link itself, since a ring around a
+group whose height is set by a several-hundred-pixel decorative column would
+mostly circle nothing.
+
+Every rung is rendered by `PieceColumn`/`PieceRung`
+(`components/piece-column.tsx`), checked in order and derived from what the
+piece carries — no `kind` field anywhere:
+
+- a **code demo** (`piece.codeDemo`) renders in a static rail (a muted dot,
+  "paused", and `entryName(codeDemo.src)`, exported from `code-demo-frame.tsx`
+  for exactly this reuse) over its poster, boxed at `codeDemo.aspect` — drawn
+  any other way it reads as a painting, which it isn't. No iframe and no
+  "open standalone" link: nothing here boots, so nothing needs the tab stop
+  the real `CodeDemoFrame` gives its own rail.
+- an **image** renders at its own `imageAspect`, with no default/normalized
+  shape anywhere in the component;
+- anything else renders as up to two lines of type, clamped, reading
+  `preview ?? description ?? title` and deliberately never `text` (a piece's
+  `text` is the whole work, and its first line can be an entire paragraph —
+  this is what broke the tucked-peek build). This is the one rung shape
+  that *is* normalized: it takes a fixed `TEXT_RUNG_ASPECT` rather than
+  sizing to its own content, specifically so the writing column (all type)
+  lands close enough to the art column's height that one shared fade line
+  can cut through both convincingly.
+- A piece flagged `unfinished` gets `UnfinishedMark` regardless of branch —
+  in normal flow, directly under the excerpt for a text rung (not an
+  absolutely-positioned corner: a corner badge is only ever guaranteed
+  visible on a column's *last* rung, since every earlier rung has its
+  bottom portion physically covered by the one below it — the same `show`
+  mechanism that makes the column read as a stack at all).
+
+`resolvePiece()` in `app/page.tsx` resolves each hand-picked slug (or
+`[collection, piece]` tuple) through `getWorkItem`/`getCollectionPiece`, so a
+typo in `CARDS` is a build-time failure rather than a blank rung. No piece
+may be picked for more than one column — science claims all four of its
+pieces (`transformation`, `delirium`, and two in-progress essays flagged
+`unfinished`), so none of the four may also appear in the art or writing
+column.
+
+**A rung's offset (`width`, `margin-left`) is a plain CSS percentage**,
+resolved in normal flow rather than by `position: absolute` — this is also
+how the negative `margin-top` that tucks each rung under the one above it
+gets to be a percentage of the *column's width* even though it's a vertical
+offset: percentage margins resolve against the containing block's width on
+every side, the same fact `CollectionStack`'s own deck depends on (below).
+That overlap is **derived, not tabled**: a rung's rendered height in
+percent-of-column-width units follows from its own aspect (`imageAspect`, or
+`TEXT_RUNG_ASPECT` for type — every rung has one now), so `COLUMN[i].show`
+(the fraction left uncovered) directly gives the negative margin the *next*
+rung needs — see `overlapAbove()`. A code-demo rung is taller than `w /
+aspect` by its rail's fixed height, so its contribution to the next rung's
+overlap mixes a percentage and a `rem` term in one `calc()` — safe for the
+same reason `deckLength()` (below) mixes them for the collection stack's one
+fixed-strip card: the percentage still resolves against the column's width,
+and the `rem` term simply doesn't participate. `transform` on a rung carries
+**rotation only** — never `translate()`, which would resolve its
+percentages against the rung's own box rather than the column's, the same
+unit trap the rejected peek build hit.
+
+**The three columns dissolve into one shared fade**, not three separate
+ones — a `mask-image` on the container wrapping all three
+(`.columns-fade-shared`), a percentage (`66.67%` opaque, then to
+`transparent` at `100%`) rather than a fixed length, so the fade always
+reads as "the stack's last third" no matter how tall the tallest column
+ends up being, and the dissolve reads as one horizon the whole section runs
+into rather than three unrelated widgets that happen to be adjacent. The
+"see all work" CTA is a sibling of that masked container, pulled up by a
+small negative margin (`-mt-8`) with its own `position: relative;
+z-index` so it stays fully opaque on top of the fade rather than dissolving
+with it — the point is a crisp, solid button sitting above the columns'
+disappearing tail, not one blended into it. The pull-up is tuned against
+the *shortest* column's own bottom edge, not the fade length itself: pull
+up further than that and the CTA starts overlapping a column's
+still-legible content rather than its faded tail. Each discipline's own CTA
+lives up in its header instead and never touches the band. **This only
+holds when the three columns sit side by side**
+(`md` and up); below that breakpoint `DisciplinePanels` stacks them, and a
+single mask spanning three *stacked* columns' full combined height would
+dissolve only the last one, leaving the first two with a hard, undissolved
+edge. So there are genuinely two fade rules, picked by the same breakpoint
+the layout itself switches on: `.column-fade` (inside `PieceColumn` itself)
+fades each column individually below `md` and goes inert at `md` and up,
+where `.columns-fade-shared` takes over instead.
+
+The column opens on `.discipline-column:hover`, `:focus-visible`, and
+`.discipline-column-active` (`.column-rung` in `globals.css`) — the same
+selector set the site's other hover-triggered UI uses, not `.group:hover`.
+`.discipline-column-active` is toggled by JS when the matching word in the
+hero copy is hovered, with the pointer nowhere near the column, so a
+`:hover`-only rule would leave it scattered while nothing else in the
+gesture reacted. **Opening rotates every rung to exactly `0deg`
+individually** — not a shared "open" angle, and not the group as a unit:
+there is no card left to rotate, lift, or scale as one rigid object.
+Verified in a real browser: the link's own `transform` is `none` both at
+rest and on hover, every rung's box (`width`/`margin-left`/`margin-top`)
+is byte-identical before and after, and only each rung's own `transform:
+rotate()` changes. `prefers-reduced-motion: reduce` pins every rung to its
+rest rotation and drops the transition, rather than hiding anything — the
+column and its fade are layout, not a motion effect, and stay fully present
+either way.
+
+The three columns no longer match height: each sets its own, and the
+science column — four pieces including two in-progress drafts, since
+"honest at 2" didn't survive science growing past two — still isn't forced
+to match the others. That's the intended reading, not a regression.
 
 ## Conventions
 

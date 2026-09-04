@@ -261,18 +261,90 @@
     background-attachment: fixed;
   }
 
-  /* corkboard collage — tilted panels that settle flat on hover/focus, or
-     when .tilt-card-active is toggled by JS (hovering the matching word in
-     the hero copy above settles the panel the same way, even though the
-     mouse is nowhere near it). */
-  .tilt-card {
-    transform: rotate(var(--tilt, 0deg));
-    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms ease;
+  /* A discipline column (PieceColumn, components/piece-column.tsx) — an
+     even run of unrelated pieces standing directly on the page, each tucked
+     under the one above it in normal flow. transform carries rotation only
+     — never translate, which would resolve its percentages against the
+     rung's own box instead of the column's (see PieceColumn's overlapAbove
+     comment). At rest the column is a scatter of tilted objects; on hover
+     every rung squares itself back to 0° individually (§8) — the group
+     itself never rotates, lifts, or scales as a unit, because there is no
+     longer a card to be one. Driven off `.discipline-column`'s own
+     hover/focus/active state, not `.group:hover` — a hover on the matching
+     word in the hero copy above toggles `.discipline-column-active` via JS
+     with the pointer nowhere near it, and `.group:hover` only fires for an
+     actual pointer hover, which would leave the column scattered while
+     nothing else in the gesture reacted. */
+  .column-rung {
+    transform: rotate(var(--r));
+    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .tilt-card:hover,
-  .tilt-card:focus-visible,
-  .tilt-card.tilt-card-active {
-    transform: rotate(0deg) translateY(-0.4rem) scale(1.025);
+  .discipline-column:hover .column-rung,
+  .discipline-column:focus-visible .column-rung,
+  .discipline-column.discipline-column-active .column-rung {
+    transform: rotate(0deg);
+  }
+  /* The column is layout, not a motion effect — the implication of more
+     has to survive with reduced motion, not disappear. Pin to the rest
+     rotation (never the squared-up one) and drop the transition, rather
+     than hiding .column-rung outright. */
+  @media (prefers-reduced-motion: reduce) {
+    .column-rung,
+    .discipline-column:hover .column-rung,
+    .discipline-column:focus-visible .column-rung,
+    .discipline-column.discipline-column-active .column-rung {
+      transform: rotate(var(--r));
+      transition: none;
+    }
+  }
+
+  /* The three columns dissolve together into one shared fade near the
+     bottom of the section (§5 of the discipline-columns spec) — applied
+     once, to the container wrapping all three columns, not per column;
+     that's the entire mechanism behind "one horizon" rather than three
+     independent dissolves. A mask needs no colour knowledge and is correct
+     in both themes for free — unlike an overlay gradient, which would have
+     to match the page's own ground exactly, and with the card gone that
+     ground is `.night-vignette`'s radial gradients on <body>, not a flat
+     token. A percentage, not a fixed length: the fade is meant to read as
+     "the stack's last third," so its absolute size should track the
+     container's own height (the tallest column's) rather than stay a
+     constant number of rem as picks change and that height drifts. If
+     mask-image is unsupported the columns simply render whole with a clean
+     bottom edge — an acceptable degradation, since nothing else depends on
+     the clip.
+
+     §5's "one shared line" reasoning is specifically about the three
+     columns sitting *side by side* — below `md`, `DisciplinePanels` stacks
+     them instead (§6 says nothing about this; the spec is written for the
+     side-by-side arrangement throughout), and one mask spanning three
+     stacked columns' full combined height would only ever dissolve the
+     last one, leaving the first two with a hard, unfaded bottom edge. So
+     this is genuinely two rules, not one, split by the same breakpoint the
+     layout itself switches on: `.column-fade` fades each column
+     individually below `md` (this is what a plain `<PieceColumn>` gets),
+     and turns itself off at `md` and up, where `.columns-fade-shared`
+     (applied once, to the row wrapping all three `<PieceColumn>`s) takes
+     over instead. */
+  .column-fade {
+    -webkit-mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
+  }
+  .columns-fade-shared {
+    -webkit-mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
+  }
+  @media (min-width: 768px) {
+    .column-fade {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+  }
+  @media not all and (min-width: 768px) {
+    .columns-fade-shared {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
   }
 
   /* an animation tile's centered play triangle, held at rest until hovered

@@ -13,7 +13,7 @@ export function StampBadge({
   return (
     <span
       className={cn(
-        'font-brand inline-flex items-center gap-1.5 rounded-full border-2 border-current px-3 py-1 text-xs font-bold lowercase tracking-wide',
+        'font-brand inline-flex items-center gap-1.5 rounded-full border-2 border-current px-4 py-1 text-xs font-bold lowercase tracking-wide',
         className,
       )}
       style={{ transform: `rotate(${tilt}deg)` }}
