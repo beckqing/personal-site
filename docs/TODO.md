@@ -306,12 +306,12 @@ match nothing today rather than ten; that is expected and stays.
       survives the demo not running, and `delirium`'s poster is Beck's own
       illustration, so a reduced-motion reader gets the artwork rather than an
       empty box. Don't reopen this as a gap.
-- [ ] One consequence of the above worth closing on its own terms:
+- [x] ~~One consequence of the above worth closing on its own terms:
       `metaDescription()` falls through `description` → `preview` → `text` and
-      returns `''`, so `/work/delirium` ships an **empty meta description** —
-      what a search result or a shared link renders from. Either give the
-      piece a one-line `description`, or make `metaDescription()` fall back to
-      the title. A write-up is not what fixes this.
+      returns `''`~~ — **fixed 2026-09-09.** `metaDescription()` now falls
+      back to `item.title` as a last resort, so `/work/delirium` ships
+      `🌊🐠 delirium` instead of an empty tag. `tsc --noEmit` and `next build`
+      clean.
 - [ ] **Beck:** confirm `year: '2022'`. It was taken from the commit that
       created `delirium.html` in `github.com/beckqing/whims` (2022-05-21), not
       stated by Beck — and the underlying illustration may well predate the
@@ -327,8 +327,11 @@ match nothing today rather than ten; that is expected and stays.
 - [x] ~~The frame's mono label reads `index.html`~~ — fixed 2026-08-29
       (Beck): `entryName()` falls back to the containing folder when the entry
       is an `index.*`, so the rail reads `delirium`.
-- [ ] `delirium` is appended at the end of `REAL_WORK`, so it sorts last under
-      "in my order". Move it wherever Beck actually wants it.
+- [x] ~~`delirium` is appended at the end of `REAL_WORK`, so it sorts last
+      under "in my order". Move it wherever Beck actually wants it.~~ —
+      **moot 2026-09-09.** The "in my order" sort was retired (see §12), so
+      `delirium` now lands among the other 2022 work on `year` rather than
+      trailing the gallery. Its array position only breaks ties inside 2022.
 
 ## 3. No lint or test setup
 
@@ -380,8 +383,10 @@ columns rewrite deleted the `app/page.tsx` fallback that referenced it.
 Checked by grepping `app/`, `components/`, `lib/`, `content/`, and
 `scripts/`: zero hits. `public/placeholder.jpg` is itself orphaned now.
 
-- [ ] **Delete `public/placeholder.jpg`**, or find it a new reference if one
-      is wanted.
+- [x] ~~**Delete `public/placeholder.jpg`**, or find it a new reference if one
+      is wanted.~~ — **deleted 2026-09-09**, after re-confirming zero
+      references across `app/`, `components/`, `lib/`, `content/`, and
+      `scripts/`.
 
 The code-demo build left two scratch fixtures, tracked here 2026-08-30
 rather than in §2 — they are development furniture, not part of `delirium`.
@@ -592,11 +597,17 @@ minimal `process` shape was chosen to allow.
 
 ## 12. The gallery has no sort at all — **shipped 2026-08-28**
 
-`sortWork(items, mode)` in `lib/work.ts` (`curated | newest | oldest`,
-`curated` the identity default) and a cycle control beside the venn toggle,
-with `?sort=` in the URL on the same terms as `?mode=`. See
+`sortWork(items, mode)` in `lib/work.ts` and a cycle control beside the venn
+toggle, with `?sort=` in the URL on the same terms as `?mode=`. See
 [history/2026-08-essays-viewer-sort.md](history/2026-08-essays-viewer-sort.md)
 for the full build record.
+
+**Amended 2026-09-09 (Beck):** shipped as `curated | newest | oldest` with
+`curated` ("in my order") the identity default. `curated` is now gone and
+`newest` is the default. The authored array order survives only as the
+tiebreaker within a year — see ARCHITECTURE.md for why an author-only
+sequence couldn't carry the default. A stale `?sort=curated` link falls back
+to `newest`, the same way `?sort=banana` always did.
 
 - [ ] **Beck:** if "recently added" is wanted, that needs an `added` date
       backfilled onto items. The field is documented on `WorkPiece`; no item
@@ -1352,3 +1363,78 @@ problem — they already render fine as single-image pieces).
       one DOM, switched by CSS, not a JS layout swap.
 - [ ] Caption and slide order import **verbatim** once the above is decided,
       per the site's standing rule that imported captions aren't rewritten.
+
+## 23. The gallery shows all 32 entries at one volume — **specced 2026-09-09, not built**
+
+There is no way for `/work` to say *start here*, and no way for a piece to
+recede without being deleted. Every entry competes with every other at the
+same weight, so the 2026 essays, a 2017 sticky-note daily, and Beck's own
+favorites all read as equally load-bearing.
+
+The default order was the first half of this problem and is **fixed** — the
+gallery sorts `newest` first and the "in my order" mode is retired (§12's
+amendment). Chronology buries most of what Beck would have archived, but it
+buries `eye-studies` along with it: 2022 holds 11 entries and chronology has
+no opinion about which of them is the best thing on the site.
+
+**Fully specced in [specs/2026-09-tiers-and-pins.md](specs/2026-09-tiers-and-pins.md).**
+Two independent mechanisms, either shippable alone: `tier`
+(`favorite | general | archive`) as a property of the work, and `PINNED` as a
+short hand-picked slug list holding the head of each masonry column. Pins are
+capped at the live column count — 3 across, 2 on a phone — because that is
+the only count the masonry can seat without a ragged second row (spec §3.1).
+
+**Both named ends carry a badge; `general` carries nothing** (spec §2.2). The
+first draft rendered only `favorite`, on the argument that displaying a low
+rank attaches a self-insult to the work; Beck reversed that the same day —
+"useful to mark things archived tbh" — and the distinction that makes it
+right is that *"archived" names a placement, not a verdict.* An archive is
+where things are kept. A badge may say where a piece sits; it may not score
+it, which is what still rules out visible stars. Marking it also does real
+work: without it, revealing the archive drops N unexplained cards into the
+grid with no way to tell which ones just appeared.
+
+Rejected along the way, with reasons, in spec §11: a "start here" band above
+the grid, larger tiles for featured work (not expressible — every tile is one
+grid track wide and nothing can span columns), pinning the first N in reading
+order, and visible 1–3 stars.
+
+- [ ] **Beck: which slugs are pinned**, left to right, at most three.
+- [ ] **Beck: which pieces are `favorite`.** Unbounded — the cap of three
+      applies to pins, not to this. `eye-studies` is the only one named out
+      loud so far.
+- [ ] **Beck: which pieces are `archive`** — but see the Mindtober item
+      below first.
+- [ ] **Beck: both badges' icons and labels**, and the reveal control's
+      wording. Spec §10.4–10.5 fix the register — the favorite reads as
+      affection rather than score, the archive names a location rather than
+      a grade — but not the strings. Open sub-question: whether the archive
+      badge carries a date ("archived · 2019") or reads plainly.
+- [ ] Ships inert: `PINNED` empty and every `tier` unset renders the gallery
+      exactly as it does today, so the mechanism can land before the
+      editorial pass does.
+
+### 23a. `mindtober-21`'s poems are untagged — blocks giving it a tier
+
+Both the collection and all 31 pieces are tagged `['art', 'ink']`. There is
+no `writing` tag and no `poem` tag anywhere in it, so `?tags=poem` returns
+nothing from it, `formFor()` falls back to `'essay'` on every piece, and the
+stack shows drawings only (every piece is `isHybrid`, so `collectionLayout`
+is `'illustrated'`). What the set actually holds is a **single terza rima
+chain across all 31 tercets** — `alone/own` → `cries/friend/goodbyes` →
+`expend/loom/end` ([lib/work.ts:1541](../lib/work.ts#L1541) onward).
+
+It reads as the weakest collection on the site because the site is only
+showing half of it. Beck, 2026-09-09: "I take back what I said about
+mindtober being one star — I think you're right that the drawings are, but
+not the poems / tercet / collection."
+
+- [ ] **Tag the poems.** Correct on its own terms, independent of §23.
+- [ ] **Do not assign `mindtober-21` a tier until this lands** — archiving it
+      now would bake in a judgement caused by a presentation bug.
+- [ ] Getting the tercets onto the collection stack is a **separate**
+      question with a real cost: `layout: 'book'` would front three tercets
+      immediately via the existing `ChapbookStack`, but
+      `/work/mindtober-21/read` renders `piece.text` and nothing else, so it
+      would silently drop the ink half of an illustrated work. Spec §7.1 has
+      the options.

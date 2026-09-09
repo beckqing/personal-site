@@ -66,12 +66,18 @@ and/or/not, plus free text over title, description, and tags — and, for
 collections only, their children's titles, descriptions, `text`, and
 `preview`.
 
-**The gallery's default order is editorial.** `/work` renders `lib/work.ts`'s
-authored array order, and `sortWork`'s `curated` mode is identity — it is a
-real choice, not an accident, so it is the default and stays out of the URL.
-`newest`/`oldest` sort on `year` (when the work was made — there is no upload
-date in the data) and break ties by authored position, so Beck's order
-survives inside each year.
+**The gallery's default order is chronological.** `/work` sorts `newest`
+first, which stays out of the URL; `oldest` is the only other mode. Both sort
+on `year` (when the work was made — there is no upload date in the data) and
+break ties by authored position, so `lib/work.ts`'s array order still decides
+what happens inside a single year.
+
+A third mode, `curated` ("in my order"), was the identity-sort default until
+Beck retired it 2026-09-09. The authored order is still a real editorial
+sequence, but it is one only the author can read: across work spanning
+2017–2026 a visitor has no way to tell an intentional adjacency from an
+append, so the sequence could not do the job a default order has to do.
+Chronology can. The array order was demoted to the tiebreaker it still is.
 
 That last asymmetry was a bug, not a design: an item's **own** `text` and
 `preview` used to go unsearched, so a line of a Mindtober tercet was findable
