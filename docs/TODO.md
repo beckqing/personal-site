@@ -373,11 +373,19 @@ at build time.
 ## 6. Leftover assets
 
 `placeholder.svg` turned out to be the dead one (§5's fallback now points at
-`placeholder.jpg` instead) and has been deleted; `placeholder.jpg` is
-referenced again. That part is resolved (2026-08-29).
+`placeholder.jpg` instead) and has been deleted. **Correction, 2026-09-09:**
+this entry previously claimed `placeholder.jpg` was "referenced again" —
+that was true in 2026-08-29 but stopped being true when the discipline-
+columns rewrite deleted the `app/page.tsx` fallback that referenced it.
+Checked by grepping `app/`, `components/`, `lib/`, `content/`, and
+`scripts/`: zero hits. `public/placeholder.jpg` is itself orphaned now.
+
+- [ ] **Delete `public/placeholder.jpg`**, or find it a new reference if one
+      is wanted.
 
 The code-demo build left two scratch fixtures, tracked here 2026-08-30
-rather than in §2 — they are development furniture, not part of `delirium`:
+rather than in §2 — they are development furniture, not part of `delirium`.
+A third joined them 2026-09-09:
 
 - [ ] **Delete `app/excerpt-preview/`** once the `<Excerpt>` palette is
       settled. It is a real seventh app route, which is the whole reason the
@@ -393,6 +401,14 @@ rather than in §2 — they are development furniture, not part of `delirium`:
       is reachable in production even though its `lib/work.sample.ts` entry
       is not. Harmless, but "dev-only" isn't true of the file itself. If it
       stays, it stays as a deliberate choice.
+- [ ] **Delete `app/about-next/`** once the landing-page exploration for
+      `/about` resolves — either it graduates and replaces `/about`, or the
+      direction is dropped. Same gate as `excerpt-preview`:
+      `notFound()` once `NODE_ENV` is `production`. Source material for the
+      draft (Beck's branding deck) lives outside the repo at
+      `~/Downloads/personal branding slides/`; the deck itself won't survive
+      forever, so anything worth keeping from it belongs in the repo before
+      that folder is cleaned up.
 
 ## 7. About tab glyphs want to become small illustrations — **in progress: Beck is drawing the set**
 
@@ -625,6 +641,75 @@ ARCHITECTURE's "Media: speedpaints and animations" covers **two** kinds — a
 timelapse you scrub, a finished clip you press play on — both self-hosted
 single files under `public/art/`, both declared as a bare `src` string on
 `WorkPiece`. Neither describes a third kind Beck actually has.
+
+**2026-09-09, with Beck:** the animations this section is missing — the
+`philosophy-animation` collection and `i-think-that-im-human`, whose
+writeups end `[ link to animation in bio ]` / "link is in my bio" — are
+**YouTube links only**, no local files to source. That collapses 14a and 14b
+into one build: whatever renders a performance (14b, decided 2026-09-02) is
+the same embed facade these four pointers need. 14a's encoding recipe is
+moot for this case but still worth writing down, since the settings
+currently on record are wrong for it (see 14a below).
+
+Also confirmed 2026-09-09: **the six existing speedpaint clips stay
+self-hosted.** 14b's scoping already said this; it's now measured rather
+than assumed. The split is by what the viewer does with the clip, not by
+where the file lives — scrub (speedpaint) wants `SpeedpaintPlayer`'s
+always-visible scrubber and the native right-click menu (loop/PiP/save)
+`media-player.tsx:154-160` deliberately keeps working, which a YouTube
+iframe forfeits; watch (animation, performance) is what the iframe is for.
+Migrating the speedpaints would also **cost more bytes, not fewer** — a
+YouTube embed pulls ~1MB of script against clips that are mostly
+1.3–2.1MB — and YouTube re-encodes on upload, destroying the dense-keyframe
+tuning scrubbing depends on. No budget pressure either: all six clips total
+10.8MB against a 41MB `public/art` and 63MB `.git`; revisit only if the repo
+approaches 150–200MB.
+
+**Built, 2026-09-09.** `EmbeddedVideo` (`lib/work.ts`, next to `CodeDemo`) —
+a bare `{ youtubeId, aspect }` — and `animationEmbed?: EmbeddedVideo` on
+`WorkPiece`, alongside the existing self-hosted `animationSrc`. `hasAnimation()`
+now checks either. `AnimationEmbed` (`components/media-player.tsx`, next to
+`AnimationPlayer`) is the facade: local poster in the same reserved-aspect
+box every player here uses, a plain `<button>` overlay until pressed, and
+only then an iframe on `youtube-nocookie.com` with `autoplay=1` — no
+sandbox attribute (YouTube's own player needs same-origin access to itself;
+sandboxing it breaks playback rather than adding a real boundary, unlike
+`CodeDemoFrame`'s local, genuinely untrusted code). `PieceMedia` renders
+`AnimationPlayer` or `AnimationEmbed` depending on which field the piece
+carries. Verified end to end with a real click in a headless browser: the
+poster shows, pressing play mounts `youtube-nocookie.com/embed/RTGjy1jDMyM`,
+the real player boots and plays, zero console errors, and the box never
+shifts on either side of the click.
+
+**Wired onto `philosophy-animation`'s three pieces** (`privilege`,
+`reidentification`, `origins`) — all three share the one clip, matching the
+collection's "three scenes from an animation" framing. The video Beck gave
+for this is titled **"Honey | Personal Animation feat. Luca Schmidt"** on
+YouTube (`RTGjy1jDMyM`), not anything matching "philosophy animation" —
+flagged to Beck before wiring it in, given the piece's own subject
+(adoption, identity, trauma) and the mismatch was stark enough to be worth a
+check rather than a guess. **Confirmed correct by Beck 2026-09-09** — it was
+retitled since the piece's 2019 caption was written. The three writeups
+themselves (`[ link to animation in bio ]` etc.) are untouched, per the
+site's standing rule that imported captions aren't rewritten — only the
+`animationEmbed` field was added.
+
+**Still open: `i-think-that-im-human`.** Its writeup ("You can see the final
+on YouTube. The link is in my bio!") is still a dead pointer — the video
+Beck gave in this pass doesn't match it (see below). Needs its own link from
+Beck before it can be wired up the same way.
+
+**New, found in this pass, not yet on the site at all:** Beck also sent
+`BM0LXL10B7k`, titled **"Eine Vorstellung | Slam Poem"** on YouTube — real,
+on `youtube.com/@beckqing`, but matching no existing piece (it isn't
+`i-think-that-im-human`, which is described as an animation, not a poem
+reading). Beck confirmed this is a **new piece that doesn't exist on the
+site yet**, not a pointer to fill in. It's exactly the "performance" content
+TODO's older notes below (readings/talks, audio load-bearing) describe as
+unbuilt — a new `WorkPiece` needs a title, description, and tags authored
+before this has anywhere to go, and the open questions below (tag
+vocabulary, transcript-or-pointer, field-vs-own-piece) are still unresolved.
+Deliberately not built in this pass — new authoring, not facade-wiring.
 
 ### 14a. More animations — the path exists, the recipe doesn't
 
@@ -1194,3 +1279,51 @@ titles — both halves needed, since `min-w-0` alone just relocates the overflow
 into a word spilling out of its own card. Verified clean at 320px. The
 residual ~290px floor is `SiteNav`'s own minimum, below every real device;
 §13's `flex-wrap` lowers it to ~240px as a side effect. §9.2.
+
+## 22. Zine viewing doesn't exist as a type — untracked until now (2026-09-09)
+
+`adoption-minizine` (`lib/work.ts:1813`) is one `.webp` whose `description`
+says "swipe to read." There is nothing to swipe. This gap wasn't in this
+file before — it surfaced during a 2026-09-09 review of what's left on the
+site, and had no home in any existing section.
+
+**The source carousel is found.** Ten slides at
+`~/Downloads/instagram-beckqing-2026-08-26-ZvYQacRy/media/posts/202207/`
+(all 1440×1440, verbatim caption in the export's `posts.json`). That folder
+is outside the repo and won't survive forever — importing before it's
+cleaned up matters.
+
+**This is a zine special case, not a general carousel-viewer feature.**
+Checked by opening the slides: slide 1 (`17977747231537356`) is a whole
+page. Slides 2 and 3 (`17954687875910826`, `18305158546022156`) are the
+**left and right halves of one wide photograph** — the binder clip and the
+red drawing run continuously across the cut. Instagram's square export cropped
+the zine's spreads in half, and the pattern isn't uniform: some slides are
+whole pages, some are half-spreads. A generic one-image-per-slide pager would
+faithfully reproduce that damage — half a drawing, then the other half — which
+is exactly the thing a real viewer needs to undo. The ~50 other multi-slide
+carousels across the four `instagram-beckqing-*` exports are ordinary
+one-image-per-slide posts and are a different, much smaller problem (or no
+problem — they already render fine as single-image pieces).
+
+- [ ] **Reassemble the half-spreads** into the wide photos they were cut
+      from, as an asset-prep step before any import — this is restoring
+      Beck's existing composition, not composing anything new. Worth asking
+      first whether the **original uncropped photos still exist**
+      somewhere, which would skip this step and be higher quality.
+- [ ] **Beck: confirm the pairing and reading order.** The whole-page vs.
+      half-page pattern isn't uniform, and which halves belong together is
+      authorial knowledge, not something to infer from image similarity.
+- [ ] The content model needs **spreads, not pages** as the unit — most of
+      this zine reads two pages wide, unlike every other piece on the site.
+- [ ] `ImageLightbox` (`components/image-lightbox.tsx:31`) already has
+      keyboard paging, wheel, and touch-swipe — reuse it rather than writing
+      a second pager, but expect to extend its zoom/fit behavior for a wide
+      spread rather than call it as-is on a square tile.
+- [ ] **Beck: how does a spread render on a phone?** A two-page spread at
+      375px is unreadable at full width. Candidates: page-at-a-time below a
+      breakpoint, or pan/zoom within the spread. Same class of problem as
+      §21's narrow-screen columns, and probably the same shape of answer —
+      one DOM, switched by CSS, not a JS layout swap.
+- [ ] Caption and slide order import **verbatim** once the above is decided,
+      per the site's standing rule that imported captions aren't rewritten.

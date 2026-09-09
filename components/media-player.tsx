@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Binary, CircleDot, Expand, Pause, Play } from 'lucide-react'
-import { hasAnimation, hasSpeedpaint, isCodeDemo, speedpaintAspect, toneFor, type WorkItem, type WorkPiece } from '@/lib/work'
+import {
+  hasAnimation,
+  hasSpeedpaint,
+  isCodeDemo,
+  speedpaintAspect,
+  toneFor,
+  type EmbeddedVideo,
+  type WorkItem,
+  type WorkPiece,
+} from '@/lib/work'
 import { aspectStyleFor, WorkPlaceholder } from '@/components/work-visuals'
 import { ImageLightbox } from '@/components/image-lightbox'
 import { cn } from '@/lib/utils'
@@ -145,6 +154,74 @@ export function AnimationPlayer({
       <video controls muted playsInline preload="metadata" poster={poster} className="h-full w-full" aria-label={title}>
         <source src={src} type="video/mp4" />
       </video>
+    </PlayerFrame>
+  )
+}
+
+/**
+ * A finished animation that lives on YouTube — the embedded sibling of
+ * `AnimationPlayer`, for a clip too long or heavy to self-host (see TODO
+ * §14b's budget math). Built as a facade, the same principle `CodeDemoFrame`
+ * already uses for the same two reasons: reserve the box up front so
+ * pressing play never shifts the page, and don't pull YouTube's ~1MB of
+ * player script onto every visit — only once someone actually asks.
+ *
+ * No message contract or fullscreen plumbing here, unlike `CodeDemoFrame` —
+ * YouTube's own player already provides both, and re-implementing either
+ * would just be fighting the iframe for control it already has.
+ */
+export function AnimationEmbed({
+  video,
+  poster,
+  title,
+  className,
+}: {
+  video: EmbeddedVideo
+  poster?: string
+  title: string
+  className?: string
+}) {
+  const [playing, setPlaying] = useState(false)
+
+  return (
+    <PlayerFrame aspect={video.aspect} className={className}>
+      {playing ? (
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1`}
+          title={title}
+          className="h-full w-full border-0"
+          // No sandbox attribute: unlike CodeDemoFrame's exploratory local
+          // code, this is YouTube's own player, which needs same-origin
+          // access to itself to work at all — sandboxing it would just
+          // break playback, not add a real boundary.
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setPlaying(true)}
+          className="group relative block h-full w-full cursor-pointer"
+          aria-label={`Play ${title}`}
+        >
+          {poster ? (
+            // eslint-disable-next-line @next/next/no-img-element -- a plain
+            // <img> here, not next/image: the poster is the button's own
+            // background, sized by the reserved aspect box already, and
+            // Image's fill mode would need this to be a non-interactive div
+            // instead of the button it actually is.
+            <img src={poster} alt="" aria-hidden="true" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-black" />
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/35">
+            <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-background/85 text-foreground shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105">
+              <Play className="h-5 w-5 translate-x-[1px]" strokeWidth={1.75} fill="currentColor" aria-hidden="true" />
+            </span>
+          </span>
+        </button>
+      )}
     </PlayerFrame>
   )
 }
@@ -341,10 +418,11 @@ export function PieceMedia({
   lightboxIndex?: number
   className?: string
 }) {
-  const { animationSrc, speedpaintSrc } = piece
-  if (!piece.image && !animationSrc && !speedpaintSrc) return null
+  const { animationSrc, animationEmbed, speedpaintSrc } = piece
+  const hasAnim = Boolean(animationSrc || animationEmbed)
+  if (!piece.image && !hasAnim && !speedpaintSrc) return null
 
-  if (!animationSrc && !speedpaintSrc) {
+  if (!hasAnim && !speedpaintSrc) {
     return (
       <ImageLightbox items={lightboxItems} initialIndex={lightboxIndex} className={className}>
         <div className="aspect-[16/10] w-full overflow-hidden" style={aspectStyleFor(piece)}>
@@ -354,21 +432,27 @@ export function PieceMedia({
     )
   }
 
-  const both = Boolean(animationSrc && speedpaintSrc)
+  const both = Boolean(hasAnim && speedpaintSrc)
 
   return (
     <div className={className}>
-      {animationSrc && (
+      {hasAnim && (
         <div>
           {both && (
             <p className="font-brand mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">finished animation</p>
           )}
-          <AnimationPlayer
-            src={animationSrc}
-            poster={piece.image}
-            aspect={piece.imageAspect}
-            title={piece.title}
-          />
+          {animationSrc ? (
+            <AnimationPlayer
+              src={animationSrc}
+              poster={piece.image}
+              aspect={piece.imageAspect}
+              title={piece.title}
+            />
+          ) : (
+            animationEmbed && (
+              <AnimationEmbed video={animationEmbed} poster={piece.image} title={piece.title} />
+            )
+          )}
         </div>
       )}
       {speedpaintSrc && (

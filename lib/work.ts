@@ -54,9 +54,22 @@ export type WorkPiece = {
   speedpaintAspect?: string
   /**
    * A finished animation clip's video file (e.g. '/art/...mp4'), played with
-   * standard time-based controls on the piece's own page.
+   * standard time-based controls on the piece's own page. Mutually exclusive
+   * with `animationEmbed` in practice (a piece has the file or it doesn't) —
+   * both exist as separate fields, not a union, because `lib/work.ts` may
+   * only ever hold plain serializable data, and a discriminated union here
+   * would buy nothing a piece author can't already express by setting one
+   * field and leaving the other unset.
    */
   animationSrc?: string
+  /**
+   * A finished animation that lives on YouTube rather than in `public/` —
+   * for a clip too long or too heavy to self-host reasonably (TODO §14b's
+   * budget math). Rendered by `AnimationEmbed`: a local poster in a reserved
+   * box, with the actual `youtube-nocookie.com` iframe only injected once a
+   * viewer presses play — never a bare iframe, and never autoplaying.
+   */
+  animationEmbed?: EmbeddedVideo
   /**
    * When the piece went on the site, ISO YYYY-MM-DD — distinct from `year`,
    * which is when the work was made. No item carries this yet; a 'recently
@@ -120,6 +133,24 @@ export type CodeDemo = {
   seedable?: boolean
   /** Public source, if there is any. Rendered as a header link. */
   repo?: string
+}
+
+/**
+ * A finished video embedded from YouTube rather than self-hosted. Plain data
+ * on the same principle as `CodeDemo` — `lib/work.ts` may never hold a
+ * component reference — and the id is kept bare (not a full URL) so
+ * `AnimationEmbed` is the one place that builds an actual embed URL,
+ * consistently, off `-nocookie.com`. See TODO §14.
+ */
+export type EmbeddedVideo = {
+  /** The YouTube video id — the `v=` value, or the path segment after `youtu.be/`. Not a full URL. */
+  youtubeId: string
+  /**
+   * The player's aspect ratio ('16/9' for nearly everything on YouTube).
+   * Required for the same reason `CodeDemo.aspect` is: the frame reserves
+   * its box before the iframe exists, so pressing play never shifts the page.
+   */
+  aspect: string
 }
 
 /**
@@ -368,7 +399,7 @@ export function hasSpeedpaint(item: WorkItem): boolean {
 
 /** A piece with a finished animation clip. Collections don't carry media directly. */
 export function hasAnimation(item: WorkItem): boolean {
-  return !isCollection(item) && Boolean(item.animationSrc)
+  return !isCollection(item) && Boolean(item.animationSrc || item.animationEmbed)
 }
 
 /** The aspect a speedpaint video's player should take — its own, falling back to the finished image's. */
@@ -1405,6 +1436,11 @@ const REAL_WORK: WorkItem[] = [
           '[ link to animation in bio ]\n\nNot every adoptee is so lucky. Adoption can be viewed as trauma -- there is no adoption without abandonment. With international adoption, there is also a loss of culture. Not all adoptees are the same. Not everyone views it the same way.',
         image: '/art/2019/philosophy-animation-01.jpg',
         imageAspect: '1/1',
+        // The animation the writeup above points at. Confirmed by Beck,
+        // 2026-09-09 — retitled on YouTube since this piece's 2019 caption
+        // was written, hence the mismatch between "Honey" and "philosophy
+        // animation."
+        animationEmbed: { youtubeId: 'RTGjy1jDMyM', aspect: '16/9' },
       },
       {
         slug: 'reidentification',
@@ -1416,6 +1452,7 @@ const REAL_WORK: WorkItem[] = [
           "[ link to animation in bio ]\n\nI have made no modifications to my flesh since the start of my disidentification and reconciliation with my sex, and I think that's also important part of my identity. I am, in many ways, not a detransitioner, because I never really transitioned in the first place. I am, however, reidentified with my sex, not because I feel female, but because I am.\n\nI still feel agender. But I don't see this as being truly important to how people treat me, because, outside of sports, medicine, and statistics, everyone should treat everyone with as a unique individual to be respected regardless of sex or gender identity.",
         image: '/art/2019/philosophy-animation-02.jpg',
         imageAspect: '1/1',
+        animationEmbed: { youtubeId: 'RTGjy1jDMyM', aspect: '16/9' },
       },
       {
         slug: 'origins',
@@ -1427,6 +1464,7 @@ const REAL_WORK: WorkItem[] = [
           "[ link to animation in bio ]\n\nWhile I don't know how it why I was given up to the Social Welfare Institute, it could be that I was taken from my parents by government workers, and not that I was abandoned.\n\nMore on this topic is found in the documentary @onechildnation.",
         image: '/art/2019/philosophy-animation-03.jpg',
         imageAspect: '1/1',
+        animationEmbed: { youtubeId: 'RTGjy1jDMyM', aspect: '16/9' },
       },
     ],
   },
