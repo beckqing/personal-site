@@ -1142,11 +1142,34 @@ still navigates; and the gallery pairs into two columns below 640, with
 `illustrated` collections staying single (`base: 1`) so verse keeps its
 measure.
 
-**Partly built, uncommitted at time of writing.** The gallery's second column,
-`MasonryColumns.base`, and the `sizes` correction are in the tree along with a
-first pass at the tab row. What is specced and not built: the `xs` breakpoint
-and the mask-query move (§2), the rung type scale and `COLUMN`'s `x` entries
-(§12), the deck's narrow geometry (§9.1), and the nav changes (§13).
+**Built.** Every section of the spec is in the tree: the tab row and `xs`
+regime switch (§2–§8), the gallery's second column with `MasonryColumns.base`
+and the `sizes` correction (§9), the deck's two geometries and the responsive
+`CollectionMark` (§9.1), the `min-w-0` + `break-words` overflow fix (§9.2),
+the rung type scale and `COLUMN`'s `x` entries (§12), and the nav's
+`flex-wrap`/`leading-none` (§13). `tsc --noEmit` and `next build` are clean,
+208 static pages (unchanged — nothing here adds or removes a route).
+
+A round of live review past the spec's own scope followed: the gallery's
+`TextCard`/`HybridCard`/chapbook-deck excerpts were unclamped (falling
+through to a piece's full `text` with no hand-set `preview`, towering over
+neighboring cards at the paired column), the title row's arrow squeezed
+every wrapped line instead of just the last and has since been dropped
+entirely, `SiteNav`'s wrapped `work`/`about` pair sat flush-left instead of
+against the toggle, and the gallery's card padding/gaps and page margins
+didn't share a single scale. All fixed in the same commit.
+
+**One residual, found by testing rather than by reading the spec:** at
+exactly 320px, `/work`'s `document.documentElement.scrollWidth` reads 15px
+over the viewport — but every element's own rendered box, checked directly,
+sits fully inside its card and the viewport; the phantom width traces to
+`TextCard`/`HybridCard`'s icon+tag header row (`flex-wrap` was added there,
+which fixed the visible layout but not this specific number — a Chromium
+quirk where `flex-wrap`'s intrinsic-size bookkeeping for scrollable overflow
+doesn't fully track the final wrapped result). No visible symptom at any
+width tested; `/` is clean at 320/375/500 and `/work` is clean at 375/500.
+Closing it for real means shrinking the Quote icon or `TagPill` padding in
+that one row, which is a visual call left to Beck rather than made here.
 
 **Two findings from measuring rather than reasoning**, both recorded in the
 spec because they contradict what the code says about itself:

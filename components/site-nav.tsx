@@ -19,13 +19,31 @@ export function SiteNav() {
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <BrandMark className="h-8 w-8" />
-          <span className="font-brand text-lg font-bold lowercase tracking-tight text-foreground">
+          {/* leading-none: below the nav's ~363px one-line width (§13 of the
+              narrow-screen-columns spec) "beck qing" wraps to two lines, and
+              the default 1.5 line-height reads as two separate words rather
+              than a stacked lockup. Safe at every width — the nav's own
+              height is set by the 36px ThemeToggle, and this line box is
+              27px at 1.5 and 18px at 1.0, under it either way. */}
+          <span className="font-brand text-lg font-bold leading-none lowercase tracking-tight text-foreground">
             beck qing
           </span>
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <ul className="flex items-center gap-1">
+          {/* flex-wrap, not a breakpoint: `work`/`about` stack when they
+              don't fit and sit side by side when they do, with no width to
+              guess and nothing to keep in sync with `--breakpoint-xs`
+              (§13). justify-end keeps both lines flush against the toggle
+              instead of flex-wrap's default flex-start, which left a
+              stacked pair hugging the ul's left edge; gap-y-2 gives the
+              stacked pair the space Beck asked for, and the nav row's own
+              items-center centres the (now two-line) block against the
+              toggle vertically. A side effect worth knowing: a wrapping
+              flex container's min-content is its widest single item, not
+              the whole row, so this also drops the page's overall overflow
+              floor from ~290px to ~240px (§9.2). */}
+          <ul className="flex flex-wrap items-center justify-end gap-1 gap-y-2">
             {LINKS.map((link) => {
               const active = pathname.startsWith(link.href)
               return (

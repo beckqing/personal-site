@@ -31,6 +31,10 @@
   --font-mono: var(--font-recursive), ui-monospace, 'Courier New', monospace;
   --font-heading: var(--font-recursive), ui-monospace, monospace;
 
+  /* The home page's tab-row/three-columns regime switches here (narrow-
+     screen-columns spec §2) — not a stock Tailwind breakpoint. */
+  --breakpoint-xs: 31.25rem;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -334,13 +338,17 @@
     -webkit-mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
   }
-  @media (min-width: 768px) {
+  /* narrow-screen-columns spec §2: the stacked 640-767 band is gone, so this
+     mask switch moves from `md` (768px) to the new `xs` breakpoint (500px,
+     31.25rem) — the same width DisciplinePanels now flips from tab+panel to
+     the three-across row at. */
+  @media (min-width: 31.25rem) {
     .column-fade {
       -webkit-mask-image: none;
       mask-image: none;
     }
   }
-  @media not all and (min-width: 768px) {
+  @media not all and (min-width: 31.25rem) {
     .columns-fade-shared {
       -webkit-mask-image: none;
       mask-image: none;
@@ -376,17 +384,47 @@
   /* A collection stack's backing cards (CollectionStack / ChapbookStack in
      work-visuals.tsx) — bottom-anchored via negative margin-bottom so each
      card's peek is exactly its target regardless of the card's own content
-     height (see "Collection stack geometry" in docs/ARCHITECTURE.md). Driven entirely by inline custom
-     properties set from the DECK table in JS, so the numbers exist in one
-     place instead of drifting between a literal class and a JS constant. */
+     height (see "Collection stack geometry" in docs/ARCHITECTURE.md). Driven
+     entirely by inline custom properties set from the DECK_WIDE/DECK_NARROW
+     tables in JS, so the numbers exist in one place instead of drifting
+     between a literal class and a JS constant.
+
+     Two geometries, split at `sm` (narrow-screen-columns spec §9.1): an
+     inline style always wins over a media query on the same property, so a
+     `@media (max-width: 639px) { .deck-card { --y: … } }` block would do
+     nothing while the inline `--y` is set. `deckVars()` emits both
+     `--y-wide`/`--y-narrow` (and the `hy` pair) under different names
+     instead, and it's this rule's own media query that picks between them —
+     narrow by default, wide from `sm` up. Tilts (`--r`/`--hr`) don't differ
+     between the two geometries, so they stay single-valued. */
   .deck-card {
-    margin-bottom: var(--y);
+    margin-bottom: var(--y-narrow);
     transform: rotate(var(--r));
     transition: margin 300ms ease-out, transform 300ms ease-out, box-shadow 300ms ease-out;
   }
   .group:hover .deck-card {
-    margin-bottom: var(--hy);
+    margin-bottom: var(--hy-narrow);
     transform: rotate(var(--hr));
+  }
+  @media (min-width: 640px) {
+    .deck-card {
+      margin-bottom: var(--y-wide);
+    }
+    .group:hover .deck-card {
+      margin-bottom: var(--hy-wide);
+    }
+  }
+
+  /* The deck's own container reserve (`deckReserveVars()`,
+     work-visuals.tsx) — same inline-beats-media-query trap as `.deck-card`
+     above, same fix: two named vars, one rule to choose between them. */
+  .deck-reserve {
+    padding-bottom: var(--reserve-narrow);
+  }
+  @media (min-width: 640px) {
+    .deck-reserve {
+      padding-bottom: var(--reserve-wide);
+    }
   }
 
   /* Shiki's dual-theme output (see components/excerpt.tsx). Rendered with

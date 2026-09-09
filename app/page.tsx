@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Palette, Feather, FlaskConical } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowRight, LayoutGrid, Palette, Feather, FlaskConical } from 'lucide-react'
 import { BrandMark } from '@/components/brand-mark'
 import { StampBadge } from '@/components/collage'
 import { HeroWordScatter, IconScatterField, CategoryWord, useCollage } from '@/components/hero-icon-collage'
@@ -69,7 +70,7 @@ const CARDS: Card[] = [
     // reads through the offsets and rotations, not the aspect ratios.
     // `lady-bird` breaks the rhythm, which is why it isn't rung 1.
     pieces: ['rabbit-in-the-moon', 'april-colors-24', 'lady-bird', 'projection'],
-    copy: 'Paintings made mostly after dark — moons, plants, and the anatomy of feeling.',
+    copy: 'Visual art made with a variety of media, but predominantly pixels and acrylic.',
     cta: 'look around',
   },
   {
@@ -110,8 +111,22 @@ const CARDS: Card[] = [
  *  anywhere in it squares up its column (§8), whether the pointer is over
  *  the header or a rung. The focus ring lives on the header block, not the
  *  link itself: a ring around a group whose height is set by a
- *  several-hundred-pixel decorative column would mostly circle nothing. */
-function DisciplineColumn({ href, label, Icon, accentClass, category, pieces, copy, cta }: Card) {
+ *  several-hundred-pixel decorative column would mostly circle nothing.
+ *  `visibilityClassName` (narrow-screen-columns spec §6): below `xs` (500px,
+ *  §2's revised regime boundary) a discipline panel only renders when its
+ *  tab is selected; from `xs` up it always shows — pure CSS, no JS media
+ *  query, so server and first client render always agree. */
+function DisciplineColumn({
+  href,
+  label,
+  Icon,
+  accentClass,
+  category,
+  pieces,
+  copy,
+  cta,
+  visibilityClassName,
+}: Card & { visibilityClassName?: string }) {
   const { hovered } = useCollage()
   const active = hovered === category
   const columnPieces = pieces.map(resolvePiece)
@@ -122,10 +137,14 @@ function DisciplineColumn({ href, label, Icon, accentClass, category, pieces, co
       className={cn(
         'discipline-column group flex w-full max-w-md flex-col outline-none',
         active && 'discipline-column-active',
+        visibilityClassName,
       )}
     >
       <div className="rounded-md group-focus-visible:ring-2 group-focus-visible:ring-ring">
-        <div className="flex justify-center">
+        {/* Below `xs` the tab row carries the label instead (§4) — showing
+            it twice here would be the duplication the shipped section
+            already refused. */}
+        <div className="hidden justify-center xs:flex">
           <StampBadge className={accentClass} tilt={0}>
             <Icon className="h-3.5 w-3.5" />
             <span>{label}</span>
@@ -147,22 +166,154 @@ function DisciplineColumn({ href, label, Icon, accentClass, category, pieces, co
   )
 }
 
-/** The three discipline columns — no card behind them (§6): each is a
- *  header plus a loose run of 2–4 unrelated pieces standing directly on the
- *  page, squaring up on its own hover/focus, or when the matching word in
- *  the hero copy above is hovered (shared via HeroWordScatter's context).
- *  `md:items-start`: each column's own height is honest (science, with
- *  four pieces including two drafts, still isn't forced to match the
- *  others). Below `md` the three stack and each fades individually
- *  (`.column-fade` inside `PieceColumn`); at `md` and up they sit side by
- *  side inside one shared fade (`.columns-fade-shared`) instead — see §5
- *  and the comment on `.column-fade` in globals.css. */
-function DisciplinePanels() {
+/** Copy for the `all work` tab (§5), decided alongside the copy edits in §4a. */
+const ALL_WORK_COPY = 'Art, essays, and experiments, ranging from biology to puppetry.'
+
+/** The first pick of each discipline, in `CARDS` order — derived rather than
+ *  a hand-picked fourth list, so re-picking a discipline's column updates
+ *  this one too (§5). */
+const ALL_WORK_PIECES: PieceRef[] = CARDS.map((card) => card.pieces[0])
+
+/** The `all work` panel (§5, §6): below `xs` only, selected by default. No
+ *  badge (the tab row already carries the label) and no CTA of its own — the
+ *  section's bottom `see all work` link serves that role, since giving this
+ *  panel its own would put two identical links to `/work` ~200px apart. */
+function AllWorkPanel({ className }: { className?: string }) {
+  const columnPieces = ALL_WORK_PIECES.map(resolvePiece)
+
   return (
-    <div className="columns-fade-shared flex flex-col items-center gap-10 sm:gap-12 md:flex-row md:items-start md:justify-center md:gap-6">
-      {CARDS.map((card) => (
-        <DisciplineColumn key={card.href} {...card} />
-      ))}
+    <Link href="/work" className={cn('discipline-column group flex w-full max-w-md flex-col outline-none', className)}>
+      <div className="rounded-md group-focus-visible:ring-2 group-focus-visible:ring-ring">
+        <p className="text-sm leading-relaxed text-muted-foreground">{ALL_WORK_COPY}</p>
+      </div>
+
+      <div className="mt-6">
+        <PieceColumn pieces={columnPieces} />
+      </div>
+    </Link>
+  )
+}
+
+/** One control in the narrow-screen tab row (§3, §7) — a toggle button, not
+ *  the ARIA tabs pattern (§7): the panels it controls are `display: none`
+ *  above `xs`, which would leave `tabpanel`s labelled by a tab that's fallen
+ *  out of the accessibility tree. `aria-label` carries the accessible name
+ *  standing alone ("show art", not "art") since the row isn't adjacent to a
+ *  heading that supplies the noun. The fill (`bg-current/10`), not colour
+ *  alone, marks the selected state — colour alone fails anyone who can't
+ *  separate the three accents. */
+function TabButton({
+  active,
+  onClick,
+  Icon,
+  label,
+  accentClass,
+}: {
+  active: boolean
+  onClick: () => void
+  Icon: typeof Palette
+  label: string
+  accentClass: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      aria-label={`show ${label}`}
+      className={cn(
+        // px-2 (not StampBadge's usual px-4) and py-3: the row-2 knife-edge
+        // §3 warned about — measured, the three discipline pills' natural
+        // widths (~307.5px) overrun the 280px available at a 320px
+        // viewport, so this takes §3's first fallback. py-3 clears the
+        // 44px tap-target check in §10.2 (36px with the tighter py-2).
+        'font-brand inline-flex items-center gap-1.5 rounded-full border-2 border-current px-2 py-3 text-xs font-bold lowercase tracking-wide transition-colors',
+        active ? cn(accentClass, 'bg-current/10') : 'text-muted-foreground',
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      <span>{label}</span>
+    </button>
+  )
+}
+
+/** The three discipline columns, plus (below `xs` only) a fourth `all work`
+ *  panel and the tab row that switches between all four (narrow-screen-
+ *  columns spec §3–§6) — no card behind any of them: each is a header plus
+ *  a loose run of 2–4 unrelated pieces standing directly on the page,
+ *  squaring up on its own hover/focus, or when the matching word in the
+ *  hero copy above is hovered (shared via HeroWordScatter's context).
+ *  `xs:items-start`: each column's own height is honest (science, with
+ *  four pieces including two drafts, still isn't forced to match the
+ *  others). §2 (revised 2026-09-09) deletes the old 640–767 stacked band —
+ *  there is one regime boundary now, not two: below `xs` (500px) the three
+ *  columns don't coexist at all (exactly one panel shows, picked by the tab
+ *  row) and each fades individually (`.column-fade` inside `PieceColumn`);
+ *  at `xs` and up they go straight to side by side inside one shared fade
+ *  (`.columns-fade-shared`) instead — see §5 and the comment on
+ *  `.column-fade` in globals.css.
+ *
+ *  Selection defaults to `all`, identical on the server and the first
+ *  client render, so there's no width-driven mismatch to correct (§6).
+ *  Below `xs` exactly one of the four panels is visible at a time, picked
+ *  by `visibilityClassName`/`className`; from `xs` up the tab row is
+ *  hidden and all three discipline panels show, unconditionally. */
+function DisciplinePanels() {
+  const { hovered } = useCollage()
+  const [selected, setSelected] = useState<'all' | IconCategory>('all')
+
+  // A hero word's hover latches the tab, but only on the transition to
+  // non-null (§8) — `hovered` snaps back to null on mouse-out, and reacting
+  // to that would bounce the panel back to `all work` the moment the
+  // pointer leaves the word, which reads as a flicker, not a gesture.
+  const prevHoveredRef = useRef<IconCategory | null>(null)
+  useEffect(() => {
+    if (hovered !== null && prevHoveredRef.current === null) {
+      setSelected(hovered)
+    }
+    prevHoveredRef.current = hovered
+  }, [hovered])
+
+  return (
+    <div>
+      {/* Tab row (§3): the default sits alone on its own row, the three
+          disciplines share the second — natural widths, centred, not
+          equal-flex (a full `science` label needs more room than an equal
+          third would give it). Hidden from `xs` up, where the side-by-side
+          row takes over instead — §2 deleted the intermediate stacked band,
+          so there's nothing between the tabs and the three-across row. */}
+      <div className="mb-6 flex flex-col items-center gap-2 xs:hidden">
+        <TabButton
+          active={selected === 'all'}
+          onClick={() => setSelected('all')}
+          Icon={LayoutGrid}
+          label="all work"
+          accentClass="text-foreground"
+        />
+        <div className="flex items-center gap-1.5">
+          {CARDS.map((card) => (
+            <TabButton
+              key={card.href}
+              active={selected === card.category}
+              onClick={() => setSelected(card.category)}
+              Icon={card.Icon}
+              label={card.label}
+              accentClass={card.accentClass}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="columns-fade-shared flex flex-col items-center gap-10 xs:flex-row xs:items-start xs:justify-center xs:gap-6">
+        <AllWorkPanel className={selected === 'all' ? 'block xs:hidden' : 'hidden'} />
+        {CARDS.map((card) => (
+          <DisciplineColumn
+            key={card.href}
+            {...card}
+            visibilityClassName={selected === card.category ? 'block' : 'hidden xs:block'}
+          />
+        ))}
+      </div>
     </div>
   )
 }

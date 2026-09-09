@@ -13,7 +13,7 @@ import {
 } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowDownUp, ArrowRight, Quote, RotateCcw, Search, X } from 'lucide-react'
+import { ArrowDownUp, Quote, RotateCcw, Search, X } from 'lucide-react'
 import {
   ALL_TAGS,
   DISCIPLINE_FACETS,
@@ -206,6 +206,15 @@ function TagPill({ children, className }: { children: ReactNode; className?: str
   )
 }
 
+/** A card's bottom title line, shared by TextCard and HybridCard. */
+function CardTitleRow({ title }: { title: string }) {
+  return (
+    <p className="mt-4 break-words font-brand text-sm lowercase tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
+      {title}
+    </p>
+  )
+}
+
 /**
  * Text-forward pieces (poems, essays) — a quote-style preview, no image.
  * The form (poem/essay) reads as a small tag up top rather than folded
@@ -217,31 +226,44 @@ function TextCard({ item }: { item: WorkItem }) {
   const excerpt = item.preview ?? item.text ?? item.description ?? ''
   return (
     <article
-      className="group flex flex-col rounded-2xl border border-border p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+      className="group flex flex-col rounded-2xl border border-border p-3 transition-all hover:-translate-y-0.5 hover:shadow-lg sm:p-6"
       style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}
     >
       <Link href={workHref(item)} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <div className="flex items-start justify-between gap-3">
+        {/* flex-wrap + ml-auto (not justify-between): at a 130px paired
+            gallery column, Quote's fixed 28px plus the badge column's own
+            un-shrinkable minimum (TagPill is `shrink-0`) can run a few px
+            past the card's padded content width — invisible in the
+            rendered layout (everything still lands inside the card) but
+            registers as phantom scrollable overflow at the page level.
+            ml-auto reproduces justify-between's right alignment on one line
+            and keeps it on two if the badge wraps below the icon. */}
+        <div className="flex flex-wrap items-start gap-3">
           <Quote
             className="h-7 w-7 shrink-0 -scale-x-100"
             style={{ color: `color-mix(in srgb, ${tone} 70%, transparent)` }}
             strokeWidth={1.5}
             aria-hidden="true"
           />
-          <div className="flex flex-col items-end gap-2">
+          <div className="ml-auto flex flex-col items-end gap-2">
             {item.unfinished && <UnfinishedMark />}
             <TagPill>{formFor(item)}</TagPill>
           </div>
         </div>
 
-        <VerseBlock text={excerpt} context="card" className="mt-3 text-lg text-foreground" />
+        {/* text-sm + line-clamp-4 below sm: `excerpt` falls back to a
+            piece's full `text` when it has no hand-set `preview`, and at a
+            paired ~130px gallery column that can tower over every image
+            card beside it even clamped at the sm+ text size — reported
+            directly against this build, not spec-driven. sm+ keeps the
+            size and room a 3-column card already had. */}
+        <VerseBlock
+          text={excerpt}
+          context="card"
+          className="mt-3 line-clamp-4 text-sm text-foreground sm:line-clamp-none sm:text-lg"
+        />
 
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <span className="font-brand text-sm lowercase tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
-            {item.title}
-          </span>
-          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-foreground" />
-        </div>
+        <CardTitleRow title={item.title} />
       </Link>
     </article>
   )
@@ -264,28 +286,29 @@ function HybridCard({ item }: { item: WorkItem }) {
           <WorkPlaceholder item={item} />
         </div>
 
-        <div className="p-6" style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}>
-          <div className="flex items-start justify-between gap-3">
+        <div className="p-3 sm:p-6" style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}>
+          {/* flex-wrap + ml-auto — same reasoning as TextCard's identical row above. */}
+          <div className="flex flex-wrap items-start gap-3">
             <Quote
               className="h-7 w-7 shrink-0 -scale-x-100"
               style={{ color: `color-mix(in srgb, ${tone} 70%, transparent)` }}
               strokeWidth={1.5}
               aria-hidden="true"
             />
-            <div className="flex flex-col items-end gap-2">
+            <div className="ml-auto flex flex-col items-end gap-2">
               {item.unfinished && <UnfinishedMark />}
               <TagPill>{formFor(item)}</TagPill>
             </div>
           </div>
 
-          <VerseBlock text={excerpt} context="card" className="mt-3 text-lg text-foreground" />
+          {/* text-sm + line-clamp-4 below sm — same reasoning as TextCard's identical excerpt above. */}
+          <VerseBlock
+            text={excerpt}
+            context="card"
+            className="mt-3 line-clamp-4 text-sm text-foreground sm:line-clamp-none sm:text-lg"
+          />
 
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <span className="font-brand text-sm lowercase tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
-              {item.title}
-            </span>
-            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-foreground" />
-          </div>
+          <CardTitleRow title={item.title} />
         </div>
       </Link>
     </article>
@@ -321,7 +344,11 @@ function CollectionTile({ item }: { item: WorkCollection }) {
             href={workHref(item)}
             className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <h2 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
+            {/* break-words: a single long/unbroken word (no space to wrap
+                at) otherwise overflows this box rather than shrinking with
+                it — the same §9.2 min-content bug, just outside the grid's
+                own sizing since this chrome is `position: absolute`. */}
+            <h2 className="break-words font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
               {item.title}
             </h2>
             {item.description && (
@@ -404,11 +431,16 @@ function ImageCard({ item }: { item: WorkItem }) {
 
       <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end p-4">
         <div className="sticky bottom-4 mx-auto flex w-full max-w-[min(85%,20rem)] items-end justify-between gap-3 rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+          {/* min-w-0: this Link sits beside TagPill's `shrink-0` in a
+              `justify-between` row, and a flex item's default min-width is
+              its own content size — without this it refuses to shrink
+              below that instead of wrapping. break-words on the h2 handles
+              a single word too long to wrap at all (§9.2). */}
           <Link
             href={workHref(item)}
-            className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-w-0 rounded pointer-events-auto outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <h2 className="font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
+            <h2 className="break-words font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
               {item.title}
             </h2>
           </Link>
@@ -714,10 +746,11 @@ export function WorkGallery() {
       ))}
 
       <div className="relative z-10">
-      {/* Search */}
+      {/* Search — text-sm/py-2/a smaller icon, matching TagChip's own size
+          rather than the larger, separately-chosen scale this had before. */}
       <div className="relative">
         <Search
-          className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
         <input
@@ -726,7 +759,7 @@ export function WorkGallery() {
           onChange={(e) => setQueryInput(e.target.value)}
           placeholder="search titles, descriptions, text, tags…"
           aria-label="Search all work"
-          className="font-brand w-full rounded-full border border-border bg-card py-3 pl-12 pr-4 text-base lowercase text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-goldenrod"
+          className="font-brand w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm lowercase text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-goldenrod"
         />
         {queryInput && (
           <button

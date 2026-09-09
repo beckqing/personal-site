@@ -64,7 +64,7 @@ export default async function WorkItemPage({ params }: { params: Promise<{ slug:
   const chapbook = isCollection(item) && isChapbook(item)
 
   return (
-    <main className={cn('mx-auto px-5 py-16 sm:px-8 sm:py-20', chapbook ? 'max-w-3xl' : 'max-w-5xl')}>
+    <main className={cn('mx-auto px-3 py-16 xs:px-5 sm:px-8 sm:py-20', chapbook ? 'max-w-3xl' : 'max-w-5xl')}>
       <Link
         href="/work"
         className="font-brand inline-flex items-center gap-1.5 text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
@@ -141,7 +141,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
       {chapbook ? (
         <ChapbookContents collection={item} />
       ) : (
-        <MasonryGrid className="mt-6" columns={layout === 'illustrated' ? { lg: 2 } : undefined}>
+        <MasonryGrid className="mt-6" columns={layout === 'illustrated' ? { lg: 2, base: 1 } : undefined}>
           {item.pieces.map((p, i) => (
             <PieceTile key={p.slug} collection={item} piece={p} index={i} />
           ))}

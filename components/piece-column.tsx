@@ -10,15 +10,22 @@ import { toneFor, type WorkPiece } from '@/lib/work'
  * (`w`/`x`) and degrees of rotation at rest (`r`) — the open state is a
  * constant `0deg` (§8), so there is no `hr` here. `show` is the fraction of
  * this rung left uncovered by the rung below it — the band you actually
- * see. The last rung's `show` is 1: nothing covers it. Verbatim from §4 of
- * docs/specs/2026-09-home-discipline-columns.md, this table's own source of
- * truth.
+ * see. The last rung's `show` is 1: nothing covers it. `w`/`r`/`show` are
+ * verbatim from §4 of docs/specs/2026-09-home-discipline-columns.md; `x` is
+ * retabled by §12.2 of docs/specs/2026-09-narrow-screen-columns.md — the
+ * old 2–14 range left the right 10–26% of every rung's column empty (an
+ * `x + w ≤ 90` invariant sized for rotation jitter that only needs ~4%), so
+ * rungs now alternately lean toward their column's left and right edges —
+ * matching the alternating sign of `r` — and slightly overhang them. Nothing
+ * clips: `.column-fade`/`.columns-fade-shared` are `mask-image`, which
+ * doesn't clip horizontally, so the overhang is bounded by the page's own
+ * `px-5`/`px-8` padding, not by the column itself.
  */
 const COLUMN = [
-  { w: 72, x: 2, r: -2.5, show: 0.52 },
-  { w: 76, x: 12, r: 2.0, show: 0.55 },
+  { w: 72, x: -4, r: -2.5, show: 0.52 },
+  { w: 76, x: 21, r: 2.0, show: 0.55 },
   { w: 70, x: 6, r: -1.5, show: 0.5 },
-  { w: 74, x: 14, r: 3.0, show: 1 },
+  { w: 74, x: 26, r: 3.0, show: 1 },
 ] as const
 
 type Rung = (typeof COLUMN)[number]
@@ -151,7 +158,7 @@ function PieceRung({ piece, geometry, marginTop }: { piece: WorkPiece; geometry:
   return (
     <div
       aria-hidden="true"
-      className="column-rung relative overflow-hidden rounded-lg border border-foreground/10 bg-card px-4 py-3 shadow-sm"
+      className="column-rung relative overflow-hidden rounded-lg border border-foreground/10 bg-card px-2 py-3 shadow-sm"
       style={{ ...style, aspectRatio: TEXT_RUNG_ASPECT }}
     >
       {/* The same quote glyph TextCard/HybridCard use to mark an excerpt
@@ -165,9 +172,20 @@ function PieceRung({ piece, geometry, marginTop }: { piece: WorkPiece; geometry:
       />
       {/* Type sets at the top of the box, not centered — the band that
           stays visible under the rung below is the top band (§4), so
-          top-set type is always the type that shows. Two lines, clamped:
-          the excerpt provably can't exceed that, which is what makes a
-          fixed aspect safe here without ever cropping real content.
+          top-set type is always the type that shows.
+
+          §12.1 of the narrow-screen-columns spec: this is Recursive Mono
+          (`.font-brand-italic` sets `MONO 1`), whose ~0.6em advance means
+          `text-base` was already clipping the longest previews (this rung
+          is not "provably" un-croppable at two lines — that was never
+          true at a mono advance). `text-xs`/`px-2` buy back the width, and
+          the rung has vertical room to spend: at a 288px desktop rung the
+          box is ~78% empty at two lines of `text-base`. The clamp count
+          varies by width instead of a flat number because the column's
+          pixel width (not just its aspect) is what decides how many lines
+          a fixed-height box can hold without the mono type looking
+          sparse — line-clamp-3 at `xs` uses the room the narrower column
+          leaves that `md`'s wider rung doesn't need as badly.
 
           The mark sits in normal flow right after the excerpt, not
           absolutely overlaid — an overlay corner is only ever guaranteed
@@ -177,7 +195,9 @@ function PieceRung({ piece, geometry, marginTop }: { piece: WorkPiece; geometry:
           the text instead keeps both inside the top band every rung
           actually keeps visible, regardless of its position in the
           column. */}
-      <p className="font-brand-italic line-clamp-2 text-base leading-relaxed text-foreground/80">{excerpt}</p>
+      <p className="font-brand-italic line-clamp-2 xs:line-clamp-3 md:line-clamp-2 text-xs leading-relaxed text-foreground/80">
+        {excerpt}
+      </p>
       {piece.unfinished && (
         <div className="mt-2 flex justify-end">
           <UnfinishedMark />
