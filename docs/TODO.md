@@ -1117,3 +1117,57 @@ live from Beck rather than re-litigated:**
       anywhere near entry text silently breaks the verbatim rule (`the
       Chinese vegan scene`); and `new Date('2024-11')` renders as October
       west of Greenwich. All four addressed.
+
+---
+
+## 21. The home page's discipline columns are unusable on a phone — **specced 2026-09-09, partly built**
+
+At 375px the three stacked columns run **~2,550px** — about 3.8 screenfuls to
+scroll past three headers and twelve decorative rungs. The 640–767 band
+carries the same stack with more room to waste on it, since a column is
+~630–660px tall whatever the viewport.
+
+**Fully specced in
+[specs/2026-09-narrow-screen-columns.md](specs/2026-09-narrow-screen-columns.md).**
+Below ~500px the three pills become control tabs over a single column with
+`all work` as the default; from 500 up the three columns sit side by side and
+the stacked band is deleted entirely. One DOM switched by CSS, not a JS layout
+swap — a JS switch would flash the 2,550px stack before hydration.
+
+**Decided with Beck 2026-09-09**, in the spec's §0: tabs keep their icons
+(which forces the row to break in two — `all work` alone above the three
+disciplines); `all work` is the label, not `all`; the `all` column takes one
+rung from each discipline; a hero word's hover latches the tab while its tap
+still navigates; and the gallery pairs into two columns below 640, with
+`illustrated` collections staying single (`base: 1`) so verse keeps its
+measure.
+
+**Partly built, uncommitted at time of writing.** The gallery's second column,
+`MasonryColumns.base`, and the `sizes` correction are in the tree along with a
+first pass at the tab row. What is specced and not built: the `xs` breakpoint
+and the mask-query move (§2), the rung type scale and `COLUMN`'s `x` entries
+(§12), the deck's narrow geometry (§9.1), and the nav changes (§13).
+
+**Two findings from measuring rather than reasoning**, both recorded in the
+spec because they contradict what the code says about itself:
+
+- The rung excerpt is **monospaced** (`.font-brand-italic` sets `MONO: 1`),
+  advance measured at ~0.596em. Two lines hold ~54 characters at a desktop
+  column, so `lost`'s 66-character preview is **already clipped today** —
+  `PieceRung`'s comment that "the excerpt provably can't exceed two lines" is
+  false. §12.1.
+- The collection deck's taper **inverts** in a paired column: `CARD4_STRIP_PX`
+  is a fixed 40px while cards 2 and 3 are percentages, so at a 130px card the
+  blank counting card becomes the deepest band. Fixed by a second geometry
+  below `sm` (§9.1) — desktop keeps 98/61/40 and the word `pieces` exactly as
+  it ships today, which makes a desktop regression as much a failure as a
+  phone one.
+
+**Closed on the way through:** the narrow-viewport page overflow. Grid tracks
+default to `min-width: auto`, so `grid-cols-2` couldn't shrink below a card's
+min-content and the browser was shrinking the whole document to fit. Fixed
+with `min-w-0` on the grid tracks plus `min-w-0 break-words` on the card
+titles — both halves needed, since `min-w-0` alone just relocates the overflow
+into a word spilling out of its own card. Verified clean at 320px. The
+residual ~290px floor is `SiteNav`'s own minimum, below every real device;
+§13's `flex-wrap` lowers it to ~240px as a side effect. §9.2.

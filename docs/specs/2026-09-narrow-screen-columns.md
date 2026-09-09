@@ -37,11 +37,12 @@
 | How the regime switch happens | **CSS visibility over one DOM**, not a JS layout switch | §6 |
 | Whether `illustrated` collections get 2 columns | **No** — verse keeps its measure, `base: 1` | §9 |
 | The `all` column's half-dissolved third rung | **Accepted for now**, not re-tabled | Beck, 2026-09-09 |
-| Collection stacks below 640 | **Single column** — they don't pair. Mechanism unresolved, §9.1 | Beck, 2026-09-09 |
+| Collection stacks below 640 | **They pair, deck and all.** Two geometries split at `sm`: desktop unchanged, narrow shrinks the mark and widens card 3, §9.1 | Beck, 2026-09-09 (revised) |
 | `all` and `art` tab copy | **Written**, §5 and §4a | Beck, 2026-09-09 |
 | Excerpt type size in a rung | **Smaller at narrow widths**, §12.1 | Beck, 2026-09-09 |
 | Gutter between rungs | **Closed by widening `x`, not by shrinking `gap`**, §12.2 | §12.2 |
 | Rungs overhanging their column | **Yes**, bounded by the page's own padding | Beck, 2026-09-09 |
+| The narrow-viewport page overflow | **Fixed** — `min-w-0` + `break-words`. Residual ~290px floor is `SiteNav`'s own minimum, below any real device: leave it, §9.2 | Beck, 2026-09-09 |
 
 ---
 
@@ -424,89 +425,207 @@ that dependency array as a primitive, not as the object.
 Non-`illustrated` collection detail pages get two columns along with the
 main gallery. That is consistent and wanted — they are grids of images.
 
-### 9.1. Collection stacks don't pair — and `MasonryGrid` can't express that
+### 9.1. Collection stacks in a paired column — resolved
 
-**Decided (Beck, 2026-09-09): collection stacks render single-column below
-640 while everything else pairs up.** That resolves the deck-taper inversion
-(§10.6) by never putting a deck in a 130px card. **The mechanism is not
-resolved**, and this is the one thing still blocking implementation.
+**Decided (Beck, 2026-09-09): the deck stays, in two columns.** This
+reverses the earlier decision that collection stacks would render
+single-column below 640 while everything else paired.
 
-`MasonryGrid` deals its children round-robin into N sibling flex columns —
-that dealing is the whole reason it isn't CSS `columns`, since it's what
-makes the grid read left→right, top→bottom. A collection is not special in
-that flow: `work-gallery.tsx` renders every result, collections included, as
-a `WorkCard` in one `.map()`. **There is no way for one child of a flex
-column to span its siblings**, so "full-width collections beside paired
-cards" is not something the current structure can say.
+**The earlier "`MasonryGrid` can't express that" was about that decision,
+not about the deck.** What the component cannot say is *"one child spans
+both columns while its siblings pair"* — it deals children round-robin into
+sibling flex columns, which is what makes the grid read left→right rather
+than down-then-across, and no child of a flex column can span its siblings.
+With the decision reversed there is nothing to express: a collection is a
+card like any other, and the deck draws in whatever width the track gives
+it. The blocker is gone, and no `col-span`, dense flow or narrow deck
+variant is needed.
 
-Four ways out:
+**What actually breaks is one number.** `CARD4_STRIP_PX = 40` is the only
+absolute length in an otherwise fully proportional deck — it exists because
+`CollectionMark` is fixed-size text (`px-2.5 py-1 text-xs`, an 8 + 24 + 8
+strip). Cards 2 and 3 are percentages of the column width, so as the card
+narrows they shrink past the fixed one and the taper **inverts**:
 
-1. **A real CSS grid below 640, with collections at `col-span-2`.** Says
-   exactly what was decided. Costs the round-robin: `grid-auto-flow: dense`
-   or plain grid order would reorder the gallery, and reading order is a
-   property the component exists to protect.
-2. **Render a collection's cover card alone below 640** — no fanned deck —
-   so it pairs like any other card. Preserves order and pairing, and the
-   deck (the thing that breaks) simply isn't drawn at a width where it
-   can't work. `CollectionMark`'s ~95px pill against a 130px card still
-   needs checking. **This is the recommendation** — it reads as "below 640 a
-   collection is a card with a count on it," which is honest.
-3. **Give the deck a narrow variant after all** — the option declined on
-   2026-09-09. Recorded here only so a future reader knows it was refused,
-   not overlooked.
-4. **Revert the gallery to one column below 640.** Abandons §9 entirely and
-   leaves the phone gallery as it is today.
+| column | card 2 | card 3 | card 4 |
+| --- | --- | --- | --- |
+| 350px | 98px | 61px | 40px |
+| 158px (375 viewport) | 44px | **28px** | 40px |
+| 128px (315 viewport) | 36px | **22px** | **40px** |
 
-Needs Beck before §9 is built. Nothing else in this spec depends on it.
+Card 4 passes card 3 below a 229px column and card 2 as well below 143px —
+both inside the paired phone range, which is why it reads as compacted
+rather than merely small (§10.6 has the full measurement).
 
-**Update, 2026-09-09.** §9's column change is in the working tree, so the
-deck now renders in a paired column and §10.6's inversion is confirmed by
-eye rather than argued from the geometry table. It is worse than the "at a
-130px card" framing suggested: the taper is already broken at 375px, not
-only on a small phone. That doesn't change the decision, only its urgency —
-whatever mechanism §9.1 picks has to land before §9 ships, not after.
+**Fix (Beck, 2026-09-09): two geometries, split at `sm`.** Desktop keeps
+today's deck and today's mark exactly — the ~0.63 decay, the 98/61/40 taper
+at a 350px column, and the word `pieces`. Only below 640 does anything
+change. The count stays on card 4 at every width; the badge never goes over
+artwork.
 
-### 9.2. The two-column grid overflows the page — and that is the offset
+**The trap, first: inline styles beat media queries.** `deckVars()` writes
+`--y`/`--r`/`--hy`/`--hr` inline and `deckReserve()` writes `padding-bottom`
+inline, so a `@media (max-width: 639px) { .deck-card { --y: … } }` block in
+globals.css does nothing at all — the inline declaration wins regardless of
+the query. Emit **both** values inline under different names and let the
+stylesheet choose:
 
-**Observed 2026-09-09 at a 315px viewport:** the whole site renders at
-roughly 70% scale with a band of dead background down the right-hand side,
-including the sticky nav, which is full-width and so should be impossible
-to inset. It isn't an inset. The page is **wider than the viewport**, and
-the browser is shrinking the whole document to fit; the leftover strip is
-`<html>`'s `bg-background` painting the canvas, which it does across the
-full viewport no matter how wide the root box is.
+```
+style={{ '--y-narrow': …, '--y-wide': …, '--hy-narrow': …, '--hy-wide': … }}
 
-**Cause: grid items have `min-width: auto`.** A grid column cannot shrink
-below its content's min-content width, and min-content for a card is set by
-its longest unbreakable word. The worst case in the corpus is the card
-title row in `work-gallery.tsx` — `font-brand` (Recursive **Mono**, ~0.6em
-advance) at `text-sm`:
+.deck-card { margin-bottom: var(--y-narrow); }
+@media (min-width: 640px) { .deck-card { margin-bottom: var(--y-wide); } }
+```
 
-| | |
-| --- | --- |
-| `Māteriālistārum`, 15 chars × 8.4px | ~126px |
-| `gap-3` + the trailing `ArrowRight` | ~26px |
-| the card's own `p-6` | 48px |
-| **card min-content** | **~200px** |
-| × 2 columns + `gap-5` + the page's `px-5` | **~460px** |
+The container's reserve needs the same treatment and a class of its own,
+since it is a bare inline `paddingBottom` today. Tilts don't differ between
+the two geometries, so `--r`/`--hr` stay single-valued.
 
-460px of document in a 315px viewport is a 0.68 scale factor, which is what
-the screenshot shows. This is a **new** failure: at one column the grid was
-never asked to fit two min-contents side by side, so §9 introduced it.
+**The narrow table.** Cards 2's offsets and every tilt are unchanged; card 3
+widens and card 4's strip shrinks with the mark:
 
-**The fix is two classes, and it needs both.**
+| card | wide (`sm`+, today) | narrow (< 640) |
+| --- | --- | --- |
+| 2 | `y: 28` | `y: 28` |
+| 3 | `y: 45.5` (strip 17.5%) | **`y: 50`** (strip 22%) |
+| 4 | `y: 45.5 + 40px` | **`y: 50 + 26px`** |
 
-1. `min-w-0` on `MasonryGrid`'s column wrappers (`<div key={i}
-   className="flex flex-col gap-5">`), which is what actually lets a grid
-   track go below min-content.
-2. `break-words` on the card title span, plus `min-w-0` on it so it can
-   shrink inside its `flex … justify-between` row. Without this, step 1
+`hy` stays derived, not chosen — whatever keeps `y + dip(r)` equal across
+rest and hover so the tile's bottom edge doesn't move when the deck
+flattens. For narrow card 3 that is `50 + dip(2.5) − dip(1) = 51.31`; card
+4 follows the same rule it already does.
+
+Resulting taper, descending at every real width:
+
+| column | card 2 | card 3 | card 4 |
+| --- | --- | --- | --- |
+| 350px (wide geometry) | 98px | 61px | 40px |
+| 158px (375 viewport) | 44px | 35px | 26px |
+| 130px (320 viewport) | 36px | 29px | 26px |
+
+The inversion threshold moves from a 229px column to **118px** — a 296px
+viewport, below every device in use.
+
+**The mark, responsive.** Below `sm` it drops the word and most of its size;
+at `sm`+ it is exactly what ships today.
+
+| | wide (`sm`+) | narrow |
+| --- | --- | --- |
+| text | `text-xs` | `text-[10px]` |
+| padding | `px-2.5 py-1` | `px-2 py-0.5` |
+| gap / icon | `gap-1.5` / `h-3.5` | `gap-1` / `h-3` |
+| label | `30 pieces` | `30` |
+| measured | ~105 × 24px | ~44 × 18px |
+
+Two details that decide whether the arithmetic holds:
+
+- **Set the narrow line-height explicitly** (`text-[10px]/[0.875rem]` or
+  `leading-[14px]`). An arbitrary Tailwind font size sets only `font-size`
+  and inherits `line-height`, and the pill's height — `max(icon, line box)`
+  + padding — is what `CARD4_STRIP_PX` is measured from. Inherit a 1.5
+  line-height and the 18px pill becomes 19px and the strip is wrong.
+- **Hide the word with `sr-only sm:not-sr-only`, not `hidden sm:inline`.**
+  `hidden` drops it from the accessibility tree, leaving a bare "30" beside
+  an `aria-hidden` icon. The count needs its noun in the accessible name at
+  every width.
+
+**`CARD4_STRIP_PX` becomes two constants**, and its doc comment already
+warns that changing the mark's padding, text size or inset changes this
+number with nothing recomputing it. That comment now governs two values
+instead of one, and both are derived from the table above: 8 + 24 + 8 wide,
+4 + 18 + 4 narrow.
+
+**What this costs.** Two geometries to keep in sync instead of one, against
+the deck's original design of a single table resolving against the column
+width. That is the price of leaving desktop untouched, and it was taken
+deliberately (Beck, 2026-09-09) over the two alternatives below.
+
+**Rejected: one table, card 3 widened to 22% everywhere.** Simpler, but it
+changes the cards 2→3 decay from ~0.63 to ~0.79 at every width, growing
+card 3's strip from 61px to 77px at a desktop column — a visible change to
+every collection card in service of a phone-only problem.
+
+**Rejected: move the count to the cover** (Beck, 2026-09-09). It would have
+made the deck fully proportional by removing the only absolute length, but
+it puts a badge over artwork. Recorded so a future reader knows the
+proportional option was available and declined, not overlooked.
+
+### 9.2. The two-column grid overflowed the page — fixed
+
+**Resolved 2026-09-09.** At 315px the whole site rendered at ~70% scale
+with dead background down the right-hand side, the full-width sticky nav
+included. It was never an inset: the document was wider than the viewport
+and the browser was shrinking the whole page to fit, with `<html>`'s
+`bg-background` painting the leftover strip — which it does across the full
+viewport regardless of how wide the root box is. The viewport meta was
+correct (`width=device-width, initial-scale=1`, verified in the served
+HTML), so this was real overflow.
+
+**Cause: grid and flex items default to `min-width: auto`.** Neither a grid
+track nor a flex row shrinks below its content's min-content width, and
+min-content is set by the longest unbreakable run. `.font-brand` is
+Recursive **Mono**, so every label is wider per character than it looks. §9
+introduced it: at one column the grid was never asked to fit two
+min-contents side by side.
+
+**Fix, applied — and it needed both halves:**
+
+1. `min-w-0` on `MasonryGrid`'s column wrappers, which is what actually lets
+   a grid track go below min-content.
+2. `min-w-0` + `break-words` on the card title spans. Without this, step 1
    converts a page-wide overflow into a word spilling out of every card —
-   the same bug, relocated.
+   the same bug relocated.
 
-Verify by asserting `document.documentElement.scrollWidth ===
-window.innerWidth` at 320px. That assertion is worth keeping in mind for
-every width in §10, not just this one.
+`CollectionTile`'s `<h2>` already carried `break-words` inside an
+`<a class="min-w-0">` before any of this; the pattern existed in the
+codebase, just not everywhere.
+
+**What remains is a floor at ~290px**, and it is `SiteNav` — measured, not
+inferred. At a 239px client width the elements crossing the edge are led by
+the nav's right-hand group and the theme toggle, both ending at exactly
+290px, which is the `scrollWidth`:
+
+| | measured |
+| --- | --- |
+| `work` pill | 65px |
+| `gap-1` | 4px |
+| `about` pill | 73px |
+| **`<ul>`** | **142px** |
+| `gap-2` + `ThemeToggle` | 8 + 36px |
+| **right-hand group** | **186px** |
+
+Plus the brand link (32px mark + `gap-2.5` + `qing`, the longest word it can
+break to) and the page's `px-5`. None of that is reducible by `min-w-0` —
+it is the nav's honest minimum, and shrinking it means redesigning the nav.
+The narrowest viewport in real use is 320px, so **this is below every actual
+device and should be left alone.** Record it, don't chase it. Verified at
+320px on `/`: `innerWidth`, `clientWidth` and `scrollWidth` all read 320.
+§13's `flex-wrap` lowers the floor further, to ~240px, as a side effect.
+
+**One thing the overflow snippet reports that is not a bug.** At 320px on
+`/` it lists three `position: absolute` SVGs with right edges of 324–331 —
+`IconScatterField`'s scattered hero icons. The hero section is
+`relative overflow-hidden`, so they are clipped and never reach
+`scrollWidth`, which is why it still reads 320. Decorative overflow inside a
+clipping ancestor is expected here; the assertion to trust is
+`scrollWidth === clientWidth`, not the element list.
+
+Two things in that measurement worth not misreading. The
+`fixed inset-0 z-[999]` overlay reported at 290px wide is
+`ThemeTransitionProvider`'s — it is sized *to* the layout viewport, so it is
+a consequence of the overflow, not a cause. And the 260px-wide
+`flex items-center gap-1.5` is the gallery's sort/mode control row, which
+wants more than a 239px viewport gives it but stays under the nav's 290 —
+the runner-up, not the binding constraint.
+
+**Recursive Mono's advance is ~0.6em — confirmed.** The `about` pill
+measures 73px; less its `px-4`, that is 41px for five characters = 8.2px at
+`text-sm`, which with `.font-brand`'s own `-0.01em` letter-spacing is
+**0.596em**. An earlier revision of this section inferred "nearer 0.5em"
+from the 290px floor and was wrong — the inference assumed the floor was all
+text, when 182px of it is fixed chrome. §12.1's table was computed at 0.6em
+and needs no change; verify item 10 is discharged by this measurement rather
+than still outstanding.
 
 **`sizes` must move with it.** `work-visuals.tsx:163` claims
 `(max-width: 640px) 100vw, …`; a card is now half the viewport below 640,
@@ -533,14 +652,12 @@ Measured in a real browser at **320px and 375px**, not derived:
    overflow at any tab at 320px.
 5. Reduced motion: rungs scattered, tab switch instant, section still
    legible.
-6. **No collection stack is ever drawn in a paired column below 640** —
-   §9.1's decision, whichever mechanism carries it. No longer a prediction:
-   observed at a 315px viewport on 2026-09-09, with §9's column change in
-   the working tree (screenshot, `hthtpw` and `inktober-17` side by side).
-
-   Card 4's strip is a fixed 40px while cards 2 and 3 are percentages of the
-   column width, so the deck doesn't merely flatten — the taper **inverts**.
-   At `px-5` + `gap-5`, a column is `(vw − 60) / 2`:
+6. **A collection deck in a paired column tapers the right way** — cards
+   2, 3 and any deeper card in descending order, at 320, 375 and 639. The
+   measurement that forced §9.1's fix, kept because it is what regression
+   here would look like: with card 4 present the taper inverts, since its
+   strip is a fixed 40px while cards 2 and 3 are percentages of the column
+   width. At `px-5` + `gap-5` a column is `(vw − 60) / 2`:
 
    | viewport | column | card 2 | card 3 | card 4 |
    | --- | --- | --- | --- | --- |
@@ -549,17 +666,25 @@ Measured in a real browser at **320px and 375px**, not derived:
    | 375 | 158px | 44px | **28px** | 40px |
    | 315 | 128px | 36px | **22px** | **40px** |
 
-   Two thresholds fall out, and both are inside the phone range: card 4
-   passes card 3 below a **229px column** (viewport ~517px), and passes
-   card 2 as well below a **143px column** (viewport ~346px). So across
-   every paired phone width the blank card that exists only to carry a
-   count is deeper than the card above it, and on a small phone it is the
-   deepest band in the deck.
+   Card 4 passed card 3 below a **229px column** (viewport ~517px) and card
+   2 as well below a **143px column** (viewport ~346px) — both inside the
+   paired phone range. §9.1's fix shrinks the strip to 26px and widens card
+   3 to 22% **below `sm` only**, moving the threshold to a **118px column**
+   (~296px viewport). So the checks are: the taper descends at 320 and 375,
+   the mark still reads at `text-[10px]`, and — because §9.1 now maintains
+   two geometries — **the desktop deck is byte-for-byte unchanged**, 98/61/40
+   at a 350px column with the word `pieces` intact. A regression there is as
+   much a failure as an inverted taper on a phone.
 
-   The second half of the same effect: the deck's reserve is `46.8% + 40px`,
-   so it grows from ~58% of a square cover at a 350px column to ~78% at
-   128px. The fan gets shallower and the tile it hangs off gets shorter at
-   the same time, which is what reads as compacted rather than merely small.
+   Second half of the same effect, and the other thing to watch: the narrow
+   reserve is `51.31% + 26px`, ~70% of a square cover at a 130px column
+   against desktop's ~57%. It cannot be made constant while the strip
+   carries a fixed-size badge — that was the trade taken when the count
+   stayed on card 4. If the deck still reads as compacted, this ratio, not
+   the strip order, is where to look.
+
+   Verify against `inktober-17` (30 pieces) and `hthtpw` (5), the two in
+   Beck's 2026-09-09 screenshot.
 7. Gallery card titles, `TagPill`s and medium labels at a 130px card — wrap
    is fine, overflow is not.
 8. `tsc --noEmit` and `next build` clean; page count unchanged.
@@ -567,10 +692,9 @@ Measured in a real browser at **320px and 375px**, not derived:
    375 and 500 — on `/work` *and* `/`. §9.2 is the gallery's version of
    this; §12.2's overhang is the home page's, and both fail the same way
    (the whole document shrinks to fit) rather than by showing a scrollbar.
-10. Measure Recursive Mono's advance at `MONO: 1` before touching the type
-   scale. §12.1's whole table is linear in it and the figure there is
-   estimated. Everything downstream — the clamp count, whether `lost` fits —
-   moves with it.
+10. ~~Measure Recursive Mono's advance at `MONO: 1`.~~ **Done** — ~0.596em,
+   from the nav's `about` pill at a 239px viewport (§9.2). §12.1's table was
+   computed at 0.6em and holds.
 11. At 500px: the three discipline copy blocks still set within a line of
    each other (§4a), and `science`'s badge doesn't wrap. This is what
    decides whether 500 is the right number or whether it has to rise.
@@ -694,3 +818,46 @@ consistent bias; and (b) an overhanging rung belongs to its own column's
 `<Link>`, so hovering the part of it that visually sits over the neighbour
 squares up the *other* column than the one under the pointer. Neither is
 fatal. Both are the price of the look.
+
+---
+
+## 13. The nav at very small sizes
+
+**Beck, 2026-09-09.** Two changes, both firing at the same widths.
+
+**Where the nav breaks.** Measured from the 239px reading in §9.2, the nav's
+comfortable one-line width is:
+
+| | |
+| --- | --- |
+| brand mark + `gap-2.5` + `beck qing` on one line | ~133px |
+| `work` + `gap-1` + `about` | 146px |
+| `gap-2` + `ThemeToggle` | 44px |
+| `px-5` | 40px |
+| **one-line nav** | **~363px** |
+
+That number sits between the common Android 360 and the iPhone 375, so the
+wrapped state is a real device state rather than a synthetic one. Below it,
+the flex row shrinks both children proportionally — so the brand wraps to
+two lines and the pill row runs out of space **together**, which is why
+these two changes belong in one edit.
+
+**1. `leading-none` on the brand.** The wrapped `beck / qing` sets at the
+default 1.5 today, which reads as two separate words rather than a stacked
+lockup. This is safe at every width: the nav's height is set by the 36px
+toggle, and the brand's line box is 27px at 1.5 and 18px at 1.0 — under it
+either way, so nothing above 363px moves.
+
+**2. `flex-wrap` on the `<ul>`, not a breakpoint.** `work` and `about`
+stack when they don't fit and sit side by side when they do, with no width
+to guess and nothing to keep in sync with `--breakpoint-xs`. Give it
+`gap-y-2` for the space Beck asked for between them when stacked; the
+existing `items-center` on the nav row already centres the stacked pair
+against the toggle.
+
+**Side effect, in the right direction.** A wrapping flex container's
+min-content is its widest *item*, not its whole row, so the `<ul>` floor
+falls from 146px to 73px and the nav's own min-content goes from ~310px to
+**~240px**. §9.2's residual nav floor drops well clear of every real device.
+It is a margin-of-safety improvement, not a bug fix: §9.2 confirms the page
+already fits at 320px.
