@@ -1280,6 +1280,31 @@ into a word spilling out of its own card. Verified clean at 320px. The
 residual ~290px floor is `SiteNav`'s own minimum, below every real device;
 §13's `flex-wrap` lowers it to ~240px as a side effect. §9.2.
 
+**Open, specced but not built — the gallery's three-across breakpoint.**
+Beck, 2026-09-09: three columns should start at ~500 rather than at `lg`. At
+1023px today a two-column card is 463px wide, which is a hero image and not
+a gallery tile. Specced as
+[§9.3](specs/2026-09-narrow-screen-columns.md) of the same file, and it is
+the one section of that spec still unbuilt.
+
+- [ ] Move `MasonryGrid`'s three-column query from `lg` to `xs` (500), **and
+      re-key every card's narrow dress from the viewport to its own column**
+      with container queries. The second half is not optional: `p-3 sm:p-6`,
+      the excerpt clamp, `CollectionMark`'s two sizes and the deck's two
+      geometries are all keyed to `sm` (640), so moving the count alone puts
+      `text-lg` in a 123px measure and re-inverts the §9.1 deck taper across
+      640–815. Tailwind v4 does container queries in core — verified against
+      this project's own 4.3.3 by compiling a probe, not from the docs.
+- [ ] **Beck:** the consequence to sign off on. At three columns a card
+      doesn't reach the 256px dress threshold until a ~896px viewport, so
+      500–896 is narrow-dressed — every text card clamped to four lines at
+      `text-sm`. §9.3's closing section has the fallback if that's too
+      austere (a third dress step, not a different column count).
+- [ ] Watch the polarity: a container query with no container **never
+      matches**, and `WorkPlaceholder` renders in five places with no grid
+      above it, the lightbox included. Wide-by-default, narrow-under-query —
+      §9.3's trap list and verify item 15.
+
 ## 22. Zine viewing doesn't exist as a type — untracked until now (2026-09-09)
 
 `adoption-minizine` (`lib/work.ts:1813`) is one `.webp` whose `description`

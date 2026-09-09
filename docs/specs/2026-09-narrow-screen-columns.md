@@ -17,6 +17,14 @@
 > [history/2026-09-home-discipline-columns.md](../history/2026-09-home-discipline-columns.md)
 > into a width that spec never addressed: it was written throughout for the
 > side-by-side arrangement, and says so.
+>
+> **Addendum §9.3 (2026-09-09) is not built** and is the only part of this
+> spec that isn't. It moves the gallery's three-across from `lg` down to
+> ~500 and re-keys every card's narrow dress from the viewport to its own
+> column, via container queries. It touches `components/masonry-grid.tsx`,
+> `components/work-gallery.tsx`, `components/work-visuals.tsx` and
+> `app/globals.css` — so the "no CSS change is needed" line above, already
+> overtaken by §2's own revision, does not hold for it either.
 
 ---
 
@@ -43,6 +51,9 @@
 | Gutter between rungs | **Closed by widening `x`, not by shrinking `gap`**, §12.2 | §12.2 |
 | Rungs overhanging their column | **Yes**, bounded by the page's own padding | Beck, 2026-09-09 |
 | The narrow-viewport page overflow | **Fixed** — `min-w-0` + `break-words`. Residual ~290px floor is `SiteNav`'s own minimum, below any real device: leave it, §9.2 | Beck, 2026-09-09 |
+| When three-across begins in the gallery | **~500px (`xs`), not `lg`** — the same boundary as the home page, §9.3 | Beck, 2026-09-09 (proposed, not built) |
+| How a card knows it is in a narrow column | **Its own column's width, via container queries** — not the viewport, §9.3 | §9.3 |
+| Which way round the two dresses are written | **Wide by default, narrow under the query** — a containerless `WorkPlaceholder` must fall through to desktop, §9.3 | §9.3 |
 
 ---
 
@@ -635,6 +646,253 @@ column count lands, rather than a judgement call.
 
 ---
 
+### 9.3. Three columns from 500 — and the key that has to change with them
+
+**Proposed by Beck 2026-09-09, not built.** Reverses §11's *"`lg`'s column
+count in the gallery. Three at 1024px+ stays."*
+
+§9 paired the gallery below 640 and left the three-column breakpoint alone
+at `lg`. The top of that range is wrong in the other direction: at a 1023px
+viewport a two-column card is **464px wide**, which is a hero image, not a
+gallery tile. Three-across should begin well before 1024 whatever else
+changes.
+
+Beck's number is ~500 — the same `xs` the home page's two regimes already
+split on (§2), so the site would carry exactly one narrow-screen boundary
+instead of two.
+
+**What 500 buys**, at the grid's own `px-3 xs:px-5 sm:px-8` gutters and the
+matching `gap-3 xs:gap-5 sm:gap-8`:
+
+| viewport | 3-col card (proposed) | 2-col card (today, below `lg`) |
+| --- | --- | --- |
+| 320 | — | 142px |
+| 375 | — | 170px |
+| 499 | — | 232px |
+| 500 | **140px** | 220px |
+| 640 | **171px** | 272px |
+| 768 | 213px | 336px |
+| 896 | 256px | 400px |
+| 1023 | 299px | 464px |
+| 1024 | 299px | — (three today) |
+| 1152+ (capped by `max-w-6xl`) | 341px | — |
+
+Note the discontinuity it brings: crossing 500 **upward** takes a card from
+232px to 140px, a 39% loss as the screen gets bigger. That is accepted — it
+is §1's trade, breadth over size, and it is the point of the change rather
+than a side effect of it.
+
+**Why this is not a one-line change to `columnQueries`**
+
+Everything on this site that makes a card survive a narrow column is keyed
+to the **viewport** at `sm` (640), not to the column the card is actually
+in. Move the column count to 500 on its own and the whole 500–1024 band gets
+desktop card internals at phone-column widths:
+
+- **Text cards.** `TextCard` and `HybridCard` are `p-3 sm:p-6` with
+  `text-sm line-clamp-4 sm:line-clamp-none sm:text-lg`
+  (`work-gallery.tsx:229`/`:263` and `:289`/`:308`). Three-across at 640 is
+  a 171px card; less `p-6`'s 48px that is **123px of measure at 18px type**.
+  At the 0.596em advance §9.2 measured for Recursive at `MONO: 1` — and
+  `.font-brand-italic`, which is what `VerseBlock` sets, is the same face at
+  the same `MONO: 1` — that is **11 characters a line**. The comments on
+  those very lines say the clamp exists because a paired ~130px column
+  towered over its neighbours. This puts the same width back, at twice the
+  type size, with the clamp off.
+- **Collection decks.** The deck's two geometries split at 640 in
+  globals.css (`.deck-card`, `.deck-reserve`), and §9.1 exists entirely
+  because `CARD4_STRIP_PX_WIDE = 40` is fixed while cards 2 and 3 are
+  percentages of the column. §10.6 measured the inversion: **card 4 passes
+  card 3 below a 229px column.** At three columns a 229px column is an
+  **815px viewport**, so 640–815 would run wide decks in narrow columns —
+  the exact compaction bug §9.1 fixed, reappearing one breakpoint up.
+
+The column count and the card's dress would be keyed to two different
+numbers, and the card's would be the wrong one.
+
+**The fix: dress a card by its own width, not the viewport's**
+
+Make each `MasonryGrid` column a named container and convert the card
+internals from `sm:` to container variants. A 140px card then wears the
+narrow dress because it *is* narrow, and the column count is free to move
+without dragging four unrelated decisions along with it.
+
+Tailwind v4 has this in core — no plugin — and it is **verified against this
+project's own `tailwindcss@4.3.3`**, by compiling a probe through
+`@tailwindcss/postcss` rather than trusting the docs:
+
+| written | compiles to |
+| --- | --- |
+| `@container/card` | `container-type: inline-size; container-name: card` |
+| `@3xs/card:p-6` | `@container card (width >= 16rem) { … }` |
+| `@max-3xs/card:p-3` | `@container card (width < 16rem) { … }` |
+| `@min-[229px]/card:p-4` | `@container card (width >= 229px) { … }` |
+
+**The threshold is 16rem — 256px**, which is Tailwind's stock `--container-3xs`,
+so no arbitrary variant and no new theme token. Why that number and not
+another:
+
+| candidate | wide dress starts at | against |
+| --- | --- | --- |
+| `2xs` (288px) | ~992px viewport | preserves today's minimum exactly, but leaves the wide dress nearly vestigial — narrow from 500 all the way to 992 |
+| **`3xs` (256px)** | **896px viewport** | 6% under today's blessed minimum; clears the deck's 229px floor by 27px |
+| `[229px]` | 815px viewport | sits *on* the deck's inversion point with no margin at all |
+
+The upper bound is empirical: **272px is the narrowest column that ships the
+wide dress today** — two columns at a 640px viewport. The lower bound is the
+deck's 229px inversion. 256 is the only round scale value between them.
+**If it reads too tight in review, `2xs` is the agreed step up** — one token
+per converted class, nothing else moves.
+
+At a 256px column the wide dress gets 208px of measure at `text-lg`, about
+19 characters. Today's narrowest shipping three-column card (299px at 1024)
+gets 23. Tighter, not new.
+
+**The polarity: wide by default, narrow under the query**
+
+**A container query with no container ancestor never matches**, so which way
+round the two dresses are written decides what breaks when someone renders a
+card outside the grid. Today `.deck-card` is narrow by default and wide from
+`sm`; keep that polarity and anything containerless is stuck narrow forever.
+
+That is not hypothetical. `WorkPlaceholder` renders in five places with no
+`MasonryGrid` above it — `media-player.tsx:429`, `code-demo-frame.tsx:319`,
+`image-lightbox.tsx:485`, `essay.tsx:162`, `guess-panel.tsx:45` — including
+the lightbox, at full screen. Its `text-3xl sm:text-4xl` title would sit at
+`text-3xl` in every one of them.
+
+Adding `@container/card` to those five call sites is the other option and is
+the wrong one: five places to forget, and a sixth the next time the
+component is reused. **Invert instead — wide by default, narrow under
+`(width < 16rem)`.** A missing container then falls through to today's
+desktop rendering, which is both the safe direction and the correct one for
+a lightbox.
+
+Checked, so the polarity is decided by `WorkPlaceholder` alone rather than
+argued per component: `CollectionStack` and `ChapbookStack` render only at
+`work-gallery.tsx:338`, always inside the grid, and `VerseBlock`'s `'card'`
+context appears only in the gallery and in `ChapbookStack` — every detail
+page uses `'reading'`. Both are safe either way. One polarity for the whole
+conversion is worth more than a per-component argument.
+
+**Inventory — what converts**
+
+The container goes on `MasonryGrid`'s existing column wrapper:
+
+```
+<div className="@container/card flex min-w-0 flex-col gap-3 xs:gap-5 sm:gap-8">
+```
+
+| file | today | becomes |
+| --- | --- | --- |
+| `work-gallery.tsx:229` | `p-3 sm:p-6` | `p-6 @max-3xs/card:p-3` |
+| `work-gallery.tsx:263` | `line-clamp-4 text-sm sm:line-clamp-none sm:text-lg` | `text-lg @max-3xs/card:line-clamp-4 @max-3xs/card:text-sm` |
+| `work-gallery.tsx:289` | `p-3 sm:p-6` | as :229 |
+| `work-gallery.tsx:308` | as :263 | as :263 |
+| `work-visuals.tsx:114/118/121` | `CollectionMark`'s two sizes | same inversion — **must** move in lockstep with the deck below, since `CARD4_STRIP_PX_*` is measured from this pill |
+| `work-visuals.tsx:209` | `text-3xl sm:text-4xl` | `text-4xl @max-3xs/card:text-3xl` — the call site that forced the polarity |
+| `work-visuals.tsx:254` | `sm:[text-indent:-1ch] sm:pl-[1ch]` | unconditional, with `@max-3xs/card:[text-indent:0] @max-3xs/card:pl-0` |
+| `work-visuals.tsx:301/327` | `ChapbookStack` cover padding + excerpt | as :229 / :263 |
+| `globals.css:400–430` | `.deck-card` / `.deck-reserve` | below |
+
+The deck's CSS keeps its shape and swaps its query:
+
+```
+.deck-card { margin-bottom: var(--y-wide); … }
+.group:hover .deck-card { margin-bottom: var(--hy-wide); }
+@container card (width < 16rem) {
+  .deck-card { margin-bottom: var(--y-narrow); }
+  .group:hover .deck-card { margin-bottom: var(--hy-narrow); }
+}
+```
+
+with `.deck-reserve` following the same pattern on `padding-bottom`.
+**`deckVars()`'s four-named-vars workaround survives untouched** — a
+container query loses to an inline style exactly as a media query does, so
+the reason that function emits `--y-wide`/`--y-narrow` instead of `--y` is
+unchanged by any of this. Only the defaults swap and the query changes kind;
+the comments above both rules need their `sm`/`min-width: 640px` wording
+updated, not their reasoning.
+
+Leave keyed to the viewport, deliberately:
+
+- **`work-gallery.tsx:188`**, `sm:opacity-60` on the venn control's label.
+  That is a stand-in for "this pointer can hover", not a width — and it sits
+  on the control row, where no column container would reach it anyway.
+- **`work-visuals.tsx:825`**, `sm:columns-2`. A list, not a card.
+- **`MasonryGrid`'s own `gap-3 xs:gap-5 sm:gap-8`.** Its comment says the
+  gaps are tuned to match the *page's* gutter at each step, which is a
+  viewport fact about the page, not a fact about a column.
+
+**Three remaining traps**
+
+**1. `container-type: inline-size` subsumes half of §9.2.** It applies
+inline-size containment, which makes the column's min-content contribution
+zero — the same thing `min-w-0` was bought for. **Keep `min-w-0` anyway**:
+it costs one class, it keeps working if a container is ever removed, and
+§9.2's other half — `break-words` on the title spans — does separate work
+and is still load-bearing.
+
+**2. `sizes` moves a second time.** `work-visuals.tsx:176` now reads
+`(max-width: 1024px) 50vw, 33vw`. With three columns from 500 the 500–1024
+band is 33vw, not 50vw, so it becomes `(max-width: 31.25rem) 50vw, 33vw`.
+No container query helps here — `sizes` is a viewport mechanism and Next's
+`Image` has no container-aware form. One pre-existing inaccuracy this does
+*not* fix: the `illustrated` detail page runs `base: 1`, so its card is
+100vw below `xs` while the string claims 50vw. That under-reports (a
+blurrier image, not a wasted download) and stays out of scope.
+
+**3. `@xs/card:` and `xs:` are different numbers.** This project's
+`--breakpoint-xs` is 31.25rem (500px); Tailwind's stock `--container-xs` is
+20rem (320px), and both will appear in the same class strings. Using `3xs`
+rather than `xs` dodges the worst of it; a comment at the container's
+declaration site is still worth the line.
+
+**What this changes on `/work/[slug]`**
+
+`MasonryGrid` is the detail page's grid too, so the containers land there
+for free — and the `illustrated` case (`{ lg: 2, base: 1 }`) gets better.
+A single full-width column at 375px is a **351px** card, which under today's
+viewport key gets the *narrow* dress and under the container key correctly
+gets the wide one. That is a fix, and it is the case that motivates the
+whole approach.
+
+**The decision this leaves for Beck**
+
+At three columns the wide dress does not begin until a ~896px viewport, so
+**500–896 is narrow-dressed: every text card clamped to four lines at
+`text-sm`.** That is a wider range than the phones the narrow dress was
+designed for, and it is the honest consequence of three columns starting at
+500 — three cards cannot be both numerous and roomy inside 500px.
+
+If it reads as too austere on a tablet, the answer is a third dress step,
+not a different column count: container queries make that one more variant
+(padding stepping at `2xs`, say, with type still stepping at `3xs`).
+Answering it by raising the column breakpoint back up only re-opens §11's
+question from the other side.
+
+**Verify**
+
+Additions to §10, measured rather than derived:
+
+12. At **500, 640, 768 and 896**: three columns, no horizontal overflow, and
+    `document.documentElement.scrollWidth === window.innerWidth` on `/work`
+    — §10.9's assertion extended to the new band.
+13. A collection deck tapers descending at 500, 640 and **815**. 815 is
+    where the unfixed version inverts, so it is the regression's own width.
+14. The desktop deck is still byte-for-byte 98/61/40 at a 350px column with
+    the word `pieces` intact — §10.6's standing requirement, now guarded by
+    a container query instead of a media query.
+15. `WorkPlaceholder`'s title renders at `text-4xl` in the **lightbox**,
+    `media-player`, `code-demo-frame`, `essay` and `guess-panel` — the five
+    containerless call sites. This is the polarity trap, and it is the most
+    likely thing here to ship broken and go unnoticed, since none of the
+    five is on `/work`.
+16. The `illustrated` detail page at 375px gets the wide dress, not the
+    narrow one.
+
+---
+
 ## 10. What to verify, and the one thing likely to break
 
 Measured in a real browser at **320px and 375px**, not derived:
@@ -703,7 +961,8 @@ Measured in a real browser at **320px and 375px**, not derived:
 
 ## 11. Out of scope
 
-- `lg`'s column count in the gallery. Three at 1024px+ stays.
+- ~~`lg`'s column count in the gallery. Three at 1024px+ stays.~~
+  **Reversed by §9.3, 2026-09-09** — see the reversal note below.
 - `COLUMN`'s `w` and `show` columns. §12.2 retables `x` only; `w` is the
   entry that rescales every column's height and drags §5's fade tuning with
   it, and nothing here has established what it should become.
@@ -716,6 +975,10 @@ so the reversal is visible rather than silent:
 - *"The 640–767 band keeps today's stack."* Void — §2 deletes that band.
 - *"Any change to `piece-column.tsx`."* Void — §12 changes both the rung
   type scale and `COLUMN`'s `x` entries, which live there.
+- *"`lg`'s column count in the gallery. Three at 1024px+ stays."* Void as
+  of 2026-09-09 — §9.3 moves three-across down to ~500. What stays out of
+  scope is the count itself: three is still the maximum, and nothing here
+  proposes a fourth column at any width.
 
 ---
 
