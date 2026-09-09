@@ -16,7 +16,8 @@ function columnQueries(columns: MasonryColumns) {
   ] as const
 }
 
-function useColumnCount(columns: MasonryColumns) {
+/** The live column count for a given `columns` config — exported so a caller (the gallery, for `PINNED`) can size itself to the same value the grid renders with. */
+export function useMasonryColumns(columns: MasonryColumns = DEFAULT_COLUMNS): number {
   const base = columns.base ?? 2
   // Starts at the widest layout so the server render and the first client
   // render agree; the effect corrects it on mount for narrower viewports.
@@ -52,19 +53,28 @@ export function MasonryGrid({
   children,
   className,
   columns = DEFAULT_COLUMNS,
+  pinned,
 }: {
   children: ReactNode
   className?: string
   /** Column count at `lg` — 3 for image grids, 2 for `illustrated` collections, whose verse needs more measure than a third of the page gives it. */
   columns?: MasonryColumns
+  /** One child per column, head-of-column, left to right — see docs/specs/2026-09-tiers-and-pins.md §3.5. Optional; unset (the home page's and collection pages' calls) behaves exactly as before. */
+  pinned?: ReactNode
 }) {
-  const columnCount = useColumnCount(columns)
+  const columnCount = useMasonryColumns(columns)
   const base = columns.base ?? 2
 
   const cols: ReactNode[][] = Array.from({ length: columnCount }, () => [])
   Children.toArray(children).forEach((child, i) => {
     cols[i % columnCount].push(child)
   })
+
+  // `slice` is defensive — callers are expected to already cap at
+  // columnCount, but this component must not be the one that trusts a
+  // caller and then writes past the end of `cols`.
+  const heads = Children.toArray(pinned).slice(0, columnCount)
+  heads.forEach((child, i) => cols[i].unshift(child))
 
   return (
     // Widths come from the responsive template rather than columnCount, so a

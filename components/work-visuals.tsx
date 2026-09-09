@@ -1,7 +1,7 @@
 import { forwardRef, type CSSProperties } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, FileText, Hourglass, ImageOff, Layers, Quote } from 'lucide-react'
+import { Archive, ArrowRight, FileText, Heart, Hourglass, ImageOff, Layers, Quote } from 'lucide-react'
 import {
   DISCIPLINE_FACETS,
   DISCIPLINES,
@@ -92,6 +92,51 @@ export function UnfinishedMark({ className }: { className?: string }) {
     >
       <Hourglass className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
       in progress
+    </span>
+  )
+}
+
+/**
+ * Badge flagging a piece as one of Beck's favorites — see `WorkPiece.tier`.
+ * Deliberately not a matched opposite of `ArchiveMark` (§6 of the spec): a
+ * heart reads as affection rather than rank, and unlike the archive mark it
+ * may carry the piece's own discipline tone, the way other accented chrome
+ * (e.g. TextCard's Quote glyph) does.
+ */
+export function FavoriteMark({ tone, className }: { tone?: string; className?: string }) {
+  return (
+    <span
+      className={cn(
+        'font-brand inline-flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-xs lowercase text-foreground backdrop-blur-sm',
+        className,
+      )}
+    >
+      <Heart className="h-3.5 w-3.5" style={tone ? { color: tone } : undefined} strokeWidth={1.75} aria-hidden="true" />
+      favorite
+    </span>
+  )
+}
+
+/**
+ * Badge flagging a piece as archived — out of the default browse, still
+ * published. Rendered only where archived items are actually being shown (a
+ * revealed gallery, a search result, the piece's own page): in the default
+ * grid there is nothing to label. Icon-only with the word on hover/focus
+ * (`title` + `aria-label`, `WriteupMark`'s treatment) rather than a visible
+ * label — the quieter of the two marks, muted foreground and no accent tone,
+ * so the pair doesn't read as a scoreboard. See `WorkPiece.tier`.
+ */
+export function ArchiveMark({ className }: { className?: string }) {
+  return (
+    <span
+      title="archived"
+      aria-label="Archived — out of the default browse, still published"
+      className={cn(
+        'inline-flex items-center justify-center rounded-full bg-background/80 p-1.5 text-muted-foreground backdrop-blur-sm',
+        className,
+      )}
+    >
+      <Archive className="h-3.5 w-3.5" strokeWidth={1.75} />
     </span>
   )
 }

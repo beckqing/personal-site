@@ -23,8 +23,10 @@ import {
   filterWork,
   formFor,
   galleryLightboxItems,
+  isArchived,
   isCollection,
   isDiscipline,
+  isFavorite,
   isHybrid,
   isTextForward,
   mediumFor,
@@ -34,6 +36,7 @@ import {
   SORT_LABEL,
   SORT_MODES,
   sortWork,
+  splitPinned,
   tagTone,
   toneFor,
   UNIVERSAL_FACETS,
@@ -46,10 +49,18 @@ import {
   type WorkItem,
   type WorkPiece,
 } from '@/lib/work'
-import { aspectStyleFor, CollectionStack, UnfinishedMark, VerseBlock, WorkPlaceholder } from '@/components/work-visuals'
+import {
+  ArchiveMark,
+  aspectStyleFor,
+  CollectionStack,
+  FavoriteMark,
+  UnfinishedMark,
+  VerseBlock,
+  WorkPlaceholder,
+} from '@/components/work-visuals'
 import { ImageLightbox } from '@/components/image-lightbox'
 import { MediaBadges } from '@/components/media-player'
-import { MasonryGrid } from '@/components/masonry-grid'
+import { MasonryGrid, useMasonryColumns } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
 
 /**
@@ -246,6 +257,8 @@ function TextCard({ item }: { item: WorkItem }) {
             aria-hidden="true"
           />
           <div className="ml-auto flex flex-col items-end gap-2">
+            {isFavorite(item) && <FavoriteMark tone={tone} />}
+            {isArchived(item) && <ArchiveMark />}
             {item.unfinished && <UnfinishedMark />}
             <TagPill>{formFor(item)}</TagPill>
           </div>
@@ -296,6 +309,8 @@ function HybridCard({ item }: { item: WorkItem }) {
               aria-hidden="true"
             />
             <div className="ml-auto flex flex-col items-end gap-2">
+              {isFavorite(item) && <FavoriteMark tone={tone} />}
+              {isArchived(item) && <ArchiveMark />}
               {item.unfinished && <UnfinishedMark />}
               <TagPill>{formFor(item)}</TagPill>
             </div>
@@ -337,6 +352,13 @@ function CollectionTile({ item }: { item: WorkCollection }) {
       >
         <CollectionStack item={item} />
       </Link>
+
+      {(isFavorite(item) || isArchived(item)) && (
+        <div className="absolute left-3 top-3 z-20 flex items-center gap-2">
+          {isFavorite(item) && <FavoriteMark tone={toneFor(item)} />}
+          {isArchived(item) && <ArchiveMark />}
+        </div>
+      )}
 
       <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end p-4">
         <div className="sticky bottom-4 mx-auto w-full max-w-[min(85%,20rem)] rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
@@ -427,7 +449,13 @@ function ImageCard({ item }: { item: WorkItem }) {
       )}
 
       <MediaBadges item={item} />
-      {item.unfinished && <UnfinishedMark className="absolute left-3 top-3 z-20" />}
+      {(isFavorite(item) || isArchived(item) || item.unfinished) && (
+        <div className="absolute left-3 top-3 z-20 flex items-center gap-2">
+          {isFavorite(item) && <FavoriteMark tone={toneFor(item)} />}
+          {isArchived(item) && <ArchiveMark />}
+          {item.unfinished && <UnfinishedMark />}
+        </div>
+      )}
 
       <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end p-4">
         <div className="sticky bottom-4 mx-auto flex w-full max-w-[min(85%,20rem)] items-end justify-between gap-3 rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
@@ -508,8 +536,9 @@ export function WorkGallery() {
   }, [searchParams])
   const sort = useMemo<SortMode>(() => {
     const s = searchParams.get('sort')
-    return SORT_MODES.includes(s as SortMode) ? (s as SortMode) : 'curated'
+    return SORT_MODES.includes(s as SortMode) ? (s as SortMode) : 'newest'
   }, [searchParams])
+  const showArchived = searchParams.get('archive') === '1'
 
   // Local mirror of the search box for instant typing feedback.
   const [queryInput, setQueryInput] = useState(urlQuery)
@@ -525,6 +554,7 @@ export function WorkGallery() {
         mode?: FilterMode | null
         sort?: SortMode | null
         view?: string | null
+        archive?: boolean | null
       },
       historyMode: 'push' | 'replace',
     ) => {
@@ -543,14 +573,19 @@ export function WorkGallery() {
         else sp.delete('mode')
       }
       if ('sort' in changes) {
-        // 'curated' is the default, so it stays out of the URL for clean links.
-        if (changes.sort && changes.sort !== 'curated') sp.set('sort', changes.sort)
+        // 'newest' is the default, so it stays out of the URL for clean links.
+        if (changes.sort && changes.sort !== 'newest') sp.set('sort', changes.sort)
         else sp.delete('sort')
       }
       // No default to omit: `view` is simply present or absent.
       if ('view' in changes) {
         if (changes.view) sp.set('view', changes.view)
         else sp.delete('view')
+      }
+      // 'off' is the default, so it stays out of the URL for clean links.
+      if ('archive' in changes) {
+        if (changes.archive) sp.set('archive', '1')
+        else sp.delete('archive')
       }
       const qs = sp.toString()
       const url = qs ? `${pathname}?${qs}` : pathname
@@ -599,19 +634,49 @@ export function WorkGallery() {
 
   const reset = useCallback(() => {
     setQueryInput('')
-    commit({ q: null, tags: null, mode: null, sort: null }, 'push')
+    commit({ q: null, tags: null, mode: null, sort: null, archive: null }, 'push')
   }, [commit])
 
+  // One-way: reveals the archive, then the control that triggered it
+  // disappears (§4.3 — there's nothing left to reveal). `reset` is the way
+  // back, same as every other state this row can accumulate.
+  const revealArchive = useCallback(() => commit({ archive: true }, 'push'), [commit])
+
+  // Searching or filtering *is* digging (§4.1 of the tiers-and-pins spec), so
+  // either one surfaces the archive without the explicit reveal control.
+  const digging = Boolean(queryInput.trim()) || selectedTags.size > 0
+  const includeArchived = showArchived || digging
+
   const results = useMemo(
-    () => sortWork(filterWork(WORK, { query: queryInput, tags: Array.from(selectedTags), mode }), sort),
-    [queryInput, selectedTags, mode, sort],
+    () =>
+      sortWork(
+        filterWork(WORK, { query: queryInput, tags: Array.from(selectedTags), mode, includeArchived }),
+        sort,
+      ),
+    [queryInput, selectedTags, mode, sort, includeArchived],
+  )
+
+  const archivedCount = useMemo(() => WORK.filter(isArchived).length, [])
+  const total = includeArchived ? WORK.length : WORK.length - archivedCount
+
+  // Pins hold only in the default view — no search, no tags, chronological
+  // order (§3.3) — and only up to as many as the live masonry can seat
+  // (§3.1); a narrower viewport demotes the surplus back into `rest` rather
+  // than crowding the head row.
+  const pinsActive = !digging && sort === 'newest'
+  const columnCount = useMasonryColumns()
+  const { pins, rest } = useMemo(
+    () => (pinsActive ? splitPinned(results, columnCount) : { pins: [], rest: results }),
+    [results, columnCount, pinsActive],
   )
 
   // The lightbox's domain: the subset of the rendered results that open it,
-  // in the same order they're rendered. `?view=<slug>` is the single source
-  // of truth for *which* piece is open — ImageLightbox's internal index is a
-  // fast local mirror (see its own doc comment).
-  const lightboxItems = useMemo(() => galleryLightboxItems(results), [results])
+  // in the same order they're rendered — pins first, then the rest, matching
+  // the masonry's head-of-column placement. `?view=<slug>` is the single
+  // source of truth for *which* piece is open — ImageLightbox's internal
+  // index is a fast local mirror (see its own doc comment).
+  const renderedItems = useMemo(() => [...pins, ...rest], [pins, rest])
+  const lightboxItems = useMemo(() => galleryLightboxItems(renderedItems), [renderedItems])
   const viewSlug = searchParams.get('view')
   const viewIndex = lightboxItems.findIndex((p) => p.slug === viewSlug)
   const lightboxOpen = viewIndex >= 0
@@ -679,7 +744,12 @@ export function WorkGallery() {
     () => DISCIPLINES.filter((d) => selectedTags.has(d)),
     [selectedTags],
   )
-  const activeCount = selectedTags.size + (queryInput.trim() ? 1 : 0)
+  // `showArchived` counts too: it's the only state that isn't a tag or a
+  // query, but once set it's an active state with no other affordance back
+  // off it besides `reset` — the reveal control (§4.3) only ever turns it on,
+  // and it disappears once it has, so omitting this from the count would
+  // leave a revealed archive with no `reset` button to put it back.
+  const activeCount = selectedTags.size + (queryInput.trim() ? 1 : 0) + (showArchived ? 1 : 0)
 
   // Tags active disciplines' subtags with their parent's color, so they still
   // read as grouped with no label once they're inline among everything else.
@@ -790,8 +860,8 @@ export function WorkGallery() {
       {/* Summary + mode + reset */}
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-5">
         <p className="font-brand text-sm lowercase text-muted-foreground">
-          <span className="font-bold text-foreground">{results.length}</span> of {WORK.length}{' '}
-          {WORK.length === 1 ? 'entry' : 'entries'}
+          <span className="font-bold text-foreground">{results.length}</span> of {total}{' '}
+          {total === 1 ? 'entry' : 'entries'}
           {selectedTags.size > 0 && (
             <span>
               {' '}
@@ -801,6 +871,15 @@ export function WorkGallery() {
           )}
         </p>
         <div className="flex items-center gap-3">
+          {archivedCount > 0 && !digging && !showArchived && (
+            <button
+              type="button"
+              onClick={revealArchive}
+              className="font-brand inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm lowercase text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground"
+            >
+              show archive · +{archivedCount}
+            </button>
+          )}
           {activeCount > 0 && (
             <button
               type="button"
@@ -825,10 +904,10 @@ export function WorkGallery() {
       </div>
 
       {/* Masonry (reads left-to-right, top-to-bottom) or empty state */}
-      {results.length > 0 ? (
+      {pins.length + rest.length > 0 ? (
         <GalleryLightboxContext.Provider value={lightboxApi}>
-          <MasonryGrid className="mt-6">
-            {results.map((item) => (
+          <MasonryGrid className="mt-6" pinned={pins.map((item) => <WorkCard key={item.slug} item={item} />)}>
+            {rest.map((item) => (
               <WorkCard key={item.slug} item={item} />
             ))}
           </MasonryGrid>

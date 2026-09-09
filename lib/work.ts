@@ -1,5 +1,7 @@
 import { SAMPLE_WORK } from './work.sample'
 
+export type WorkTier = 'favorite' | 'general' | 'archive'
+
 /**
  * A single piece of work. Collections are pieces that contain other pieces,
  * so a collection and a standalone piece share the same shape and page layout.
@@ -91,6 +93,20 @@ export type WorkPiece = {
    * screenshot into `process` instead.
    */
   unfinished?: boolean
+  /**
+   * Where this piece sits in Beck's own regard. `favorite` is work worth
+   * leading with; `archive` stays out of the default browse; `general` (the
+   * default when unset) is everything else.
+   *
+   * Both named ends render a badge; `general` renders nothing — see
+   * docs/specs/2026-09-tiers-and-pins.md §2.2. An `archive` badge names
+   * where a piece sits, not how good it is, and appears only where archived
+   * work is actually shown.
+   *
+   * Distinct from `PINNED`, which is a page position rather than a property
+   * of the work.
+   */
+  tier?: WorkTier
   /**
    * A runnable code demo — the piece's subject is a thing that runs, and
    * this is how to run it. Its `image` is the poster (a still capture of the
@@ -318,11 +334,12 @@ export function piecePath(collection: WorkCollection, piece: WorkPiece): string 
 
 /**
  * A page's `<meta name="description">` text — `description`, since not every
- * piece has one, falling back to `preview` then the first line of `text`,
+ * piece has one, falling back to `preview`, then the first line of `text`,
+ * then the piece's own title so a wordless piece never ships an empty tag,
  * truncated to a meta-tag-friendly length.
  */
 export function metaDescription(item: WorkPiece): string {
-  const raw = (item.description ?? item.preview ?? item.text ?? '').split('\n')[0]
+  const raw = (item.description ?? item.preview ?? item.text ?? item.title).split('\n')[0]
   return raw.length > 160 ? `${raw.slice(0, 159)}…` : raw
 }
 
@@ -345,6 +362,16 @@ export function isTextForward(item: WorkItem): boolean {
  */
 export function isCodeDemo(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.codeDemo)
+}
+
+export function tierOf(item: WorkItem): WorkTier {
+  return item.tier ?? 'general'
+}
+export function isFavorite(item: WorkItem): boolean {
+  return tierOf(item) === 'favorite'
+}
+export function isArchived(item: WorkItem): boolean {
+  return tierOf(item) === 'archive'
 }
 
 /** A piece that asks you to name its subject. */
@@ -2236,6 +2263,43 @@ const SHOW_SAMPLE_WORK = false
 export const WORK: WorkItem[] =
   process.env.NODE_ENV === 'production' || !SHOW_SAMPLE_WORK ? REAL_WORK : [...REAL_WORK, ...SAMPLE_WORK]
 
+/** The most pins any gallery viewport can seat — `MasonryGrid`'s widest column count. */
+export const MAX_PINS = 3
+
+/**
+ * Slugs that hold the head of each masonry column in the gallery's default
+ * view, left to right. A page position, not a judgement — see
+ * docs/specs/2026-09-tiers-and-pins.md §1.
+ *
+ * Hand-picked rather than derived, the same idiom as `stackPieces` and
+ * `app/page.tsx`'s `CARDS[].pieces`: the choice is a composition no predicate
+ * expresses, and hand-picking means adding work never silently changes what
+ * fronts the gallery.
+ *
+ * At most `MAX_PINS`. Narrower viewports seat fewer, and the surplus falls
+ * back to its chronological position rather than crowding the head row (§3.4).
+ */
+export const PINNED: readonly string[] = []
+
+// Unconditional (not NODE_ENV-guarded) so a bad hand-maintained list fails
+// `next build` rather than only `next dev` — same precedent as
+// lib/mdx-bodies.ts's BODIES/MDX_BODY_SLUGS check.
+if (new Set(PINNED).size !== PINNED.length) {
+  throw new Error(`PINNED contains duplicate slugs: ${PINNED.join(', ')}`)
+}
+if (PINNED.length > MAX_PINS) {
+  throw new Error(`PINNED has ${PINNED.length} slugs, more than MAX_PINS (${MAX_PINS})`)
+}
+for (const slug of PINNED) {
+  const item = WORK.find((w) => w.slug === slug)
+  if (!item) {
+    throw new Error(`PINNED lists "${slug}", but no top-level WorkItem in lib/work.ts has that slug`)
+  }
+  if (isArchived(item)) {
+    throw new Error(`PINNED lists "${slug}", but its tier is 'archive' — an archived piece can't be pinned`)
+  }
+}
+
 /**
  * How selected tags combine. Shared with the little venn toggle:
  * and = carry every tag, or = carry any tag, not = carry none of them.
@@ -2258,13 +2322,23 @@ export function nextMode(m: FilterMode): FilterMode {
  * Tag combination (and/or/not) plus a free-text search over an item's own
  * title, description, text, preview, and tags — and, for collections, the
  * same title/description/text/preview fields on each of their children.
+ * `includeArchived` defaults to `false`, so every existing caller keeps
+ * excluding `archive`-tier items without an edit; the policy for *when* a
+ * caller should pass `true` lives with the caller (see `WorkGallery`'s
+ * `digging`), not here.
  */
 export function filterWork(
   items: WorkItem[],
-  { query, tags, mode }: { query: string; tags: string[]; mode: FilterMode },
+  {
+    query,
+    tags,
+    mode,
+    includeArchived = false,
+  }: { query: string; tags: string[]; mode: FilterMode; includeArchived?: boolean },
 ): WorkItem[] {
   const q = query.trim().toLowerCase()
   return items.filter((item) => {
+    if (!includeArchived && isArchived(item)) return false
     if (tags.length > 0) {
       const owned = itemTags(item)
       const has = (t: string) => owned.has(t)
@@ -2283,30 +2357,34 @@ export function filterWork(
   })
 }
 
-export type SortMode = 'curated' | 'newest' | 'oldest'
+export type SortMode = 'newest' | 'oldest'
 
-export const SORT_MODES: SortMode[] = ['curated', 'newest', 'oldest']
+export const SORT_MODES: SortMode[] = ['newest', 'oldest']
 
 export const SORT_LABEL: Record<SortMode, string> = {
-  curated: 'in my order',
   newest: 'newest first',
   oldest: 'oldest first',
 }
 
-/** Authored position, so sorts stay stable and ties fall back to Beck's order. */
-const CURATED_INDEX = new Map(WORK.map((item, i) => [item.slug, i]))
+/**
+ * Authored position, kept only as a tiebreaker. A `curated` sort mode ("in my
+ * order") used to be the gallery's default; Beck retired it 2026-09-09 —
+ * chronology is the honest default for a body of work that spans 2017–2026,
+ * and an authored order nobody but the author can read is not a thing a
+ * visitor can navigate by. The array order still breaks ties inside a year,
+ * where chronology has nothing left to say.
+ */
+const AUTHORED_INDEX = new Map(WORK.map((item, i) => [item.slug, i]))
 
 function tie(a: WorkItem, b: WorkItem): number {
-  return (CURATED_INDEX.get(a.slug) ?? 0) - (CURATED_INDEX.get(b.slug) ?? 0)
+  return (AUTHORED_INDEX.get(a.slug) ?? 0) - (AUTHORED_INDEX.get(b.slug) ?? 0)
 }
 
 /**
- * Order a filtered result set. Never mutates its input. 'curated' is identity:
- * the hand-authored order in this file is a real editorial choice, so it stays
- * the default and the URL says nothing when it's active.
+ * Order a filtered result set. Never mutates its input. `newest` is the
+ * default, so it stays out of the URL.
  */
 export function sortWork(items: WorkItem[], mode: SortMode): WorkItem[] {
-  if (mode === 'curated') return items
   const dir = mode === 'newest' ? -1 : 1
   return [...items].sort((a, b) => {
     const ya = Number.parseInt(a.year, 10)
@@ -2319,6 +2397,24 @@ export function sortWork(items: WorkItem[], mode: SortMode): WorkItem[] {
     if (ya !== yb) return (ya - yb) * dir
     return tie(a, b)
   })
+}
+
+/**
+ * Pull the pinned items out of a sorted result set, in `PINNED` order, up to
+ * `limit` (the live column count). Slugs past `limit` — and slugs filtered
+ * out of `items` entirely — stay in `rest` at their sorted position, so a
+ * narrow viewport demotes a pin rather than dropping or misplacing it.
+ */
+export function splitPinned(
+  items: WorkItem[],
+  limit: number,
+): { pins: WorkItem[]; rest: WorkItem[] } {
+  const wanted = PINNED.slice(0, Math.max(0, Math.min(limit, MAX_PINS)))
+  const pins = wanted
+    .map((slug) => items.find((item) => item.slug === slug))
+    .filter((item): item is WorkItem => Boolean(item))
+  const taken = new Set(pins.map((p) => p.slug))
+  return { pins, rest: items.filter((item) => !taken.has(item.slug)) }
 }
 
 export function getWorkItem(slug: string): WorkItem | undefined {
