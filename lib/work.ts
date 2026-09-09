@@ -459,9 +459,23 @@ export function isDiscipline(tag: string): tag is Discipline {
   return (DISCIPLINES as readonly string[]).includes(tag)
 }
 
-/** The first discipline tag an item carries — drives its accent tone. */
+/**
+ * Which discipline wins when a piece carries more than one — the order the
+ * *accent* is picked in, deliberately not `DISCIPLINES`' order. `DISCIPLINES`
+ * is the reading order the site says out loud ("art, writing, and science" in
+ * the hero, the filter chips, the home columns) and is left alone.
+ *
+ * `science` outranks `writing` (Beck, 2026-09-03): the essays tagged both are
+ * science writing, and the emerald is the thing worth saying about them — a
+ * `writing`-first order gave them pumpkin, the same accent as the poems.
+ * `art` still outranks both, which is what keeps `delirium` denim; see the
+ * note on its tags below.
+ */
+const DISCIPLINE_PRECEDENCE: readonly Discipline[] = ['art', 'science', 'writing']
+
+/** The discipline an item's accent tone comes from — see DISCIPLINE_PRECEDENCE. */
 export function primaryDiscipline(item: WorkItem): Discipline | undefined {
-  return DISCIPLINES.find((d) => item.tags.includes(d))
+  return DISCIPLINE_PRECEDENCE.find((d) => item.tags.includes(d))
 }
 
 /** An art piece's medium (ink, watercolor, digital), if it has one. */
@@ -2120,7 +2134,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'transformation',
     year: '2026',
     description: 'Explaining heat shock transformation, and finding out that a decades-old, widely used lab protocol still isn\'t mechanistically understood.',
-    tags: ['writing', 'science', 'essay', 'biology'],
+    tags: ['science', 'writing', 'essay', 'biology'],
     text:
       "Cold → hot → cold, and somehow, some fraction of your cells end up with your DNA inside them. Somehow. We still somehow don't know how this works.",
   },
@@ -2136,14 +2150,14 @@ const REAL_WORK: WorkItem[] = [
     slug: 'colony-selection',
     title: 'colony selection',
     year: '2026',
-    tags: ['writing', 'science', 'essay', 'biology'],
+    tags: ['science', 'writing', 'essay', 'biology'],
     unfinished: true,
   },
   {
     slug: 'designing-dna',
     title: 'designing dna',
     year: '2026',
-    tags: ['writing', 'science', 'essay', 'biology'],
+    tags: ['science', 'writing', 'essay', 'biology'],
     unfinished: true,
   },
   {
@@ -2154,7 +2168,8 @@ const REAL_WORK: WorkItem[] = [
     // Beck. The illustration itself may predate the interactive version.
     year: '2022',
     // `art` first is not what picks the tone — primaryDiscipline() iterates
-    // DISCIPLINES in its own order, so `art` would win from any position.
+    // DISCIPLINE_PRECEDENCE in its own order, so `art` would win from any
+    // position.
     // Carrying it is deliberate (decided with Beck 2026-08-29): this is Beck's
     // own illustration made interactive, and the denim tone is honest about
     // that even though it costs the emerald that would flag `science` finally

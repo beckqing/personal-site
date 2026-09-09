@@ -240,7 +240,7 @@ export default async function CollectionPiecePage({
           )}
 
           {Body ? (
-            <EssayBody className="mt-6">
+            <EssayBody tone={tone} className="mt-6">
               <Body />
             </EssayBody>
           ) : (

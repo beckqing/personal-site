@@ -1012,9 +1012,9 @@ which is provisional — see TODO §2.
 It carries `art` as well as `science` and `code`, which the spec advised
 against. That was Beck's call: the piece is their own illustration, and the
 denim tone is honest about that even though it costs the emerald that would
-flag science finally having work in it. `primaryDiscipline()` was **not**
-changed — it still iterates `DISCIPLINES` in its own order, so `art` wins from
-any tag position, and `first-art-fair` is unaffected.
+flag science finally having work in it. `art` still outranks everything in
+`DISCIPLINE_PRECEDENCE` (see "Which discipline colours a piece" below), so it
+wins from any tag position here, and `first-art-fair` is unaffected.
 
 **The name is `code demo`, decided by Beck 2026-08-29.** The spec drafted these
 as "coding explorations" whose runnable artifact was a "sketch"; both are gone.
@@ -1172,6 +1172,27 @@ families matter:
 Tailwind classes must appear **literally** in source — its scanner can't see
 `text-${name}`, so accent classes are written out in full (see the `PANELS`
 array in `app/page.tsx`).
+
+**Which discipline colours a piece.** Nothing stops a piece carrying two or
+three disciplines, so `primaryDiscipline()` picks one — and it iterates
+`DISCIPLINE_PRECEDENCE` (`art`, `science`, `writing`), deliberately *not*
+`DISCIPLINES`' order. `DISCIPLINES` is the reading order the site says out
+loud (the hero copy, the filter chips, the home columns) and is left alone;
+precedence is only about which tone wins. `science` was moved ahead of
+`writing` (Beck, 2026-09-03): the essays tagged both are science writing, and
+before this they read as pumpkin, indistinguishable from the poems. Everything
+tone-driven follows from that one function — the meta line under a piece's
+title, the quote glyph and tint on its cards, the pull-quote rule on its page,
+and its tag chips — so a science essay is emerald throughout. Those essays
+also list `science` before `writing` in their own `tags` arrays, which is what
+orders the chips (`TagLinks` renders the array as authored).
+
+An MDX essay body is the one place the tone can't be passed down as a prop:
+`essayComponents` is a single global map and MDX gives it no piece. `EssayBody`
+takes a `tone` and publishes it as `--essay-accent` on the wrapper instead, so
+the blockquote rule inside reads it off the cascade. Unset, it falls back to
+`--writing`, which is what that rule was hard-coded to before science essays
+existed.
 
 Fonts: Recursive (variable, with `CASL`/`MONO`/`slnt` axes — the `font-brand`
 and `font-brand-italic` utilities) and Noto Sans, both via `next/font/google`.

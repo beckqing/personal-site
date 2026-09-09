@@ -1,4 +1,4 @@
-import type { AnchorHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
+import type { AnchorHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from 'react'
 import Link from 'next/link'
 import { ImageOff } from 'lucide-react'
 import type { MDXComponents } from 'mdx/types'
@@ -7,10 +7,30 @@ import { WorkPlaceholder } from '@/components/work-visuals'
 import { cn } from '@/lib/utils'
 import { headingStyles } from '@/lib/heading-styles'
 
-/** Wraps a rendered MDX body: sets the measure, vertical rhythm, and base type. */
-export function EssayBody({ children, className }: { children: ReactNode; className?: string }) {
+/**
+ * Wraps a rendered MDX body: sets the measure, vertical rhythm, and base type.
+ *
+ * `tone` is the piece's accent (`toneFor(piece)`), published to the subtree as
+ * `--essay-accent`. `essayComponents` is one global, piece-agnostic map — MDX
+ * gives it no way to receive a piece — so a component that wants the tone
+ * reads it off the cascade from here rather than being handed it. Optional:
+ * without it the accent falls back to `--writing`, which is what the rule was
+ * hard-coded to before science essays needed emerald.
+ */
+export function EssayBody({
+  children,
+  tone,
+  className,
+}: {
+  children: ReactNode
+  tone?: string
+  className?: string
+}) {
   return (
-    <div className={cn('max-w-2xl text-pretty text-base leading-relaxed text-foreground/85', className)}>
+    <div
+      className={cn('max-w-2xl text-pretty text-base leading-relaxed text-foreground/85', className)}
+      style={tone ? ({ '--essay-accent': tone } as CSSProperties) : undefined}
+    >
       {children}
     </div>
   )
@@ -197,7 +217,7 @@ export const essayComponents: MDXComponents = {
   blockquote: (props: HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
       className="mt-6 border-l-2 py-1 pl-5 text-foreground/85"
-      style={{ borderColor: 'color-mix(in srgb, var(--writing) 55%, transparent)' }}
+      style={{ borderColor: 'color-mix(in srgb, var(--essay-accent, var(--writing)) 55%, transparent)' }}
       {...props}
     />
   ),

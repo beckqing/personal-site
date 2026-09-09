@@ -210,7 +210,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
             <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">{piece.description}</p>
           )}
           {Body ? (
-            <EssayBody className="mt-6">
+            <EssayBody tone={tone} className="mt-6">
               <Body />
             </EssayBody>
           ) : (
@@ -238,7 +238,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         </div>
         <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto mt-8 max-w-3xl shadow-sm" />
         {Body ? (
-          <EssayBody className="mt-8">
+          <EssayBody tone={tone} className="mt-8">
             <Body />
           </EssayBody>
         ) : (
@@ -262,7 +262,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
           <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">{piece.description}</p>
         )}
         {Body ? (
-          <EssayBody className="mt-6">
+          <EssayBody tone={tone} className="mt-6">
             <Body />
           </EssayBody>
         ) : (
