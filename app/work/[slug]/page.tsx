@@ -31,6 +31,7 @@ import {
   PieceTile,
   ProcessSection,
   Prose,
+  SceneSection,
   TagLinks,
   VerseBlock,
 } from '@/components/work-visuals'
@@ -242,6 +243,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
             piece.writeup && <Prose text={piece.writeup} className="mt-6" />
           )}
           <ProcessSection piece={piece} />
+          <SceneSection piece={piece} />
           <TagLinks tags={piece.tags} className="mt-8" />
         </div>
       </article>
@@ -261,7 +263,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         >
           <VerseBlock text={piece.text ?? ''} className="text-xl text-foreground" />
         </div>
-        <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto mt-8 max-w-3xl shadow-sm" />
+        <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto mt-8 max-w-3xl" />
         {Body ? (
           <EssayBody tone={tone} className="mt-8">
             <Body />
@@ -270,6 +272,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
           piece.writeup && <Prose text={piece.writeup} className="mt-8" />
         )}
         <ProcessSection piece={piece} />
+        <SceneSection piece={piece} />
         <TagLinks tags={piece.tags} className="mt-10" />
       </article>
     )
@@ -277,7 +280,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
 
   return (
     <article className="mt-6">
-      <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto max-w-3xl shadow-sm" />
+      <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto max-w-3xl" />
       <div className="mx-auto mt-8 max-w-2xl">
         {statusFlags}
         <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
@@ -294,6 +297,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
           piece.writeup && <Prose text={piece.writeup} className="mt-6" />
         )}
         <ProcessSection piece={piece} />
+        <SceneSection piece={piece} />
         <TagLinks tags={piece.tags} className="mt-8" />
       </div>
     </article>

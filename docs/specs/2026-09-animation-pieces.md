@@ -476,3 +476,63 @@ not a standalone section:
 
 > | **D4 — animations lead to themselves** | An animation piece (`hasAnimation()`) skips the gallery's still-image lightbox and links straight to its own page (`opensInGalleryLightbox()` excludes it) — a curated still can't outrank the thing the piece actually is. Its card shows the animation's own thumbnail (`animationPosterFor()` — YouTube's `hqdefault` for an embed, unconditionally), not a hand-set `image`. A **speedpaint-only** piece is entirely unaffected: the still is still the piece there, and stays what you click into. `AnimationEmbed` renders `PlayerFrame` in `bare` mode (no border) — its own iframe edge is enough. |
 > | **D5 — `scenes` vs. `process`** | `scenes` (`ProcessStill[]`, same shape as `process`) holds finished stills that supplement an animation; `process` stays WIP-only. Both render through the same internal `StillsSection`, under their own headings, via `SceneSection`/`ProcessSection`. |
+
+---
+
+## 11. As built — 2026-09-10
+
+Shipped the same day it was designed, including §6, which this file had left
+to a later session. Recorded here rather than by editing the sections above,
+so the design and what it collided with stay separately legible. §§1–5, 7 and
+the D4/D5 rows above shipped as written except where noted.
+
+**Six things the spec got wrong or left open, and how each resolved:**
+
+1. **§5.3's fourth call site doesn't exist.** The spec said to add
+   `<SceneSection>` "next to each existing `<ProcessSection>` call," listing
+   `app/work/[slug]/[pieceSlug]/page.tsx` among them — but that route had no
+   `ProcessSection` call at all, and never had. **That was its own latent
+   bug**, surfaced by this spec and fixed alongside it: a collection sub-piece
+   carrying `process` rendered nothing, because only the top-level route knew
+   the field existed. Both sections are now called in both routes, `process`
+   first (§8's fixed order). Latent, not live — the only two pieces carrying
+   `process` today (`child-not-adult`, `desire-and-distance`) are top-level,
+   so nothing was actually being dropped on the site.
+2. **§6's OG-image worry is a non-issue.** The spec flagged "check
+   `generateMetadata`/OG-image handling before dropping `image`." Checked:
+   nothing on this site derives a social image from `piece.image`. No route
+   sets `openGraph` or `twitter` at all, and `app/opengraph-image.tsx` is a
+   single static site-wide card that takes no params and never reads `WORK`.
+   Dropping `image` would have had zero metadata consequence.
+3. **`image` was kept anyway, for a different reason the spec missed.**
+   `PieceMedia` renders its trailing "view still image" trigger
+   (`media-player.tsx`) *unconditionally* in the animation branch. Dropping
+   `image` would have left that button opening a tinted placeholder. So
+   `honey` keeps its `image`/`imageAspect`; they describe the still, which is
+   now all they're read for.
+4. **§6 silently dropped half the imported text.** It mapped each sub-piece's
+   `writeup` to a scene caption and said nothing about `description` — which
+   on all three pieces is also Beck's own Instagram caption text. Captions are
+   now `description` + `writeup` joined verbatim, in the order the piece page
+   rendered them.
+5. **Neither spec noticed the aspect mismatch.** Making the card paint a 16:9
+   YouTube thumbnail while `aspectStyleFor` still sized its box from
+   `imageAspect` (`1/1` on every piece here) center-cropped the thumbnail.
+   Fixed generally rather than per-piece, at the same primitive §2 chose:
+   `posterAspectFor()` sits beside `animationPosterFor()` in `lib/work.ts` and
+   **must branch identically to it** — one answers what fills the box, the
+   other what shape the box is. `aspectStyleFor` reads it, so all seven call
+   sites are fixed at once.
+6. **§3's ARCHITECTURE.md instruction was overdue.** `ARCHITECTURE.md`'s
+   lightbox-predicate paragraph asserted "A speedpaint or animation is **not**
+   excluded" — the exact claim §3 reverses. Rewritten, and the collection-layout
+   table no longer lists `philosophy-animation` as a `gallery` collection.
+
+**§6 executed, with two deviations Beck chose:** the piece is titled **Honey**
+after the video itself, and its **slug changed to `honey`** — so
+`/work/philosophy-animation` retires along with its three sub-piece URLs.
+**No redirects** were added (§9 had them out of scope; Beck confirmed a clean
+break). Known accepted loss: `filterWork` reads neither `scenes` nor
+`process`, so "Privilege"/"Reidentification"/"Origins" stop being search terms.
+
+**§4c stands closed as designed** — nothing was changed about the black bars.

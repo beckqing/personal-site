@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { CircleDot, Expand, Pause, Play } from 'lucide-react'
 import {
+  animationPosterFor,
   hasAnimation,
   hasSpeedpaint,
   isCodeDemo,
@@ -103,16 +104,19 @@ function formatTime(seconds: number): string {
 /** Shared frame/border/rounding so the animation and speedpaint players never drift apart visually. */
 function PlayerFrame({
   aspect,
+  bare = false,
   className,
   children,
 }: {
   aspect?: string
+  /** Omits the border — for AnimationEmbed, whose YouTube iframe already has its own visible edge and doesn't need a second one drawn around it. */
+  bare?: boolean
   className?: string
   children: ReactNode
 }) {
   return (
     <div
-      className={cn('relative overflow-hidden rounded-2xl border border-border bg-black', className)}
+      className={cn('relative overflow-hidden rounded-2xl bg-black', !bare && 'border border-border', className)}
       style={aspect ? { aspectRatio: aspect } : undefined}
     >
       {children}
@@ -178,7 +182,7 @@ export function AnimationEmbed({
   const [playing, setPlaying] = useState(false)
 
   return (
-    <PlayerFrame aspect={video.aspect} className={className}>
+    <PlayerFrame aspect={video.aspect} bare className={className}>
       {playing ? (
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1`}
@@ -438,13 +442,13 @@ export function PieceMedia({
           {animationSrc ? (
             <AnimationPlayer
               src={animationSrc}
-              poster={piece.image}
+              poster={animationPosterFor(piece)}
               aspect={piece.imageAspect}
               title={piece.title}
             />
           ) : (
             animationEmbed && (
-              <AnimationEmbed video={animationEmbed} poster={piece.image} title={piece.title} />
+              <AnimationEmbed video={animationEmbed} poster={animationPosterFor(piece)} title={piece.title} />
             )
           )}
         </div>

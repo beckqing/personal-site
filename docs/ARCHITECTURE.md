@@ -188,7 +188,7 @@ live but aren't:
 
 | Layout | Collections |
 |---|---|
-| `gallery` | `hthtpw`, `april-colors-19`, `april-colors-24`, `inktober-17`, `i-think-that-im`, `philosophy-animation`, `eye-studies` |
+| `gallery` | `hthtpw`, `april-colors-19`, `april-colors-24`, `inktober-17`, `i-think-that-im`, `eye-studies` |
 | `illustrated` | `mindtober-21` (31 hybrid pieces) |
 | `book` | `love-worth-heartbreak` (22 text-forward pieces) |
 
@@ -712,10 +712,14 @@ circle" above) and `app/icon.svg` was added alongside `app/favicon.ico` and
   `GalleryLightboxContext`) and the arrows' paging domain both read it; if
   they ever diverge, an arrow lands on a piece whose own card would have
   navigated. Code demos are excluded — a demo's `image` is only a poster
-  still, and the thing the card advertises runs on its own page. A speedpaint
-  or animation is **not** excluded: the finished still is the piece and the
-  video is process, the framing `PieceMedia` already uses when it offers the
-  still alongside every video.
+  still, and the thing the card advertises runs on its own page. **Animations
+  are excluded too, as of 2026-09-10, for the same reason**: a finished
+  animation *is* the piece, not its poster, so its card leads straight to the
+  page that plays it (see D4 under "Media: speedpaints and animations"). A
+  piece with only a **speedpaint** stays included, and the distinction is the
+  whole point — there the still genuinely is the piece and the video is
+  process, the framing `PieceMedia` still uses when it offers the still
+  alongside a speedpaint.
 
   **The dismiss flight and Base UI's scroll lock are coupled, and not
   obviously.** `useScrollLock` (`@base-ui/utils`) clamps `<body>` to `height:
@@ -899,6 +903,8 @@ survive.
 | **D1 — speedpaint controls** | Custom, with a scrubber that is **always visible**. Native `controls` auto-hide during playback, which defeats the point. |
 | **D2 — Verdant** | **Cropped to a centered square**, matching its `1/1` `imageAspect`, so no aspect override is needed. |
 | **D3 — looping** | No `loop` attribute. Loopable via the browser's native right-click menu — implemented by *not blocking it*: no `controlsList`, no full-bleed click-catcher over the video. |
+| **D4 — animations lead to themselves** | An animation piece (`hasAnimation()`) skips the gallery's still-image lightbox and links straight to its own page (`opensInGalleryLightbox()` excludes it) — a curated still can't outrank the thing the piece actually is. Its card shows the animation's own thumbnail (`animationPosterFor()` — YouTube's `hqdefault` for an embed, unconditionally), not a hand-set `image`, in a box sized by `posterAspectFor()` so the thumbnail isn't cropped to a still's shape. **The two must branch identically**: they answer "what fills the box" and "what shape is the box" together. Requires `i.ytimg.com` in `next.config.mjs`'s `images.remotePatterns` — `next/image` throws without it. `AnimationEmbed` renders `PlayerFrame` in `bare` mode (no border); its own iframe edge is enough. A **speedpaint-only** piece is entirely unaffected: the still is still the piece there, and stays what you click into. |
+| **D5 — `scenes` vs. `process`** | `scenes` (`ProcessStill[]`, same shape as `process`) holds finished stills that supplement an animation; `process` stays WIP-only. Both render through the same internal `StillsSection`, under their own headings, via `SceneSection`/`ProcessSection`. Note `filterWork` reads neither — a scene's `alt` is not a search term. |
 
 > **On D2's history.** An earlier version of the build log recorded D2 as
 > "ship uncropped, full 9:16, downscaled to 540px wide, 50.5s" and described a

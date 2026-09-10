@@ -705,6 +705,22 @@ themselves (`[ link to animation in bio ]` etc.) are untouched, per the
 site's standing rule that imported captions aren't rewritten — only the
 `animationEmbed` field was added.
 
+**Amended 2026-09-10 — that collection no longer exists.** Sharing one
+`animationEmbed` across three sub-pieces made the gallery show the same
+video's thumbnail three times, which read as a modelling error rather than a
+rendering one: the finished animation is the piece, and the three stills are
+scenes of it. Per `docs/specs/2026-09-animation-pieces.md` §6 the collection
+collapsed into **one** `WorkPiece`, slug `honey`, titled from the video
+itself; the three stills moved into the new `scenes` field (D5 in
+ARCHITECTURE's media table). Each scene's caption is its former piece's
+`description` and `writeup` joined verbatim — nothing reworded, nothing
+dropped. `/work/philosophy-animation` and its three sub-piece URLs are gone
+with **no redirect** (Beck's call, 2026-09-10); the sitemap drops them on its
+own since it derives from `WORK`. Two known, accepted losses: the scene
+titles stop being search terms (`filterWork` reads neither `scenes` nor
+`process`), and if the `[ link to animation in bio ]` captions ever had an
+Instagram-bio link pointing at those URLs, it now dead-ends.
+
 **Still open: `i-think-that-im-human`.** Its writeup ("You can see the final
 on YouTube. The link is in my bio!") is still a dead pointer — the video
 Beck gave in this pass doesn't match it (see below). Needs its own link from

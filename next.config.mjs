@@ -1,7 +1,11 @@
 import createMDX from '@next/mdx'
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  images: {
+    remotePatterns: [{ protocol: 'https', hostname: 'i.ytimg.com' }],
+  },
+}
 
 const withMDX = createMDX({})
 

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Archive, ArrowRight, FileText, Hourglass, ImageOff, Layers, Quote } from 'lucide-react'
 import { HeartIcon } from '@/components/heart-icon'
 import {
+  animationPosterFor,
   DISCIPLINE_FACETS,
   DISCIPLINES,
   formFor,
@@ -16,9 +17,11 @@ import {
   isTextForward,
   isTextOnly,
   piecePath,
+  posterAspectFor,
   primaryDiscipline,
   tagTone,
   toneFor,
+  type ProcessStill,
   type WorkCollection,
   type WorkItem,
   type WorkPiece,
@@ -44,14 +47,17 @@ export function aspectFor(slug: string) {
 }
 
 /**
- * A real image's own aspect ratio, as an inline style — takes priority over
- * a card's default/hashed aspect class so real artwork renders uncropped
- * instead of forced into a shape it wasn't made for. Undefined when the
- * piece has no real image or no known aspect, leaving the caller's class
- * in charge.
+ * The aspect ratio of whatever picture will actually fill this box, as an
+ * inline style — takes priority over a card's default/hashed aspect class so
+ * real artwork renders uncropped instead of forced into a shape it wasn't
+ * made for. Reads `posterAspectFor`, not `imageAspect` directly, so a piece
+ * whose card shows its embed's 16:9 thumbnail gets a 16:9 box rather than one
+ * sized for a still it isn't showing. Undefined when nothing is known,
+ * leaving the caller's class in charge.
  */
 export function aspectStyleFor(item: WorkItem): CSSProperties | undefined {
-  return item.imageAspect ? { aspectRatio: item.imageAspect } : undefined
+  const aspect = posterAspectFor(item)
+  return aspect ? { aspectRatio: aspect } : undefined
 }
 
 /**
@@ -215,7 +221,7 @@ export const WorkPlaceholder = forwardRef<
   }
 >(function WorkPlaceholder({ item, className, quality = 'full', fit = 'cover' }, ref) {
   const tone = toneFor(item)
-  const src = quality === 'thumb' ? (item.thumb ?? item.image) : item.image
+  const src = quality === 'thumb' ? (item.thumb ?? animationPosterFor(item)) : animationPosterFor(item)
 
   if (src && fit === 'contain') {
     // A plain (non-`fill`) image is a real replaced element with intrinsic
@@ -831,18 +837,10 @@ export function Prose({ text, className }: { text: string; className?: string })
   )
 }
 
-/**
- * One process still as a minimal, ephemeral `WorkPiece` stand-in — just
- * enough shape for `ImageLightbox`/`WorkPlaceholder` to render it. Never
- * added to `WORK`, never routed to: its `slug` exists only as a React key
- * and lightbox identity, and `title` carries the still's own `alt` (falling
- * back to the parent piece's title) so the opened lightbox image gets the
- * still's accessibility text rather than repeating the piece's title for
- * every still.
- */
-function processLightboxItem(piece: WorkPiece, still: NonNullable<WorkPiece['process']>[number], index: number): WorkPiece {
+/** Ephemeral WorkPiece stand-in for a still, for ImageLightbox/WorkPlaceholder. Never added to WORK, never routed to. keyPrefix keeps process/scenes lightbox identities distinct if a piece ever carries both. */
+function stillLightboxItem(piece: WorkPiece, still: ProcessStill, index: number, keyPrefix: string): WorkPiece {
   return {
-    slug: `${piece.slug}-process-${index}`,
+    slug: `${piece.slug}-${keyPrefix}-${index}`,
     title: still.alt ?? piece.title,
     year: piece.year,
     tags: piece.tags,
@@ -850,24 +848,23 @@ function processLightboxItem(piece: WorkPiece, still: NonNullable<WorkPiece['pro
   }
 }
 
-/**
- * A piece's "how this got made" section — WIP screenshots, each its own
- * `<figure>` with the image opening in the ordinary lightbox and an authored
- * caption underneath (see `WorkPiece.process`). Placed below the writeup,
- * under its own heading, deliberately not inside `PieceMedia`: a WIP
- * screenshot is a different register from the finished-image media there,
- * and sitting directly under the finished image would invite reading it as
- * another artwork rather than "here's how this got made."
- */
-export function ProcessSection({ piece }: { piece: WorkPiece }) {
-  const stills = piece.process
+/** Shared rendering for `process` and `scenes` — a heading, then each still as its own captioned figure opening in the ordinary lightbox. Not exported; ProcessSection and SceneSection are the public entry points. */
+function StillsSection({
+  piece,
+  stills,
+  heading,
+  keyPrefix,
+}: {
+  piece: WorkPiece
+  stills: ProcessStill[] | undefined
+  heading: string
+  keyPrefix: string
+}) {
   if (!stills || stills.length === 0) return null
-
-  const items = stills.map((still, i) => processLightboxItem(piece, still, i))
-
+  const items = stills.map((still, i) => stillLightboxItem(piece, still, i, keyPrefix))
   return (
     <section className="mt-10 max-w-2xl">
-      <h2 className={headingStyles.eyebrow}>process</h2>
+      <h2 className={headingStyles.eyebrow}>{heading}</h2>
       <div className="mt-4 space-y-8">
         {stills.map((still, i) => (
           <figure key={still.src}>
@@ -888,6 +885,24 @@ export function ProcessSection({ piece }: { piece: WorkPiece }) {
       </div>
     </section>
   )
+}
+
+/**
+ * A piece's "how this got made" section — WIP screenshots, each its own
+ * `<figure>` with the image opening in the ordinary lightbox and an authored
+ * caption underneath (see `WorkPiece.process`). Placed below the writeup,
+ * under its own heading, deliberately not inside `PieceMedia`: a WIP
+ * screenshot is a different register from the finished-image media there,
+ * and sitting directly under the finished image would invite reading it as
+ * another artwork rather than "here's how this got made."
+ */
+export function ProcessSection({ piece }: { piece: WorkPiece }) {
+  return <StillsSection piece={piece} stills={piece.process} heading="process" keyPrefix="process" />
+}
+
+/** A piece's finished-scene stills — see WorkPiece.scenes. Same rendering as ProcessSection, its own heading and field. */
+export function SceneSection({ piece }: { piece: WorkPiece }) {
+  return <StillsSection piece={piece} stills={piece.scenes} heading="scenes" keyPrefix="scene" />
 }
 
 /**

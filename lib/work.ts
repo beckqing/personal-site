@@ -103,6 +103,13 @@ export type WorkPiece = {
    */
   process?: ProcessStill[]
   /**
+   * Finished stills that supplement an animation — scenes from it, not WIP
+   * screenshots of making it (that's `process`). Same shape as `ProcessStill`
+   * on purpose; the distinction is semantic (what these stills show), not
+   * structural. Rendered by `SceneSection`, under its own "scenes" heading.
+   */
+  scenes?: ProcessStill[]
+  /**
    * Marks a piece as still in progress rather than finished — surfaced
    * honestly in the gallery and on the piece page rather than hidden until
    * done. When the finished piece lands, drop this and move its WIP
@@ -443,6 +450,45 @@ export function hasSpeedpaint(item: WorkItem): boolean {
 /** A piece with a finished animation clip. Collections don't carry media directly. */
 export function hasAnimation(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.animationSrc || item.animationEmbed)
+}
+
+/**
+ * YouTube's own thumbnail for an embedded video — `hqdefault` (480×360),
+ * guaranteed to exist for any public video, unlike `maxresdefault` (only
+ * present for uploads that opted into a high-res source, and 404s silently
+ * otherwise — there's no client-side recovery from that in this codebase).
+ */
+export function youtubeThumbnail(youtubeId: string): string {
+  return `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`
+}
+
+/**
+ * The picture that represents this item. For a YouTube-embedded animation,
+ * that's the video's own thumbnail, unconditionally — a curated still (even
+ * a hand-set `image`) doesn't outrank the thing the piece actually is. Every
+ * other item — including a self-hosted `animationSrc` piece, which has no
+ * separate video-thumbnail source to prefer — falls through to its own
+ * `image`. Collections are excluded from the embed branch, matching
+ * `hasAnimation()`'s own rule: a collection doesn't carry a single
+ * animation of its own, one of its pieces does.
+ */
+export function animationPosterFor(item: WorkItem): string | undefined {
+  if (!isCollection(item) && item.animationEmbed) return youtubeThumbnail(item.animationEmbed.youtubeId)
+  return item.image
+}
+
+/**
+ * The aspect of whatever `animationPosterFor()` just returned — the embed's
+ * own aspect when the poster is YouTube's thumbnail, else the item's
+ * `imageAspect`. **Must branch exactly the way `animationPosterFor` does:**
+ * these two answer one question together (what fills the box, and what shape
+ * the box is), and a box sized for a 1:1 still while a 16:9 thumbnail
+ * `cover`-fills it crops the thumbnail. `EmbeddedVideo.aspect` is required,
+ * so the embed branch always resolves.
+ */
+export function posterAspectFor(item: WorkItem): string | undefined {
+  if (!isCollection(item) && item.animationEmbed) return item.animationEmbed.aspect
+  return item.imageAspect
 }
 
 /** The aspect a speedpaint video's player should take — its own, falling back to the finished image's. */
@@ -1464,54 +1510,50 @@ const REAL_WORK: WorkItem[] = [
     imageAspect: '1/1',
   },
   {
-    slug: 'philosophy-animation',
-    title: 'Philosophy Animation',
+    // Was the `philosophy-animation` collection of three sub-pieces until
+    // 2026-09-10. All three shared one `animationEmbed`, so the gallery
+    // showed the same video's thumbnail three times — the sign that the
+    // finished animation is the piece and the three stills are scenes of it,
+    // not top-level works. Collapsed per
+    // docs/specs/2026-09-animation-pieces.md §6. Titled from the video
+    // itself: it's "Honey | Personal Animation feat. Luca Schmidt" on
+    // YouTube, retitled since this piece's 2019 captions were written (which
+    // is why they call it a philosophy animation) — confirmed by Beck
+    // 2026-09-09. The old `/work/philosophy-animation` URLs are gone with no
+    // redirect, Beck's call.
+    slug: 'honey',
+    title: 'Honey',
     year: '2019',
     description: 'Three scenes from an animation made for a philosophy class, on adoption and identity.',
     tags: ['art', 'digital'],
+    // Kept, though the gallery card now shows YouTube's thumbnail instead
+    // (`animationPosterFor`): it's what `PieceMedia`'s "view still image"
+    // trigger opens, and `imageAspect` still describes it truthfully — the
+    // card sizes itself from `posterAspectFor` now, not from this.
     image: '/art/2019/philosophy-animation-01.jpg',
     imageAspect: '1/1',
-    pieces: [
+    animationEmbed: { youtubeId: 'RTGjy1jDMyM', aspect: '16/9' },
+    // The three former sub-pieces. Each caption is that piece's own
+    // `description` and `writeup` joined verbatim, in the order its page
+    // rendered them — imported captions don't get rewritten or trimmed.
+    scenes: [
       {
-        slug: 'privilege',
-        title: 'Privilege',
-        year: '2019',
-        description:
-          'A scene from an animation I did recently for a philosophy class! This is on being privileged with well-off adoptive parents who care for me.',
-        tags: ['art', 'digital'],
-        writeup:
-          '[ link to animation in bio ]\n\nNot every adoptee is so lucky. Adoption can be viewed as trauma -- there is no adoption without abandonment. With international adoption, there is also a loss of culture. Not all adoptees are the same. Not everyone views it the same way.',
-        image: '/art/2019/philosophy-animation-01.jpg',
-        imageAspect: '1/1',
-        // The animation the writeup above points at. Confirmed by Beck,
-        // 2026-09-09 — retitled on YouTube since this piece's 2019 caption
-        // was written, hence the mismatch between "Honey" and "philosophy
-        // animation."
-        animationEmbed: { youtubeId: 'RTGjy1jDMyM', aspect: '16/9' },
+        src: '/art/2019/philosophy-animation-01.jpg',
+        alt: 'Privilege',
+        caption:
+          'A scene from an animation I did recently for a philosophy class! This is on being privileged with well-off adoptive parents who care for me.\n\n[ link to animation in bio ]\n\nNot every adoptee is so lucky. Adoption can be viewed as trauma -- there is no adoption without abandonment. With international adoption, there is also a loss of culture. Not all adoptees are the same. Not everyone views it the same way.',
       },
       {
-        slug: 'reidentification',
-        title: 'Reidentification',
-        year: '2019',
-        description: 'Another bit of artwork from the philosophy animation.',
-        tags: ['art', 'digital'],
-        writeup:
-          "[ link to animation in bio ]\n\nI have made no modifications to my flesh since the start of my disidentification and reconciliation with my sex, and I think that's also important part of my identity. I am, in many ways, not a detransitioner, because I never really transitioned in the first place. I am, however, reidentified with my sex, not because I feel female, but because I am.\n\nI still feel agender. But I don't see this as being truly important to how people treat me, because, outside of sports, medicine, and statistics, everyone should treat everyone with as a unique individual to be respected regardless of sex or gender identity.",
-        image: '/art/2019/philosophy-animation-02.jpg',
-        imageAspect: '1/1',
-        animationEmbed: { youtubeId: 'RTGjy1jDMyM', aspect: '16/9' },
+        src: '/art/2019/philosophy-animation-02.jpg',
+        alt: 'Reidentification',
+        caption:
+          "Another bit of artwork from the philosophy animation.\n\n[ link to animation in bio ]\n\nI have made no modifications to my flesh since the start of my disidentification and reconciliation with my sex, and I think that's also important part of my identity. I am, in many ways, not a detransitioner, because I never really transitioned in the first place. I am, however, reidentified with my sex, not because I feel female, but because I am.\n\nI still feel agender. But I don't see this as being truly important to how people treat me, because, outside of sports, medicine, and statistics, everyone should treat everyone with as a unique individual to be respected regardless of sex or gender identity.",
       },
       {
-        slug: 'origins',
-        title: 'Origins',
-        year: '2019',
-        description: "The last scene from this animation that I'll be posting.",
-        tags: ['art', 'digital'],
-        writeup:
-          "[ link to animation in bio ]\n\nWhile I don't know how it why I was given up to the Social Welfare Institute, it could be that I was taken from my parents by government workers, and not that I was abandoned.\n\nMore on this topic is found in the documentary @onechildnation.",
-        image: '/art/2019/philosophy-animation-03.jpg',
-        imageAspect: '1/1',
-        animationEmbed: { youtubeId: 'RTGjy1jDMyM', aspect: '16/9' },
+        src: '/art/2019/philosophy-animation-03.jpg',
+        alt: 'Origins',
+        caption:
+          "The last scene from this animation that I'll be posting.\n\n[ link to animation in bio ]\n\nWhile I don't know how it why I was given up to the Social Welfare Institute, it could be that I was taken from my parents by government workers, and not that I was abandoned.\n\nMore on this topic is found in the documentary @onechildnation.",
       },
     ],
   },
@@ -2475,10 +2517,12 @@ export function imageLightboxSlice(
 /**
  * Whether this gallery card opens the lightbox in place rather than
  * navigating. A code demo is excluded on purpose: its `image` is only a
- * poster still, and the thing it advertises runs on its own page. A piece
- * with a speedpaint or animation *is* included — the finished still is the
- * piece, the video is process, which is the same framing `PieceMedia` uses
- * when it always offers the still alongside the video.
+ * poster still, and the thing it advertises runs on its own page. An
+ * animation is excluded for the same reason, as of 2026-09-10 — a finished
+ * animation is the piece, not its poster, and it leads straight to itself.
+ * A piece with only a speedpaint (no finished animation) stays included:
+ * there, the still genuinely is the piece, and the speedpaint is process —
+ * the framing `PieceMedia` still uses for that case.
  */
 export function opensInGalleryLightbox(item: WorkItem): item is WorkPiece {
   return (
@@ -2486,6 +2530,7 @@ export function opensInGalleryLightbox(item: WorkItem): item is WorkPiece {
     !isHybrid(item) &&
     !isTextForward(item) &&
     !isCodeDemo(item) &&
+    !hasAnimation(item) &&
     Boolean(item.image)
   )
 }

@@ -16,7 +16,15 @@ import {
   toneFor,
   WORK,
 } from '@/lib/work'
-import { BookFolio, categoryLabel, Prose, TagLinks, VerseBlock } from '@/components/work-visuals'
+import {
+  BookFolio,
+  categoryLabel,
+  ProcessSection,
+  Prose,
+  SceneSection,
+  TagLinks,
+  VerseBlock,
+} from '@/components/work-visuals'
 import { GuessPanel } from '@/components/guess-panel'
 import { EssayBody } from '@/components/essay'
 import { mdxBody } from '@/lib/mdx-bodies'
@@ -205,7 +213,7 @@ export default async function CollectionPiecePage({
           piece={piece}
           lightboxItems={lightboxSlice.items}
           lightboxIndex={lightboxSlice.index}
-          className="mx-auto max-w-3xl shadow-sm"
+          className="mx-auto max-w-3xl"
         />
         <div className={cn(!textForward && 'mx-auto mt-8 max-w-2xl')}>
           <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
@@ -246,6 +254,8 @@ export default async function CollectionPiecePage({
           ) : (
             piece.writeup && <Prose text={piece.writeup} className="mt-6" />
           )}
+          <ProcessSection piece={piece} />
+          <SceneSection piece={piece} />
           <TagLinks tags={piece.tags} className="mt-8" />
         </div>
       </article>
