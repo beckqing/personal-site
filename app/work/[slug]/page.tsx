@@ -1,13 +1,15 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, BookOpen, ExternalLink, Hourglass, Layers } from 'lucide-react'
+import { Archive, ArrowLeft, BookOpen, ExternalLink, Heart, Hourglass, Layers } from 'lucide-react'
 import {
   collectionLayout,
   getWorkItem,
   hasGuessablePieces,
+  isArchived,
   isChapbook,
   isCollection,
+  isFavorite,
   isHybrid,
   isCodeDemo,
   isTextForward,
@@ -186,10 +188,32 @@ function PieceView({ piece }: { piece: WorkPiece }) {
     </p>
   )
 
-  const unfinishedFlag = piece.unfinished && (
-    <div className="flex items-center gap-2 text-muted-foreground">
-      <Hourglass className="h-4 w-4" aria-hidden="true" />
-      <span className="font-brand text-xs uppercase tracking-[0.3em]">in progress</span>
+  // §2.2 of the tiers-and-pins spec: "consistent with unfinished, the mark
+  // appears both on the gallery card and on the piece's own page." One row,
+  // same reasoning as the gallery cards' combined badge row (§6.2) — up to
+  // two of these can co-occur (a favorite or archived piece can also be
+  // unfinished), so they sit side by side rather than each claiming their
+  // own placement.
+  const statusFlags = (isFavorite(piece) || isArchived(piece) || piece.unfinished) && (
+    <div className="flex flex-wrap items-center gap-4">
+      {isFavorite(piece) && (
+        <div className="flex items-center gap-2" style={{ color: tone }}>
+          <Heart className="h-4 w-4" aria-hidden="true" />
+          <span className="font-brand text-xs uppercase tracking-[0.3em]">favorite</span>
+        </div>
+      )}
+      {isArchived(piece) && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Archive className="h-4 w-4" aria-hidden="true" />
+          <span className="font-brand text-xs uppercase tracking-[0.3em]">archived</span>
+        </div>
+      )}
+      {piece.unfinished && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Hourglass className="h-4 w-4" aria-hidden="true" />
+          <span className="font-brand text-xs uppercase tracking-[0.3em]">in progress</span>
+        </div>
+      )}
     </div>
   )
 
@@ -203,7 +227,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
       <article className="mt-6">
         <CodeDemoFrame piece={piece} codeDemo={piece.codeDemo} className="mx-auto max-w-3xl shadow-sm" />
         <div className="mx-auto mt-8 max-w-2xl">
-          {unfinishedFlag}
+          {statusFlags}
           <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
           {meta}
           {piece.description && (
@@ -227,7 +251,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
   if (textForward) {
     return (
       <article className="mt-6">
-        {unfinishedFlag}
+        {statusFlags}
         <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
         {meta}
         <div
@@ -254,7 +278,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
     <article className="mt-6">
       <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto max-w-3xl shadow-sm" />
       <div className="mx-auto mt-8 max-w-2xl">
-        {unfinishedFlag}
+        {statusFlags}
         <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
         {meta}
         {hybrid && <VerseBlock text={piece.text ?? ''} className="mt-4 text-lg text-foreground" />}

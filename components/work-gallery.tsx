@@ -13,9 +13,10 @@ import {
 } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowDownUp, Maximize2, Play, Quote, RotateCcw, RotateCw, Search, X } from 'lucide-react'
+import { Archive, ArrowDownUp, Circle, Heart, Maximize2, Play, Quote, RotateCcw, RotateCw, Search, X } from 'lucide-react'
 import {
   ALL_TAGS,
+  DEFAULT_TIERS,
   DISCIPLINE_FACETS,
   DISCIPLINE_TONE,
   DISCIPLINES,
@@ -34,6 +35,7 @@ import {
   nextMode,
   opensInGalleryLightbox,
   SORT_LABEL,
+  tierOf,
   SORT_MODES,
   sortWork,
   splitPinned,
@@ -41,6 +43,7 @@ import {
   toneFor,
   UNIVERSAL_FACETS,
   WORK,
+  WORK_TIERS,
   workHref,
   type Discipline,
   type FilterMode,
@@ -48,6 +51,7 @@ import {
   type WorkCollection,
   type WorkItem,
   type WorkPiece,
+  type WorkTier,
 } from '@/lib/work'
 import {
   ArchiveMark,
@@ -125,7 +129,7 @@ function TagChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'font-brand inline-flex items-center rounded-full border lowercase transition-colors',
+        'font-brand inline-flex cursor-pointer items-center rounded-full border lowercase transition-colors',
         size === 'sm' ? 'px-2 py-0.5 text-[0.7rem]' : 'px-3 py-1 text-sm',
         active ? 'text-[var(--card)]' : 'bg-transparent text-muted-foreground hover:text-foreground',
       )}
@@ -155,7 +159,7 @@ function VennMode({ mode, onCycle }: { mode: FilterMode; onCycle: () => void }) 
       onClick={onCycle}
       title={`${mode}: ${MODE_LABEL[mode]} — tap to change`}
       aria-label={`Tag combine mode: ${mode}. ${MODE_LABEL[mode]}. Activate to cycle.`}
-      className="group inline-flex items-center gap-1.5 rounded-full px-1.5 py-1 text-muted-foreground transition-colors hover:text-foreground"
+      className="group inline-flex cursor-pointer items-center gap-1.5 rounded-full px-1.5 py-1 text-muted-foreground transition-colors hover:text-foreground"
     >
       <svg viewBox="0 0 30 20" className="h-5 w-[30px]" aria-hidden="true">
         <defs>
@@ -584,6 +588,82 @@ function TagRow({
   )
 }
 
+/**
+ * The glyph and accessible name for each tier's toggle. `general` has no
+ * badge of its own on a card (§2.2 — the unmarked default is silent), so it
+ * gets a plain circle: neutral by construction, and the one shape that
+ * can't be read as a rank. `favorite` and `archive` reuse the exact icons
+ * their card badges use, so the control inherits a vocabulary the cards
+ * already taught rather than inventing a second one.
+ */
+const TIER_CONTROL: Record<WorkTier, { Icon: typeof Heart; label: string }> = {
+  favorite: { Icon: Heart, label: 'favorites' },
+  general: { Icon: Circle, label: 'general' },
+  archive: { Icon: Archive, label: 'archive' },
+}
+
+/**
+ * Which shelves the gallery is drawing from — one independent toggle per
+ * tier, symbols only. Deliberately its own control rather than three more
+ * chips in `TagRow`: a tag says what a piece is *about*, a tier says where
+ * it *sits*, and the Venn's and/or/not applies only to the former. Folding
+ * them together would make "not archive" and "and archive" ask questions
+ * the two axes don't share an answer to.
+ *
+ * Wordless by request, so the accessible name carries the whole label
+ * (`title` + `aria-label`, the same treatment `ArchiveMark` uses for its own
+ * icon-only pill). Grouped inside one bordered shell so three loose glyphs
+ * read as a single control.
+ */
+function TierRow({
+  tiers,
+  onToggleTier,
+  className,
+}: {
+  tiers: Set<WorkTier>
+  onToggleTier: (tier: WorkTier) => void
+  className?: string
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Which work to show"
+      className={cn('inline-flex items-center rounded-full border border-border p-0.5', className)}
+    >
+      {WORK_TIERS.map((tier) => {
+        const { Icon, label } = TIER_CONTROL[tier]
+        const on = tiers.has(tier)
+        return (
+          <button
+            key={tier}
+            type="button"
+            onClick={() => onToggleTier(tier)}
+            aria-pressed={on}
+            title={label}
+            aria-label={label}
+            // On/off is a solid accent pill against a bare one — TagChip's
+            // exact active idiom, so a wordless control still reads as "the
+            // selected ones" on sight. Deliberately not a filled-vs-outline
+            // *glyph*: `Heart` and `Circle` fill into legible solids but
+            // `Archive` is a container shape, and filling it turns the box
+            // into an unreadable blob.
+            className={cn(
+              'inline-flex cursor-pointer items-center justify-center rounded-full transition-colors',
+              // p-1.5 either way so the row's width never shifts on toggle.
+              'p-1.5',
+              on
+                ? 'bg-goldenrod text-[var(--card)]'
+                : 'text-muted-foreground/50 hover:text-foreground',
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function WorkGallery() {
   const router = useRouter()
   const pathname = usePathname()
@@ -609,7 +689,15 @@ export function WorkGallery() {
     const s = searchParams.get('sort')
     return SORT_MODES.includes(s as SortMode) ? (s as SortMode) : 'newest'
   }, [searchParams])
-  const showArchived = searchParams.get('archive') === '1'
+  // Absent means `DEFAULT_TIERS`. An explicit empty list is legal and means
+  // exactly what it says — every shelf switched off, so nothing matches —
+  // which is why this checks for the param's presence rather than treating
+  // an empty result as "unset".
+  const tiers = useMemo<Set<WorkTier>>(() => {
+    const raw = searchParams.get('tiers')
+    if (raw === null) return new Set(DEFAULT_TIERS)
+    return new Set(raw.split(',').filter((t): t is WorkTier => WORK_TIERS.includes(t as WorkTier)))
+  }, [searchParams])
 
   // Local mirror of the search box for instant typing feedback.
   const [queryInput, setQueryInput] = useState(urlQuery)
@@ -625,7 +713,7 @@ export function WorkGallery() {
         mode?: FilterMode | null
         sort?: SortMode | null
         view?: string | null
-        archive?: boolean | null
+        tiers?: WorkTier[] | null
       },
       historyMode: 'push' | 'replace',
     ) => {
@@ -653,10 +741,22 @@ export function WorkGallery() {
         if (changes.view) sp.set('view', changes.view)
         else sp.delete('view')
       }
-      // 'off' is the default, so it stays out of the URL for clean links.
-      if ('archive' in changes) {
-        if (changes.archive) sp.set('archive', '1')
-        else sp.delete('archive')
+      // `DEFAULT_TIERS` is the default, so it stays out of the URL for clean
+      // links. Compared as a set, not a joined string, so the param is
+      // omitted whatever order the toggles were clicked in. An explicit
+      // empty selection has to survive as `tiers=`, since dropping the param
+      // would silently restore the default instead of showing nothing.
+      if ('tiers' in changes) {
+        const next = changes.tiers
+        const isDefault =
+          next !== null &&
+          next !== undefined &&
+          next.length === DEFAULT_TIERS.length &&
+          next.every((t) => DEFAULT_TIERS.includes(t))
+        // `[].join(',')` is `''`, which round-trips as `?tiers=` — present
+        // but empty, which is the distinction this needs to preserve.
+        if (next && !isDefault) sp.set('tiers', next.join(','))
+        else sp.delete('tiers')
       }
       const qs = sp.toString()
       const url = qs ? `${pathname}?${qs}` : pathname
@@ -705,30 +805,54 @@ export function WorkGallery() {
 
   const reset = useCallback(() => {
     setQueryInput('')
-    commit({ q: null, tags: null, mode: null, sort: null, archive: null }, 'push')
+    commit({ q: null, tags: null, mode: null, sort: null, tiers: null }, 'push')
   }, [commit])
 
-  // One-way: reveals the archive, then the control that triggered it
-  // disappears (§4.3 — there's nothing left to reveal). `reset` is the way
-  // back, same as every other state this row can accumulate.
-  const revealArchive = useCallback(() => commit({ archive: true }, 'push'), [commit])
+  // Each tier is an independent shelf, so this is a plain add/remove — no
+  // tier's state implies another's. Unchecking the last one is allowed and
+  // shows the empty state; it's a legible thing to have done, and `reset`
+  // is right there.
+  const toggleTier = useCallback(
+    (tier: WorkTier) => {
+      const next = new Set(tiers)
+      if (next.has(tier)) next.delete(tier)
+      else next.add(tier)
+      // Emitted in `WORK_TIERS` order, not click order, so the same
+      // selection always produces the same URL.
+      commit({ tiers: WORK_TIERS.filter((t) => next.has(t)) }, 'push')
+    },
+    [tiers, commit],
+  )
 
-  // Searching or filtering *is* digging (§4.1 of the tiers-and-pins spec), so
-  // either one surfaces the archive without the explicit reveal control.
-  const digging = Boolean(queryInput.trim()) || selectedTags.size > 0
-  const includeArchived = showArchived || digging
+  const tiersAreDefault =
+    tiers.size === DEFAULT_TIERS.length && DEFAULT_TIERS.every((t) => tiers.has(t))
+
+  // Searching, filtering, or changing which shelves are shown is all
+  // digging (§4.1 of the tiers-and-pins spec) — each is reason enough to
+  // drop pins (§3.3): a filtered view answers the question asked, not
+  // Beck's picks first.
+  const digging = Boolean(queryInput.trim()) || selectedTags.size > 0 || !tiersAreDefault
+
+  const tierList = useMemo(() => WORK_TIERS.filter((t) => tiers.has(t)), [tiers])
 
   const results = useMemo(
     () =>
       sortWork(
-        filterWork(WORK, { query: queryInput, tags: Array.from(selectedTags), mode, includeArchived }),
+        filterWork(WORK, {
+          query: queryInput,
+          tags: Array.from(selectedTags),
+          mode,
+          tiers: tierList,
+        }),
         sort,
       ),
-    [queryInput, selectedTags, mode, sort, includeArchived],
+    [queryInput, selectedTags, mode, sort, tierList],
   )
 
-  const archivedCount = useMemo(() => WORK.filter(isArchived).length, [])
-  const total = includeArchived ? WORK.length : WORK.length - archivedCount
+  // The denominator is what the current shelves hold, so it never invites
+  // the question the archive exists to avoid (§4.4) — and it stays honest
+  // when the shelves change rather than only tracking the archive.
+  const total = useMemo(() => WORK.filter((item) => tiers.has(tierOf(item))).length, [tiers])
 
   // Pins hold only in the default view — no search, no tags, chronological
   // order (§3.3) — and only up to as many as the live masonry can seat
@@ -815,12 +939,10 @@ export function WorkGallery() {
     () => DISCIPLINES.filter((d) => selectedTags.has(d)),
     [selectedTags],
   )
-  // `showArchived` counts too: it's the only state that isn't a tag or a
-  // query, but once set it's an active state with no other affordance back
-  // off it besides `reset` — the reveal control (§4.3) only ever turns it on,
-  // and it disappears once it has, so omitting this from the count would
-  // leave a revealed archive with no `reset` button to put it back.
-  const activeCount = selectedTags.size + (queryInput.trim() ? 1 : 0) + (showArchived ? 1 : 0)
+  // A non-default tier selection counts too: it isn't a tag or a query, but
+  // it's still a real departure from the default view, and `reset` should
+  // visibly offer to clear it same as everything else.
+  const activeCount = selectedTags.size + (queryInput.trim() ? 1 : 0) + (tiersAreDefault ? 0 : 1)
 
   // Tags active disciplines' subtags with their parent's color, so they still
   // read as grouped with no label once they're inline among everything else.
@@ -907,7 +1029,7 @@ export function WorkGallery() {
             type="button"
             onClick={() => setQueryInput('')}
             aria-label="Clear search"
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -942,30 +1064,27 @@ export function WorkGallery() {
           )}
         </p>
         <div className="flex items-center gap-3">
-          {archivedCount > 0 && !digging && !showArchived && (
-            <button
-              type="button"
-              onClick={revealArchive}
-              className="font-brand inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm lowercase text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground"
-            >
-              show archive · +{archivedCount}
-            </button>
-          )}
+          {/* reset sits left of the tier control specifically so its own
+              appear/disappear (driven by `activeCount`, which a tier toggle
+              changes) shifts nothing to its right — TierRow, sort, and the
+              venn stay put relative to each other; only the whole cluster's
+              left edge moves. */}
           {activeCount > 0 && (
             <button
               type="button"
               onClick={reset}
-              className="font-brand inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm lowercase text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground"
+              className="font-brand inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm lowercase text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               reset
             </button>
           )}
+          <TierRow tiers={tiers} onToggleTier={toggleTier} />
           <button
             type="button"
             onClick={cycleSort}
             aria-label={`Sort: ${SORT_LABEL[sort]}. Activate to change.`}
-            className="font-brand inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm lowercase text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground"
+            className="font-brand inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm lowercase text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground"
           >
             <ArrowDownUp className="h-3.5 w-3.5" aria-hidden="true" />
             {SORT_LABEL[sort]}
@@ -995,13 +1114,18 @@ export function WorkGallery() {
             nothing matches yet
           </p>
           <p className="mt-2 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground">
-            {selectedTags.size > 1 && mode === 'and'
-              ? 'These tags combine with “and”, so every result has to carry all of them at once. Try the little venn diagram to switch, or '
-              : 'No piece fits that combination. Try a different word, or '}
+            {/* Tiers first: with every shelf switched off there is nothing
+                to match against, so blaming the tags or the query would
+                point at the wrong control. */}
+            {tiers.size === 0
+              ? 'Every shelf is switched off, so there’s nothing left to show. Turn one back on, or '
+              : selectedTags.size > 1 && mode === 'and'
+                ? 'These tags combine with “and”, so every result has to carry all of them at once. Try the little venn diagram to switch, or '
+                : 'No piece fits that combination. Try a different word, or '}
             <button
               type="button"
               onClick={reset}
-              className="font-bold text-goldenrod underline-offset-4 hover:underline"
+              className="cursor-pointer font-bold text-goldenrod underline-offset-4 hover:underline"
             >
               reset everything
             </button>

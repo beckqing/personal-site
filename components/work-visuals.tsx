@@ -98,21 +98,34 @@ export function UnfinishedMark({ className }: { className?: string }) {
 
 /**
  * Badge flagging a piece as one of Beck's favorites — see `WorkPiece.tier`.
- * Deliberately not a matched opposite of `ArchiveMark` (§6 of the spec): a
- * heart reads as affection rather than rank, and unlike the archive mark it
- * may carry the piece's own discipline tone, the way other accented chrome
- * (e.g. TextCard's Quote glyph) does.
+ * Icon-only with the word on hover/focus, `ArchiveMark`'s own shell and
+ * treatment (the visible "favorite" label this used to carry read as
+ * cramped at card-corner size and didn't match its sibling mark). Still not
+ * a matched opposite of `ArchiveMark` (§6 of the spec): the heart is
+ * *filled*, not stroked — lucide ships one heart glyph with no solid
+ * variant, and an outline heart at this size reads as faint rather than
+ * affectionate — and it may carry the piece's own discipline tone, the way
+ * other accented chrome (e.g. TextCard's Quote glyph) does. Ringed in
+ * `border-current`, unlike `ArchiveMark`'s borderless shell — a filled glyph
+ * with no visible edge tends to read as a dot floating on the card rather
+ * than a badge, and the ring gives the tone-colored heart a shape to sit in
+ * that doesn't depend on the backdrop-blur alone for legibility.
  */
 export function FavoriteMark({ tone, className }: { tone?: string; className?: string }) {
   return (
     <span
+      title="favorite"
+      aria-label="Favorite — one of Beck's favorites"
       className={cn(
-        'font-brand inline-flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-xs lowercase text-foreground backdrop-blur-sm',
+        'inline-flex items-center justify-center rounded-full border border-current bg-background/80 p-1.5 backdrop-blur-sm',
+        // Falls back to the same muted tone ArchiveMark uses when no
+        // discipline tone is passed in, so the badge is never colorless.
+        !tone && 'text-muted-foreground',
         className,
       )}
+      style={tone ? { color: tone } : undefined}
     >
-      <Heart className="h-3.5 w-3.5" style={tone ? { color: tone } : undefined} strokeWidth={1.75} aria-hidden="true" />
-      favorite
+      <Heart className="h-3.5 w-3.5" fill="currentColor" strokeWidth={1.75} />
     </span>
   )
 }

@@ -3,6 +3,22 @@ import { SAMPLE_WORK } from './work.sample'
 export type WorkTier = 'favorite' | 'general' | 'archive'
 
 /**
+ * Every tier, in the order the gallery's tier control shows them — best
+ * regard to least, so the control reads as a shelf order rather than an
+ * arbitrary set.
+ */
+export const WORK_TIERS: readonly WorkTier[] = ['favorite', 'general', 'archive']
+
+/**
+ * The tiers a visitor sees without asking: everything except `archive`.
+ * This *is* §4's "out of the default browse" rule — expressed as a default
+ * rather than a special case, so the gallery's tier control starts in the
+ * state the spec describes and every other combination is just another
+ * selection.
+ */
+export const DEFAULT_TIERS: readonly WorkTier[] = ['favorite', 'general']
+
+/**
  * A single piece of work. Collections are pieces that contain other pieces,
  * so a collection and a standalone piece share the same shape and page layout.
  */
@@ -645,6 +661,7 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'color'],
     image: '/art/april-colors-19/01.jpg',
     imageAspect: '1/1',
+    tier: 'favorite',
     stackAccent: '#682f29',
     stackPieces: ['10-fire-protection', '13-grounding-hopes', '26-aphrodite'],
     pieces: [
@@ -958,6 +975,7 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'watercolor'],
     image: '/art/april-colors-24/01.webp',
     imageAspect: '1/1',
+    tier: 'favorite',
     pieces: [
       {
         slug: '01-favorite-color',
@@ -1407,6 +1425,7 @@ const REAL_WORK: WorkItem[] = [
       "Traditional collage made out of pictures of meat in grocery store advertisements.\n\nSomething different. I honestly got pretty attached to this piece, though I'm still uncertain as to whether I'd put it in my house. I'd love to hear reactions though, since some sharing in preliminary stages got a stronger response than I expected.",
     image: '/art/2019/one-flesh.jpg',
     imageAspect: '1/1',
+    tier: 'favorite',
   },
   {
     slug: 'rabbit-in-the-moon',
@@ -1430,6 +1449,7 @@ const REAL_WORK: WorkItem[] = [
       "This one has been sitting around a bit, waiting to be completed. Also, I don't really know Latin, and I wasn't expecting five declensions, so I just went with what looked like the easiest method: genitive plural of a first declension noun to describe this king here.",
     image: '/art/2019/rex-materialistarum.jpg',
     imageAspect: '1/1',
+    tier: 'archive',
   },
   {
     slug: 'transparent-eyeball',
@@ -1504,6 +1524,7 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'digital'],
     image: '/art/eye-studies/01.jpg',
     imageAspect: '1/1',
+    tier: 'favorite',
     stackAccent: '#bcb5ac',
     guessHints: [
       'What do all these animals have in common?',
@@ -1873,6 +1894,7 @@ const REAL_WORK: WorkItem[] = [
       'Used steel wool to scratch off the decals, no harm done to the ceramic.\n\nAlso, treating the white as cream color, based on previous exp baking at 400F for 30min. Might reduce temp.\n\nOil paint @sharpie mug: I\'m happy with this! The colors shifted, but it was slighter than I expected based on previous experience baking at a higher temperature.\n\nblue - warmed lightened somewhat\npink - cooled slightly\nred - cooled to dark magenta\nyellow - negligible\nwhite - negligible\n\nComparison image on the third slide is lq bc different lighting conditions.',
     image: '/art/portfolio-22/painted-mug.webp',
     imageAspect: '1/1',
+    tier: 'archive',
   },
   {
     slug: 'adoption-minizine',
@@ -1924,6 +1946,7 @@ const REAL_WORK: WorkItem[] = [
     writeup: 'Collage inspired by security envelopes and halftone screen printing.\n\n"Security". July 2022.',
     image: '/art/portfolio-22/why-be-afraid.webp',
     imageAspect: '4/5',
+    tier: 'archive',
   },
   {
     slug: 'lady-bird',
@@ -1959,6 +1982,7 @@ const REAL_WORK: WorkItem[] = [
     image: '/art/portfolio-22/security-camera.webp',
     imageAspect: '1/1',
     unfinished: true,
+    tier: 'archive',
   },
   {
     slug: 'desire-and-distance',
@@ -2191,6 +2215,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2023',
     description: 'My preferred tools and strategies for taking notes, analog and digital.',
     tags: ['writing', 'essay'],
+    tier: 'favorite',
     text:
       "I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
   },
@@ -2333,12 +2358,24 @@ export function filterWork(
     query,
     tags,
     mode,
-    includeArchived = false,
-  }: { query: string; tags: string[]; mode: FilterMode; includeArchived?: boolean },
+    tiers = DEFAULT_TIERS,
+  }: {
+    query: string
+    tags: string[]
+    mode: FilterMode
+    /**
+     * Which tiers to include. Defaults to `DEFAULT_TIERS` (everything but
+     * `archive`), so every existing caller keeps the default browse without
+     * an edit. One list covers all of §4's cases — "archive only" is
+     * `['archive']`, "browse plus archive" is all three — where a boolean
+     * `includeArchived` could only ever express the second.
+     */
+    tiers?: readonly WorkTier[]
+  },
 ): WorkItem[] {
   const q = query.trim().toLowerCase()
   return items.filter((item) => {
-    if (!includeArchived && isArchived(item)) return false
+    if (!tiers.includes(tierOf(item))) return false
     if (tags.length > 0) {
       const owned = itemTags(item)
       const has = (t: string) => owned.has(t)
