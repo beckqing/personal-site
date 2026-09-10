@@ -1,7 +1,8 @@
 import { forwardRef, type CSSProperties } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Archive, ArrowRight, FileText, Heart, Hourglass, ImageOff, Layers, Quote } from 'lucide-react'
+import { Archive, ArrowRight, FileText, Hourglass, ImageOff, Layers, Quote } from 'lucide-react'
+import { HeartIcon } from '@/components/heart-icon'
 import {
   DISCIPLINE_FACETS,
   DISCIPLINES,
@@ -102,7 +103,7 @@ export function UnfinishedMark({ className }: { className?: string }) {
  * treatment (the visible "favorite" label this used to carry read as
  * cramped at card-corner size and didn't match its sibling mark). Still not
  * a matched opposite of `ArchiveMark` (§6 of the spec): the heart is
- * *filled*, not stroked — lucide ships one heart glyph with no solid
+ * *filled*, not stroked — `HeartIcon` is a line glyph with no solid
  * variant, and an outline heart at this size reads as faint rather than
  * affectionate — and it may carry the piece's own discipline tone, the way
  * other accented chrome (e.g. TextCard's Quote glyph) does. Ringed in
@@ -117,7 +118,7 @@ export function FavoriteMark({ tone, className }: { tone?: string; className?: s
       title="favorite"
       aria-label="Favorite — one of Beck's favorites"
       className={cn(
-        'inline-flex items-center justify-center rounded-full border border-current bg-background/80 p-1.5 backdrop-blur-sm',
+        'inline-flex items-center justify-center rounded-full border border-current bg-background/80 p-1 backdrop-blur-sm',
         // Falls back to the same muted tone ArchiveMark uses when no
         // discipline tone is passed in, so the badge is never colorless.
         !tone && 'text-muted-foreground',
@@ -125,7 +126,19 @@ export function FavoriteMark({ tone, className }: { tone?: string; className?: s
       )}
       style={tone ? { color: tone } : undefined}
     >
-      <Heart className="h-3.5 w-3.5" fill="currentColor" strokeWidth={1.75} />
+      {/*
+        `HeartIcon`'s two lobes meet at a shallow dip (not a sharp cusp like
+        lucide's), so a same-color stroke used to blend into the fill and
+        round the whole glyph into a blob. Stroking in the page background
+        instead cuts a visible seam along that dip — and every other edge —
+        so the lobes stay legible at badge size without touching the path.
+      */}
+      <HeartIcon
+        className="h-3 w-3"
+        fill="currentColor"
+        stroke="var(--background)"
+        strokeWidth={1.75}
+      />
     </span>
   )
 }

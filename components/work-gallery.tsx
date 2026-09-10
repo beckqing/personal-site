@@ -9,11 +9,14 @@ import {
   useRef,
   useState,
   useTransition,
+  type ComponentType,
   type ReactNode,
+  type SVGProps,
 } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Archive, ArrowDownUp, Circle, Heart, Maximize2, Play, Quote, RotateCcw, RotateCw, Search, X } from 'lucide-react'
+import { Archive, ArrowDownUp, Circle, Maximize2, Play, Quote, RotateCcw, RotateCw, Search, X } from 'lucide-react'
+import { HeartIcon } from '@/components/heart-icon'
 import {
   ALL_TAGS,
   DEFAULT_TIERS,
@@ -281,7 +284,7 @@ function TextCard({ item }: { item: WorkItem }) {
         <VerseBlock
           text={excerpt}
           context="card"
-          className="mt-3 text-lg text-foreground @max-3xs/card:line-clamp-4 @max-3xs/card:text-sm"
+          className="mt-3 pl-3 text-lg text-foreground @max-3xs/card:line-clamp-4 @max-3xs/card:text-sm"
         />
 
         <CardTitleRow title={item.title} />
@@ -330,7 +333,7 @@ function HybridCard({ item }: { item: WorkItem }) {
           <VerseBlock
             text={excerpt}
             context="card"
-            className="mt-3 text-lg text-foreground @max-3xs/card:line-clamp-4 @max-3xs/card:text-sm"
+            className="mt-3 pl-3 text-lg text-foreground @max-3xs/card:line-clamp-4 @max-3xs/card:text-sm"
           />
 
           <CardTitleRow title={item.title} />
@@ -363,10 +366,14 @@ function CollectionTile({ item }: { item: WorkCollection }) {
         <CollectionStack item={item} />
       </Link>
 
-      {(isFavorite(item) || isArchived(item)) && (
+      {isArchived(item) && (
         <div className="absolute left-3 top-3 z-20 flex items-center gap-2">
-          {isFavorite(item) && <FavoriteMark tone={toneFor(item)} />}
-          {isArchived(item) && <ArchiveMark />}
+          <ArchiveMark />
+        </div>
+      )}
+      {isFavorite(item) && (
+        <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2">
+          <FavoriteMark tone={toneFor(item)} />
         </div>
       )}
 
@@ -517,7 +524,7 @@ function ImageCard({ item }: { item: WorkItem }) {
       )}
 
       <MediaBadges item={item} />
-      {(isFavorite(item) || isArchived(item) || item.unfinished) && (
+      {(isArchived(item) || item.unfinished) && (
         <div
           className={cn(
             'absolute left-3 z-20 flex items-center gap-2',
@@ -526,9 +533,13 @@ function ImageCard({ item }: { item: WorkItem }) {
             codeDemo ? 'top-[calc(0.75rem+2rem)]' : 'top-3',
           )}
         >
-          {isFavorite(item) && <FavoriteMark tone={toneFor(item)} />}
           {isArchived(item) && <ArchiveMark />}
           {item.unfinished && <UnfinishedMark />}
+        </div>
+      )}
+      {isFavorite(item) && (
+        <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2">
+          <FavoriteMark tone={toneFor(item)} />
         </div>
       )}
 
@@ -596,8 +607,8 @@ function TagRow({
  * their card badges use, so the control inherits a vocabulary the cards
  * already taught rather than inventing a second one.
  */
-const TIER_CONTROL: Record<WorkTier, { Icon: typeof Heart; label: string }> = {
-  favorite: { Icon: Heart, label: 'favorites' },
+const TIER_CONTROL: Record<WorkTier, { Icon: ComponentType<SVGProps<SVGSVGElement>>; label: string }> = {
+  favorite: { Icon: HeartIcon, label: 'favorites' },
   general: { Icon: Circle, label: 'general' },
   archive: { Icon: Archive, label: 'archive' },
 }
@@ -644,7 +655,7 @@ function TierRow({
             // On/off is a solid accent pill against a bare one — TagChip's
             // exact active idiom, so a wordless control still reads as "the
             // selected ones" on sight. Deliberately not a filled-vs-outline
-            // *glyph*: `Heart` and `Circle` fill into legible solids but
+            // *glyph*: `HeartIcon` and `Circle` fill into legible solids but
             // `Archive` is a container shape, and filling it turns the box
             // into an unreadable blob.
             className={cn(

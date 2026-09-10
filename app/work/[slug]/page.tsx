@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Archive, ArrowLeft, BookOpen, ExternalLink, Heart, Hourglass, Layers } from 'lucide-react'
+import { Archive, ArrowLeft, BookOpen, ExternalLink, Hourglass, Layers } from 'lucide-react'
+import { HeartIcon } from '@/components/heart-icon'
 import {
   collectionLayout,
   getWorkItem,
@@ -198,7 +199,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
     <div className="flex flex-wrap items-center gap-4">
       {isFavorite(piece) && (
         <div className="flex items-center gap-2" style={{ color: tone }}>
-          <Heart className="h-4 w-4" aria-hidden="true" />
+          <HeartIcon className="h-4 w-4" aria-hidden="true" />
           <span className="font-brand text-xs uppercase tracking-[0.3em]">favorite</span>
         </div>
       )}
