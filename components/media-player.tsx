@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Binary, CircleDot, Expand, Pause, Play } from 'lucide-react'
+import { CircleDot, Expand, Pause, Play } from 'lucide-react'
 import {
   hasAnimation,
   hasSpeedpaint,
@@ -17,23 +17,24 @@ import { ImageLightbox } from '@/components/image-lightbox'
 import { cn } from '@/lib/utils'
 
 /**
- * Quiet indicators for a gallery tile carrying extra media — a speedpaint, a
- * finished animation, a runnable code demo, or (rarely) more than one at once.
- * Purely decorative: the badges themselves do nothing. On a collection-page
- * tile the surrounding element is still a plain link and does the
- * navigating; on a top-level gallery `ImageCard`, the image itself is now
- * the button that opens the lightbox in place (see `opensInGalleryLightbox`
- * in lib/work.ts) — a code demo is the one exception, since its `image` is
- * only a poster still and stays a plain navigating link. Meant to sit inside
- * the same `relative` box that bounds the tile's image (a plain sibling of
- * the image div, or passed as extra children into `ImageLightbox`, which
- * already wraps its children in one).
+ * Quiet indicators for a gallery tile carrying extra media — a speedpaint or
+ * a finished animation, plus the accessible announcement for a runnable code
+ * demo. Purely decorative: the badges themselves do nothing. On a
+ * collection-page tile the surrounding element is still a plain link and
+ * does the navigating; on a top-level gallery `ImageCard`, the image itself
+ * is now the button that opens the lightbox in place (see
+ * `opensInGalleryLightbox` in lib/work.ts) — a code demo is the one
+ * exception, since its `image` is only a poster still and stays a plain
+ * navigating link. Meant to sit inside the same `relative` box that bounds
+ * the tile's image (a plain sibling of the image div, or passed as extra
+ * children into `ImageLightbox`, which already wraps its children in one).
  *
- * The code-demo badge is the *only* signal a tile gives that a piece runs —
- * tiles deliberately don't boot iframes (thirty tiles would be thirty rAF
- * loops, and asynchronously-booting content would make the masonry heights
- * unstable). The badge says there's more here, and the click target already
- * goes to the page where the thing runs.
+ * A code demo no longer gets a corner icon here — its `ImageCard`
+ * (work-gallery.tsx) carries the same state rail + control rail as
+ * `CodeDemoFrame` and `PieceColumn`, which says "this is a program" far
+ * louder than a small glyph did. The sr-only fact stays, since that rail is
+ * `aria-hidden` decoration and something still has to announce the demo to
+ * assistive tech.
  */
 export function MediaBadges({ item }: { item: WorkItem }) {
   const speedpaint = hasSpeedpaint(item)
@@ -50,36 +51,29 @@ export function MediaBadges({ item }: { item: WorkItem }) {
   return (
     <>
       {/*
-        The icons are decorative, but "there's more here than a still image"
+        The icon is decorative, but "there's more here than a still image"
         isn't — so the fact itself is announced once, in text, while the
-        glyphs stay aria-hidden.
+        glyph stays aria-hidden.
       */}
       <span className="sr-only">
         {`Includes ${facts.length > 1 ? `${facts.slice(0, -1).join(', ')} and ${facts[facts.length - 1]}` : facts[0]}.`}
       </span>
-      {/* The corner pills share one row so a piece carrying both sits as a
-          neat pair rather than stacking two absolutes on the same spot. A
-          single pill lands exactly where the speedpaint one always has. */}
-      {(speedpaint || codeDemo) && (
-        <span className="pointer-events-none absolute right-2.5 top-2.5 z-20 flex items-center gap-1.5">
-          {codeDemo && (
-            <span
-              aria-hidden="true"
-              title="Includes a code demo you can run"
-              className="inline-flex items-center justify-center rounded-full bg-background/85 p-1.5 text-foreground/70 backdrop-blur-sm"
-            >
-              <Binary className="h-3.5 w-3.5" strokeWidth={1.75} />
-            </span>
+      {speedpaint && (
+        <span
+          className={cn(
+            'pointer-events-none absolute right-2.5 z-20',
+            // A code demo's state rail pushes the poster (and this corner
+            // pill) down by its own height — see ImageCard.
+            codeDemo ? 'top-[calc(0.75rem+2rem)]' : 'top-2.5',
           )}
-          {speedpaint && (
-            <span
-              aria-hidden="true"
-              title="Includes a speedpaint video"
-              className="inline-flex items-center justify-center rounded-full bg-background/85 p-1.5 text-foreground/70 backdrop-blur-sm"
-            >
-              <CircleDot className="h-3.5 w-3.5" strokeWidth={1.75} />
-            </span>
-          )}
+        >
+          <span
+            aria-hidden="true"
+            title="Includes a speedpaint video"
+            className="inline-flex items-center justify-center rounded-full bg-background/85 p-1.5 text-foreground/70 backdrop-blur-sm"
+          >
+            <CircleDot className="h-3.5 w-3.5" strokeWidth={1.75} />
+          </span>
         </span>
       )}
       {animation && (

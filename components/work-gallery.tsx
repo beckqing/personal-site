@@ -13,7 +13,7 @@ import {
 } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowDownUp, Quote, RotateCcw, Search, X } from 'lucide-react'
+import { ArrowDownUp, Maximize2, Play, Quote, RotateCcw, RotateCw, Search, X } from 'lucide-react'
 import {
   ALL_TAGS,
   DISCIPLINE_FACETS,
@@ -58,6 +58,7 @@ import {
   VerseBlock,
   WorkPlaceholder,
 } from '@/components/work-visuals'
+import { entryName } from '@/components/code-demo-frame'
 import { ImageLightbox } from '@/components/image-lightbox'
 import { MediaBadges } from '@/components/media-player'
 import { MasonryGrid, useMasonryColumns } from '@/components/masonry-grid'
@@ -384,6 +385,21 @@ function CollectionTile({ item }: { item: WorkCollection }) {
 }
 
 /**
+ * One static, non-interactive rail pill — the gallery tile's control rail
+ * echoes `CodeDemoFrame`'s real `RailButton` (components/code-demo-frame.tsx)
+ * so a code demo reads as the same instrument everywhere, but a tile never
+ * boots an iframe (thirty of them would be thirty rAF loops), so its rail
+ * has nothing to actually run and is a plain `<span>`, not a `<button>`.
+ */
+function RailPill({ children }: { children: ReactNode }) {
+  return (
+    <span className="font-brand inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs lowercase text-muted-foreground/60">
+      {children}
+    </span>
+  )
+}
+
+/**
  * Visual/other standalone pieces — a tinted blank placeholder panel above
  * the metadata. Title disappears entirely at rest, leaving just the image,
  * and surfaces as a sticky chrome panel on hover/focus, matching
@@ -416,6 +432,7 @@ function ImageCard({ item }: { item: WorkItem }) {
   // lightbox is live: their `image` is only a poster still, and the thing
   // they advertise runs on their own page.
   const opensLightbox = Boolean(lightbox) && opensInGalleryLightbox(item)
+  const codeDemo = item.codeDemo
 
   return (
     <article className="group relative rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg">
@@ -442,15 +459,64 @@ function ImageCard({ item }: { item: WorkItem }) {
           href={workHref(item)}
           className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <div className="aspect-[5/4] overflow-hidden rounded-[calc(1rem-1px)]" style={aspectStyleFor(item)}>
-            <WorkPlaceholder item={item} />
-          </div>
+          {/* A code demo's tile is chrome, not a plain image — the same
+              state rail + control rail as `CodeDemoFrame` and `PieceColumn`
+              (components/code-demo-frame.tsx, components/piece-column.tsx),
+              so the same piece reads as the same kind of thing everywhere.
+              It's the rounded container here instead of the image alone,
+              rounded to `1rem - 1px` for the same reason the plain image
+              below is. Static and "paused": a tile never boots an iframe,
+              so the control rail has nothing to actually run — see
+              `RailPill` — and there's no "open standalone" link, since the
+              whole tile already opens the piece's own page. */}
+          {codeDemo ? (
+            <div className="flex flex-col overflow-hidden rounded-[calc(1rem-1px)]">
+              <div aria-hidden="true" className="flex items-center gap-3 border-b border-foreground/10 px-3 py-2">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-muted-foreground" />
+                <span className="font-brand text-xs lowercase text-muted-foreground">paused</span>
+                <span className="font-brand min-w-0 flex-1 truncate text-center text-xs text-muted-foreground/70">
+                  {entryName(codeDemo.src)}
+                </span>
+              </div>
+              <div className="aspect-[5/4] overflow-hidden" style={aspectStyleFor(item)}>
+                <WorkPlaceholder item={item} />
+              </div>
+              <div aria-hidden="true" className="flex items-center gap-1 border-t border-foreground/10 px-2 py-1.5">
+                <RailPill>
+                  <Play className="h-3.5 w-3.5" strokeWidth={1.75} fill="currentColor" aria-hidden="true" />
+                  run
+                </RailPill>
+                {codeDemo.seedable && (
+                  <RailPill>
+                    <RotateCw className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                    reseed
+                  </RailPill>
+                )}
+                <span className="flex-1" />
+                <RailPill>
+                  <Maximize2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  full
+                </RailPill>
+              </div>
+            </div>
+          ) : (
+            <div className="aspect-[5/4] overflow-hidden rounded-[calc(1rem-1px)]" style={aspectStyleFor(item)}>
+              <WorkPlaceholder item={item} />
+            </div>
+          )}
         </Link>
       )}
 
       <MediaBadges item={item} />
       {(isFavorite(item) || isArchived(item) || item.unfinished) && (
-        <div className="absolute left-3 top-3 z-20 flex items-center gap-2">
+        <div
+          className={cn(
+            'absolute left-3 z-20 flex items-center gap-2',
+            // The state rail above the poster pushes the poster (and
+            // anything pinned to its corner) down by its own height.
+            codeDemo ? 'top-[calc(0.75rem+2rem)]' : 'top-3',
+          )}
+        >
           {isFavorite(item) && <FavoriteMark tone={toneFor(item)} />}
           {isArchived(item) && <ArchiveMark />}
           {item.unfinished && <UnfinishedMark />}
