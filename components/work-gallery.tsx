@@ -27,17 +27,18 @@ import {
   filterWork,
   formFor,
   galleryLightboxItems,
-  isArchived,
+  hasAnimation,
   isCollection,
   isDiscipline,
-  isFavorite,
   isHybrid,
   isTextForward,
   mediumFor,
   MODE_LABEL,
   nextMode,
   opensInGalleryLightbox,
+  posterAspectFor,
   SORT_LABEL,
+  statusFlagsFor,
   tierOf,
   SORT_MODES,
   sortWork,
@@ -57,11 +58,9 @@ import {
   type WorkTier,
 } from '@/lib/work'
 import {
-  ArchiveMark,
   aspectStyleFor,
   CollectionStack,
-  FavoriteMark,
-  UnfinishedMark,
+  StatusRail,
   VerseBlock,
   WorkPlaceholder,
 } from '@/components/work-visuals'
@@ -245,31 +244,18 @@ function TextCard({ item }: { item: WorkItem }) {
   const excerpt = item.preview ?? item.text ?? item.description ?? ''
   return (
     <article
-      className="group flex flex-col rounded-2xl border border-border p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg @max-3xs/card:p-3"
+      className="group relative flex flex-col rounded-2xl border border-border p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg @max-3xs/card:p-3"
       style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}
     >
       <Link href={workHref(item)} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        {/* flex-wrap + ml-auto (not justify-between): at a 130px paired
-            gallery column, Quote's fixed 28px plus the badge column's own
-            un-shrinkable minimum (TagPill is `shrink-0`) can run a few px
-            past the card's padded content width — invisible in the
-            rendered layout (everything still lands inside the card) but
-            registers as phantom scrollable overflow at the page level.
-            ml-auto reproduces justify-between's right alignment on one line
-            and keeps it on two if the badge wraps below the icon. */}
-        <div className="flex flex-wrap items-start gap-3">
+        <div className="flex items-start gap-3">
           <Quote
             className="h-7 w-7 shrink-0 -scale-x-100"
             style={{ color: `color-mix(in srgb, ${tone} 70%, transparent)` }}
             strokeWidth={1.5}
             aria-hidden="true"
           />
-          <div className="ml-auto flex flex-col items-end gap-2">
-            {isFavorite(item) && <FavoriteMark tone={tone} />}
-            {isArchived(item) && <ArchiveMark />}
-            {item.unfinished && <UnfinishedMark />}
-            <TagPill>{formFor(item)}</TagPill>
-          </div>
+          <TagPill className="ml-auto">{formFor(item)}</TagPill>
         </div>
 
         {/* text-lg by default, dropping to line-clamp-4 text-sm under the
@@ -289,6 +275,11 @@ function TextCard({ item }: { item: WorkItem }) {
 
         <CardTitleRow title={item.title} />
       </Link>
+      {/* Status glyphs alone stay bottom-right, matching ImageCard/
+          CollectionTile's badge placement — self-hides when empty. */}
+      <div className="absolute bottom-3 right-3 z-20">
+        <StatusRail flags={statusFlagsFor(item)} tone={tone} />
+      </div>
     </article>
   )
 }
@@ -304,27 +295,21 @@ function HybridCard({ item }: { item: WorkItem }) {
   const tone = toneFor(item)
   const excerpt = item.preview ?? item.text ?? item.description ?? ''
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border transition-all hover:-translate-y-0.5 hover:shadow-lg">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border transition-all hover:-translate-y-0.5 hover:shadow-lg">
       <Link href={workHref(item)} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <div className="aspect-[16/9] overflow-hidden" style={aspectStyleFor(item)}>
           <WorkPlaceholder item={item} />
         </div>
 
         <div className="p-6 @max-3xs/card:p-3" style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}>
-          {/* flex-wrap + ml-auto — same reasoning as TextCard's identical row above. */}
-          <div className="flex flex-wrap items-start gap-3">
+          <div className="flex items-start gap-3">
             <Quote
               className="h-7 w-7 shrink-0 -scale-x-100"
               style={{ color: `color-mix(in srgb, ${tone} 70%, transparent)` }}
               strokeWidth={1.5}
               aria-hidden="true"
             />
-            <div className="ml-auto flex flex-col items-end gap-2">
-              {isFavorite(item) && <FavoriteMark tone={tone} />}
-              {isArchived(item) && <ArchiveMark />}
-              {item.unfinished && <UnfinishedMark />}
-              <TagPill>{formFor(item)}</TagPill>
-            </div>
+            <TagPill className="ml-auto">{formFor(item)}</TagPill>
           </div>
 
           {/* text-lg by default, line-clamp-4 text-sm under the card's own
@@ -339,6 +324,10 @@ function HybridCard({ item }: { item: WorkItem }) {
           <CardTitleRow title={item.title} />
         </div>
       </Link>
+      {/* Status glyphs alone stay bottom-right — same pattern as TextCard. */}
+      <div className="absolute bottom-3 right-3 z-20">
+        <StatusRail flags={statusFlagsFor(item)} tone={tone} />
+      </div>
     </article>
   )
 }
@@ -357,28 +346,29 @@ function HybridCard({ item }: { item: WorkItem }) {
  * `overflow: hidden` or a `transform` — either disables sticky outright.
  */
 function CollectionTile({ item }: { item: WorkCollection }) {
+  const statusFlags = statusFlagsFor(item)
+  // Same rule CollectionStack/ChapbookStack use internally to decide
+  // whether their own count pill (CollectionMark) renders — when it does,
+  // the flags fold into that pill instead of getting a second one here.
+  const hasCountPill = item.pieces.length > 3
+  const landscape = isLandscapeAspect(item)
   return (
     <div className="group relative">
       <Link
         href={workHref(item)}
         className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <CollectionStack item={item} />
+        <CollectionStack item={item} statusFlags={statusFlags} />
       </Link>
 
-      {isArchived(item) && (
-        <div className="absolute left-3 top-3 z-20 flex items-center gap-2">
-          <ArchiveMark />
-        </div>
-      )}
-      {isFavorite(item) && (
-        <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2">
-          <FavoriteMark tone={toneFor(item)} />
+      {statusFlags.length > 0 && !hasCountPill && (
+        <div className="absolute bottom-3 right-3 z-20">
+          <StatusRail flags={statusFlags} tone={toneFor(item)} />
         </div>
       )}
 
       <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end p-4">
-        <div className="sticky bottom-4 mx-auto w-full max-w-[min(85%,20rem)] rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+        <div className="sticky bottom-4 mx-auto w-full max-w-[28rem] rounded-xl border border-border/60 bg-card/75 px-3 py-2 opacity-0 shadow-sm backdrop-blur-md transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
           <Link
             href={workHref(item)}
             className="pointer-events-auto rounded outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -386,13 +376,16 @@ function CollectionTile({ item }: { item: WorkCollection }) {
             {/* break-words: a single long/unbroken word (no space to wrap
                 at) otherwise overflows this box rather than shrinking with
                 it — the same §9.2 min-content bug, just outside the grid's
-                own sizing since this chrome is `position: absolute`. */}
-            <h2 className="break-words font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
+                own sizing since this chrome is `position: absolute`. Landscape
+                covers truncate instead — see ImageCard's identical rule. */}
+            <h2
+              className={cn(
+                'font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground',
+                landscape ? 'truncate' : 'break-words text-balance',
+              )}
+            >
               {item.title}
             </h2>
-            {item.description && (
-              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{item.description}</p>
-            )}
           </Link>
         </div>
       </div>
@@ -413,6 +406,14 @@ function RailPill({ children }: { children: ReactNode }) {
       {children}
     </span>
   )
+}
+
+/** Wider than tall. Used to keep a long title from wrapping to a second line on a card that's short to begin with. */
+function isLandscapeAspect(item: WorkItem): boolean {
+  const aspect = posterAspectFor(item)
+  if (!aspect) return false
+  const [w, h] = aspect.split('/').map(Number)
+  return w > h
 }
 
 /**
@@ -443,7 +444,15 @@ function ImageCard({ item }: { item: WorkItem }) {
     return <CollectionTile item={item} />
   }
 
-  const medium = mediumFor(item)
+  const statusFlags = statusFlagsFor(item)
+  const landscape = isLandscapeAspect(item)
+  // An animation's own poster + Play overlay (MediaBadges) already say what
+  // this card is — the title panel is redundant chrome on top of it, so
+  // it's dropped here. The medium pill stays, but reads "animation" rather
+  // than the piece's own material tag (if any) — what matters on this card
+  // is that it's a video, not what it was drawn with.
+  const isAnimation = hasAnimation(item)
+  const medium = isAnimation ? 'animation' : mediumFor(item)
   // Code demos are the one visual card excluded even when the gallery's
   // lightbox is live: their `image` is only a poster still, and the thing
   // they advertise runs on their own page.
@@ -523,44 +532,83 @@ function ImageCard({ item }: { item: WorkItem }) {
         </Link>
       )}
 
-      <MediaBadges item={item} />
-      {(isArchived(item) || item.unfinished) && (
+      <MediaBadges item={item} showSpeedpaintBadge={false} />
+      {statusFlags.length > 0 && (
         <div
           className={cn(
-            'absolute left-3 z-20 flex items-center gap-2',
-            // The state rail above the poster pushes the poster (and
-            // anything pinned to its corner) down by its own height.
+            'absolute right-3 z-20',
+            // A code demo's control rail sits below the poster, in normal
+            // flow — bottom-3 alone would land inside it. Mirrors the old
+            // top offset for the state rail above.
+            codeDemo ? 'bottom-[calc(0.75rem+2rem)]' : 'bottom-3',
+          )}
+        >
+          <StatusRail flags={statusFlags} tone={toneFor(item)} />
+        </div>
+      )}
+      {/* Medium pill, tried living in its own top-right hover-reveal corner
+          instead of riding along in the title chrome panel at the bottom —
+          pointer-events-none throughout since it's decorative text with
+          nothing to click, unlike the panel below it. */}
+      {medium && (
+        <div
+          className={cn(
+            'pointer-events-none absolute right-3 z-20 opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100',
             codeDemo ? 'top-[calc(0.75rem+2rem)]' : 'top-3',
           )}
         >
-          {isArchived(item) && <ArchiveMark />}
-          {item.unfinished && <UnfinishedMark />}
+          {/* bg/blur override — floating loose over the image (unlike
+              TagPill's other callers, which all sit on a flat card
+              background already), so it needs the same backdrop treatment
+              StatusRail's pill uses to stay legible over any artwork. */}
+          <TagPill className="bg-background/80 backdrop-blur-sm">{medium}</TagPill>
         </div>
       )}
-      {isFavorite(item) && (
-        <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2">
-          <FavoriteMark tone={toneFor(item)} />
-        </div>
+      {/* Duration badge, YouTube-thumbnail style — a solid dark pill with
+          white text regardless of site theme, since that's the convention
+          being borrowed. Bottom-right, same corner as StatusRail — fine
+          today since no animation piece also carries a status flag, but the
+          two would sit on top of each other if one ever does. Only renders
+          when `duration` is hand-set — see WorkPiece.duration for why this
+          isn't fetched automatically. */}
+      {isAnimation && item.duration && (
+        <span
+          title={`Duration: ${item.duration}`}
+          aria-label={`Duration: ${item.duration}`}
+          className={cn(
+            'pointer-events-none absolute right-3 z-20 rounded bg-black/75 px-1 py-0.5 font-brand text-[0.7rem] tabular-nums text-white',
+            codeDemo ? 'bottom-[calc(0.75rem+2rem)]' : 'bottom-3',
+          )}
+        >
+          {item.duration}
+        </span>
       )}
 
-      <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end p-4">
-        <div className="sticky bottom-4 mx-auto flex w-full max-w-[min(85%,20rem)] items-end justify-between gap-3 rounded-xl border border-border bg-card p-4 opacity-0 shadow-lg transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
-          {/* min-w-0: this Link sits beside TagPill's `shrink-0` in a
-              `justify-between` row, and a flex item's default min-width is
-              its own content size — without this it refuses to shrink
-              below that instead of wrapping. break-words on the h2 handles
-              a single word too long to wrap at all (§9.2). */}
-          <Link
-            href={workHref(item)}
-            className="min-w-0 rounded pointer-events-auto outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <h2 className="break-words font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground text-balance">
-              {item.title}
-            </h2>
-          </Link>
-          {medium && <TagPill className="pointer-events-auto">{medium}</TagPill>}
+      {!isAnimation && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end p-4">
+          <div className="sticky bottom-4 mx-auto w-full max-w-[28rem] rounded-xl border border-border/60 bg-card/75 px-3 py-2 opacity-0 shadow-sm backdrop-blur-md transition-all duration-300 ease-out group-hover:opacity-100 group-focus-within:opacity-100">
+            <Link
+              href={workHref(item)}
+              className="rounded pointer-events-auto outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {/* Landscape cards are short to begin with — truncate
+                  (instead of break-words/text-balance's wrap) so a long
+                  title can't grow this panel to two lines and eat further
+                  into a card that has little height to spare. Portrait/
+                  square cards keep the taller wrapped title; they have the
+                  height for it. */}
+              <h2
+                className={cn(
+                  'font-brand text-sm lowercase tracking-[0.08em] text-muted-foreground',
+                  landscape ? 'truncate' : 'break-words text-balance',
+                )}
+              >
+                {item.title}
+              </h2>
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </article>
   )
 }
@@ -622,8 +670,8 @@ const TIER_CONTROL: Record<WorkTier, { Icon: ComponentType<SVGProps<SVGSVGElemen
  * the two axes don't share an answer to.
  *
  * Wordless by request, so the accessible name carries the whole label
- * (`title` + `aria-label`, the same treatment `ArchiveMark` uses for its own
- * icon-only pill). Grouped inside one bordered shell so three loose glyphs
+ * (`title` + `aria-label`, the same treatment `StatusRail`'s icons use for
+ * their own glyphs). Grouped inside one bordered shell so three loose glyphs
  * read as a single control.
  */
 function TierRow({

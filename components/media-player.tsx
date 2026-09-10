@@ -15,6 +15,7 @@ import {
 } from '@/lib/work'
 import { aspectStyleFor, WorkPlaceholder } from '@/components/work-visuals'
 import { ImageLightbox } from '@/components/image-lightbox'
+import { SpeedpaintIcon } from '@/components/speedpaint-icon'
 import { cn } from '@/lib/utils'
 
 /**
@@ -37,8 +38,20 @@ import { cn } from '@/lib/utils'
  * `aria-hidden` decoration and something still has to announce the demo to
  * assistive tech.
  */
-export function MediaBadges({ item }: { item: WorkItem }) {
-  const speedpaint = hasSpeedpaint(item)
+export function MediaBadges({
+  item,
+  showSpeedpaintBadge = true,
+}: {
+  item: WorkItem
+  /**
+   * false suppresses the corner speedpaint badge (and its sr-only mention)
+   * — for a caller that already surfaces the same fact through
+   * `StatusRail`, so the two don't announce it twice. The animation Play
+   * overlay is unaffected.
+   */
+  showSpeedpaintBadge?: boolean
+}) {
+  const speedpaint = hasSpeedpaint(item) && showSpeedpaintBadge
   const animation = hasAnimation(item)
   const codeDemo = isCodeDemo(item)
   if (!speedpaint && !animation && !codeDemo) return null
@@ -73,7 +86,7 @@ export function MediaBadges({ item }: { item: WorkItem }) {
             title="Includes a speedpaint video"
             className="inline-flex items-center justify-center rounded-full bg-background/85 p-1.5 text-foreground/70 backdrop-blur-sm"
           >
-            <CircleDot className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <SpeedpaintIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
           </span>
         </span>
       )}

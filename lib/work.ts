@@ -89,6 +89,15 @@ export type WorkPiece = {
    */
   animationEmbed?: EmbeddedVideo
   /**
+   * The finished animation's runtime, hand-set as `m:ss` (e.g. `'4:13'`) —
+   * shown as a small badge on the gallery card. Not fetched automatically:
+   * YouTube's key-free oEmbed endpoint doesn't return duration at all, and
+   * the Data API that does needs an API key and a build-time fetch step,
+   * infrastructure this static, no-server site doesn't otherwise have. Unset
+   * on a piece with `animationSrc`/`animationEmbed` simply omits the badge.
+   */
+  duration?: string
+  /**
    * When the piece went on the site, ISO YYYY-MM-DD — distinct from `year`,
    * which is when the work was made. No item carries this yet; a 'recently
    * added' sort mode should only appear once at least one does.
@@ -447,6 +456,23 @@ export function hasSpeedpaint(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.speedpaintSrc)
 }
 
+export type StatusFlag = 'favorite' | 'archive' | 'unfinished' | 'speedpaint'
+
+/**
+ * Which status flags apply to an item, in fixed display order. `favorite`
+ * and `archive` are mutually exclusive (both come from the single-valued
+ * `tierOf()`), so at most one of the two is ever present — the practical
+ * ceiling is 3 flags (tier, unfinished, speedpaint), not 4.
+ */
+export function statusFlagsFor(item: WorkItem): StatusFlag[] {
+  const flags: StatusFlag[] = []
+  if (isFavorite(item)) flags.push('favorite')
+  else if (isArchived(item)) flags.push('archive')
+  if (item.unfinished) flags.push('unfinished')
+  if (hasSpeedpaint(item)) flags.push('speedpaint')
+  return flags
+}
+
 /** A piece with a finished animation clip. Collections don't carry media directly. */
 export function hasAnimation(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.animationSrc || item.animationEmbed)
@@ -568,9 +594,21 @@ export const ALL_TAGS: string[] = [
   ...UNIVERSAL_FACETS.flatMap((f) => f.tags),
 ]
 
-/** Each discipline gets one of the brand tones, used to tint cards and chips. */
+/**
+ * Each discipline gets one of the brand tones, used to tint cards and chips.
+ * `art` reads `--hero-accent-art` (denim in light mode, swapping to --sky in
+ * dark), not the flat `--art` denim the hero's own icon wash still uses —
+ * the same distinction hero-icon-collage.tsx draws between its CATEGORY_VAR
+ * (legible text/accent color) and ICON_CATEGORY_VAR (decorative wash, stays
+ * on the standard hue). Every consumer here is the CATEGORY_VAR kind: a
+ * heart tint, a tag chip's text/border, a quote glyph — foreground color
+ * that needs to read against the page, not a wash — so denim's ~2.6:1
+ * contrast against dark mode's midnight background is a real legibility
+ * problem here, not a deliberate low-contrast pick the way the hero
+ * crescent's is.
+ */
 export const DISCIPLINE_TONE: Record<Discipline, string> = {
-  art: 'var(--art)',
+  art: 'var(--hero-accent-art)',
   writing: 'var(--writing)',
   science: 'var(--science)',
 }
@@ -1533,6 +1571,7 @@ const REAL_WORK: WorkItem[] = [
     image: '/art/2019/philosophy-animation-01.jpg',
     imageAspect: '1/1',
     animationEmbed: { youtubeId: 'RTGjy1jDMyM', aspect: '16/9' },
+    duration: '1:56',
     // The three former sub-pieces. Each caption is that piece's own
     // `description` and `writeup` joined verbatim, in the order its page
     // rendered them — imported captions don't get rewritten or trimmed.

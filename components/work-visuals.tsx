@@ -1,8 +1,9 @@
-import { forwardRef, type CSSProperties } from 'react'
+import { forwardRef, type ComponentType, type CSSProperties, type SVGProps } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Archive, ArrowRight, FileText, Hourglass, ImageOff, Layers, Quote } from 'lucide-react'
 import { HeartIcon } from '@/components/heart-icon'
+import { SpeedpaintIcon } from '@/components/speedpaint-icon'
 import {
   animationPosterFor,
   DISCIPLINE_FACETS,
@@ -22,6 +23,7 @@ import {
   tagTone,
   toneFor,
   type ProcessStill,
+  type StatusFlag,
   type WorkCollection,
   type WorkItem,
   type WorkPiece,
@@ -103,73 +105,93 @@ export function UnfinishedMark({ className }: { className?: string }) {
   )
 }
 
-/**
- * Badge flagging a piece as one of Beck's favorites — see `WorkPiece.tier`.
- * Icon-only with the word on hover/focus, `ArchiveMark`'s own shell and
- * treatment (the visible "favorite" label this used to carry read as
- * cramped at card-corner size and didn't match its sibling mark). Still not
- * a matched opposite of `ArchiveMark` (§6 of the spec): the heart is
- * *filled*, not stroked — `HeartIcon` is a line glyph with no solid
- * variant, and an outline heart at this size reads as faint rather than
- * affectionate — and it may carry the piece's own discipline tone, the way
- * other accented chrome (e.g. TextCard's Quote glyph) does. Ringed in
- * `border-current`, unlike `ArchiveMark`'s borderless shell — a filled glyph
- * with no visible edge tends to read as a dot floating on the card rather
- * than a badge, and the ring gives the tone-colored heart a shape to sit in
- * that doesn't depend on the backdrop-blur alone for legibility.
- */
-export function FavoriteMark({ tone, className }: { tone?: string; className?: string }) {
-  return (
-    <span
-      title="favorite"
-      aria-label="Favorite — one of Beck's favorites"
-      className={cn(
-        'inline-flex items-center justify-center rounded-full border border-current bg-background/80 p-1 backdrop-blur-sm',
-        // Falls back to the same muted tone ArchiveMark uses when no
-        // discipline tone is passed in, so the badge is never colorless.
-        !tone && 'text-muted-foreground',
-        className,
-      )}
-      style={tone ? { color: tone } : undefined}
-    >
-      {/*
-        `HeartIcon`'s two lobes meet at a shallow dip (not a sharp cusp like
-        lucide's), so a same-color stroke used to blend into the fill and
-        round the whole glyph into a blob. Stroking in the page background
-        instead cuts a visible seam along that dip — and every other edge —
-        so the lobes stay legible at badge size without touching the path.
-      */}
-      <HeartIcon
-        className="h-3 w-3"
-        fill="currentColor"
-        stroke="var(--background)"
-        strokeWidth={1.75}
-      />
-    </span>
-  )
+const STATUS_ICON: Record<
+  StatusFlag,
+  {
+    Icon: ComponentType<SVGProps<SVGSVGElement>>
+    label: string
+    /** Size override for this glyph. Default (unset) is `h-3.5 w-3.5`. */
+    size?: string
+    /** Narrow-column companion to `size`, for CollectionMark's `@max-3xs/card` step. Default (unset) is `h-3 w-3`. */
+    sizeNarrow?: string
+  }
+> = {
+  favorite: { Icon: HeartIcon, label: "Favorite — one of Beck's favorites" },
+  archive: {
+    Icon: Archive,
+    label: 'Archived — out of the default browse, still published',
+    // Archive's box shape fills its viewBox more than the other glyphs do,
+    // so at the shared default size it reads visibly bigger — sized down a
+    // touch to sit closer to CollectionMark's Layers icon beside it.
+    size: 'h-3 w-3',
+    sizeNarrow: 'h-2.5 w-2.5',
+  },
+  unfinished: { Icon: Hourglass, label: 'In progress' },
+  speedpaint: { Icon: SpeedpaintIcon, label: 'Includes a speedpaint video' },
 }
 
 /**
- * Badge flagging a piece as archived — out of the default browse, still
- * published. Rendered only where archived items are actually being shown (a
- * revealed gallery, a search result, the piece's own page): in the default
- * grid there is nothing to label. Icon-only with the word on hover/focus
- * (`title` + `aria-label`, `WriteupMark`'s treatment) rather than a visible
- * label — the quieter of the two marks, muted foreground and no accent tone,
- * so the pair doesn't read as a scoreboard. See `WorkPiece.tier`.
+ * The single home for every status glyph that used to be its own
+ * absolutely-positioned corner pill (`FavoriteMark`, `ArchiveMark`,
+ * `UnfinishedMark`, and `MediaBadges`' speedpaint dot) — one shared pill
+ * holding up to three small icons instead of up to three separately
+ * blurred/backgrounded pills competing for the same corner(s). A future
+ * status flag joins `StatusFlag` + `STATUS_ICON` + `statusFlagsFor()`; it
+ * does not get its own corner pill.
+ *
+ * `favorite` is the only flag that takes `tone` — the rest stay neutral
+ * `text-muted-foreground`, matching what the three deleted mark components
+ * did individually. The heart renders filled with no stroke at all —
+ * `fill="currentColor"` and `stroke="none"` — unlike the old `FavoriteMark`,
+ * which stroked it in the page background to cut a seam between the two
+ * lobes; at this pill's tightened size that seam read as more outline than
+ * heart, so it's a plain silhouette now.
  */
-export function ArchiveMark({ className }: { className?: string }) {
+export function StatusRail({
+  flags,
+  tone,
+  className,
+}: {
+  flags: StatusFlag[]
+  /** Tint for the favorite glyph specifically. Ignored for the other flags. */
+  tone?: string
+  className?: string
+}) {
+  if (flags.length === 0) return null
   return (
-    <span
-      title="archived"
-      aria-label="Archived — out of the default browse, still published"
+    <div
+      role="group"
+      aria-label="Status"
       className={cn(
-        'inline-flex items-center justify-center rounded-full bg-background/80 p-1.5 text-muted-foreground backdrop-blur-sm',
+        // Uniform p-1 (not px/py split) so a single-icon rail is a true
+        // circle — square content box, rounded-full — rather than an oval;
+        // multiple icons still read as a pill since the row itself is wider
+        // than it is tall.
+        'inline-flex shrink-0 items-center gap-1 rounded-full bg-background/80 p-1 backdrop-blur-sm',
         className,
       )}
     >
-      <Archive className="h-3.5 w-3.5" strokeWidth={1.75} />
-    </span>
+      {flags.map((flag) => {
+        const { Icon, label, size = 'h-3.5 w-3.5' } = STATUS_ICON[flag]
+        const isFavorite = flag === 'favorite'
+        return (
+          <span
+            key={flag}
+            title={label}
+            aria-label={label}
+            className={cn('inline-flex items-center justify-center', !isFavorite && 'text-muted-foreground')}
+            style={isFavorite ? { color: tone } : undefined}
+          >
+            <Icon
+              className={size}
+              strokeWidth={1.75}
+              aria-hidden="true"
+              {...(isFavorite ? { fill: 'currentColor', stroke: 'none' } : {})}
+            />
+          </span>
+        )
+      })}
+    </div>
   )
 }
 
@@ -186,8 +208,26 @@ export function ArchiveMark({ className }: { className?: string }) {
  * (`leading-[14px]`, not inherited): `CARD4_STRIP_PX_NARROW` is measured
  * from this pill's exact rendered height, and an inherited line-height would
  * throw that measurement off.
+ *
+ * `statusFlags` folds a collection's own status glyphs into this same pill
+ * — an experiment in place of a separate `StatusRail` corner badge fighting
+ * this one for the same bottom-right spot. Icons render at the same size
+ * (and same wide/narrow split) as the `Layers` glyph beside them, so this
+ * pill's height — the thing `CARD4_STRIP_PX_WIDE`/`_NARROW` are measured
+ * against — doesn't move; only its width grows.
  */
-export function CollectionMark({ count, className }: { count: number; className?: string }) {
+export function CollectionMark({
+  count,
+  statusFlags,
+  tone,
+  className,
+}: {
+  count: number
+  statusFlags?: StatusFlag[]
+  /** Tint for the favorite glyph specifically. Ignored for the other flags. */
+  tone?: string
+  className?: string
+}) {
   return (
     <span
       className={cn(
@@ -195,6 +235,26 @@ export function CollectionMark({ count, className }: { count: number; className?
         className,
       )}
     >
+      {statusFlags?.map((flag) => {
+        const { Icon, label, size = 'h-3.5 w-3.5', sizeNarrow = 'h-3 w-3' } = STATUS_ICON[flag]
+        const isFavorite = flag === 'favorite'
+        return (
+          <span
+            key={flag}
+            title={label}
+            aria-label={label}
+            className={cn('inline-flex items-center justify-center', !isFavorite && 'text-muted-foreground')}
+            style={isFavorite ? { color: tone } : undefined}
+          >
+            <Icon
+              className={cn(size, sizeNarrow.split(' ').map((c) => `@max-3xs/card:${c}`))}
+              strokeWidth={1.75}
+              aria-hidden="true"
+              {...(isFavorite ? { fill: 'currentColor', stroke: 'none' } : {})}
+            />
+          </span>
+        )
+      })}
       <Layers className="h-3.5 w-3.5 @max-3xs/card:h-3 @max-3xs/card:w-3" strokeWidth={1.75} aria-hidden="true" />
       <span className="text-muted-foreground">
         {count}
@@ -617,7 +677,16 @@ const deckCardBase =
  * height and needs `h-full` (not `max-h-full`, cards 2/3's clamp) to take
  * the cover's height outright.
  */
-function ChapbookStack({ item, className }: { item: WorkCollection; className?: string }) {
+function ChapbookStack({
+  item,
+  className,
+  statusFlags,
+}: {
+  item: WorkCollection
+  className?: string
+  /** Folded into card 4's `CollectionMark` when it renders — see CollectionMark. */
+  statusFlags?: StatusFlag[]
+}) {
   const tone = toneFor(item)
   // `stackPieces` (1-3 slugs) hand-picks which pieces front the stack;
   // any slot left unset falls back to the collection's first three pieces.
@@ -649,7 +718,12 @@ function ChapbookStack({ item, className }: { item: WorkCollection; className?: 
               ...deckVars(DECK_WIDE.card4, DECK_NARROW.card4),
             }}
           >
-            <CollectionMark count={item.pieces.length} className="absolute bottom-2 right-2" />
+            <CollectionMark
+              count={item.pieces.length}
+              statusFlags={statusFlags}
+              tone={tone}
+              className="absolute bottom-2 right-2"
+            />
           </div>
         )}
         {/* Card 3 — max-h-96 (not max-h-full, which is unbounded here: the
@@ -709,11 +783,20 @@ function ChapbookStack({ item, className }: { item: WorkCollection; className?: 
  * in place. The two real backing pieces get low-quality thumbnails since
  * only a thin strip of each is ever visible.
  */
-export function CollectionStack({ item, className }: { item: WorkCollection; className?: string }) {
+export function CollectionStack({
+  item,
+  className,
+  statusFlags,
+}: {
+  item: WorkCollection
+  className?: string
+  /** Folded into card 4's `CollectionMark` when it renders — see CollectionMark. */
+  statusFlags?: StatusFlag[]
+}) {
   const tone = toneFor(item)
   const chapbook = isChapbook(item)
 
-  if (chapbook) return <ChapbookStack item={item} className={className} />
+  if (chapbook) return <ChapbookStack item={item} className={className} statusFlags={statusFlags} />
 
   const aspect = aspectStyleFor(item)
   // `stackPieces` (1-3 slugs) hand-picks which pieces front the stack,
@@ -749,7 +832,12 @@ export function CollectionStack({ item, className }: { item: WorkCollection; cla
               ...deckVars(DECK_WIDE.card4, DECK_NARROW.card4),
             }}
           >
-            <CollectionMark count={item.pieces.length} className="absolute bottom-2 right-2" />
+            <CollectionMark
+              count={item.pieces.length}
+              statusFlags={statusFlags}
+              tone={tone}
+              className="absolute bottom-2 right-2"
+            />
           </div>
         )}
         {/* Card 3 */}
