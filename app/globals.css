@@ -4,10 +4,36 @@
 
 @custom-variant dark (&:is([data-theme='dark'] *));
 
+/*
+ * Noto Emoji, subsetted to the exact 19 codepoints used by first-art-fair's
+ * EmojiList — monochrome outline glyphs (not Noto Color Emoji), so they draw
+ * in currentColor like every other doodle on this site instead of importing
+ * a platform's own colour-emoji art style. `unicode-range` limits which
+ * characters even trigger the download, and covers only those 19 — the file
+ * is 7KB. See "Emoji: a subsetted monochrome web font" in ARCHITECTURE.md for
+ * how it was built and how to add a codepoint if a future essay needs one;
+ * `scripts/check-emoji-subset.mjs` fails the moment content uses one this
+ * font doesn't cover.
+ */
+@font-face {
+  font-family: 'Noto Emoji Subset';
+  src: url('/fonts/noto-emoji-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+231A, U+231B, U+1F32C, U+1F37D, U+1F3AA, U+1F3AD, U+1F3AF, U+1F3F7, U+1F441, U+1F446, U+1F44B, U+1F4B3,
+    U+1F4CC, U+1F50D, U+1F58C, U+1F697, U+1F963, U+1F964, U+1FA91;
+}
+
 @theme inline {
   --font-sans: var(--font-noto), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-recursive), ui-monospace, 'Courier New', monospace;
   --font-heading: var(--font-recursive), ui-monospace, monospace;
+
+  /* The home page's tab-row/three-columns regime switches here (narrow-
+     screen-columns spec §2) — not a stock Tailwind breakpoint. */
+  --breakpoint-xs: 31.25rem;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -82,6 +108,10 @@
   --goldenrod: #97671a; /* deeper goldenrod for text */
   --terracotta: #8c3623;
   --moon: #305789;
+  /* BrandMark's hero crescent, `light-gold` colourway — brighter than
+     --goldenrod's text-legible light-mode value, since Beck's own drawn
+     colourway (not a derived one) is what's decided for the mark. */
+  --brand-crescent: #d9aa52;
   --sky: #68bfed;
   --spring-green: #aadb6c;
 
@@ -137,6 +167,17 @@
   --goldenrod: #d9aa52;
   --terracotta: #8c3623;
   --moon: #ced2cd;
+  /* BrandMark's hero crescent, dark mode: denim, not literal white. White
+     read as a highlight but sat only ~1.5:1 off pale-slate ink — same hue
+     family, barely different lightness — so the moon blurred into the
+     letterforms at hero size. Denim is Beck's deliberate pick despite
+     measuring only ~2.6:1 off this theme's #080B24 background (the same
+     contrast the artboard's `dark-denim` *ink* draft failed on, see
+     "Assignment, and why" in ARCHITECTURE.md) — goldenrod cleared contrast
+     better (9.8:1) and was tried first, but denim's cooler read against
+     this theme's ground was preferred over the higher-contrast option. Ink
+     itself is untouched: --foreground in both themes. */
+  --brand-crescent: #305789;
   --sky: #68bfed;
   --spring-green: #aadb6c;
 
@@ -190,6 +231,15 @@
     font-family: var(--font-recursive), ui-monospace, monospace;
     font-variation-settings: 'MONO' 1, 'CASL' 1, 'slnt' -14;
   }
+  /* The art-fair essay's emoji markers. `font-variant-emoji: text` is a
+     fallback for the case the subset font fails to load — it asks the
+     platform's own font to draw text-style glyphs rather than substitute a
+     colour emoji font, so the failure mode stays monochrome instead of
+     silently reintroducing colour. */
+  .font-emoji {
+    font-family: 'Noto Emoji Subset', sans-serif;
+    font-variant-emoji: text;
+  }
 }
 
 @layer utilities {
@@ -215,36 +265,94 @@
     background-attachment: fixed;
   }
 
-  /* corkboard collage — tilted panels that settle flat on hover/focus, or
-     when .tilt-card-active is toggled by JS (hovering the matching word in
-     the hero copy above settles the panel the same way, even though the
-     mouse is nowhere near it). */
-  .tilt-card {
-    transform: rotate(var(--tilt, 0deg));
-    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms ease;
+  /* A discipline column (PieceColumn, components/piece-column.tsx) — an
+     even run of unrelated pieces standing directly on the page, each tucked
+     under the one above it in normal flow. transform carries rotation only
+     — never translate, which would resolve its percentages against the
+     rung's own box instead of the column's (see PieceColumn's overlapAbove
+     comment). At rest the column is a scatter of tilted objects; on hover
+     every rung squares itself back to 0° individually (§8) — the group
+     itself never rotates, lifts, or scales as a unit, because there is no
+     longer a card to be one. Driven off `.discipline-column`'s own
+     hover/focus/active state, not `.group:hover` — a hover on the matching
+     word in the hero copy above toggles `.discipline-column-active` via JS
+     with the pointer nowhere near it, and `.group:hover` only fires for an
+     actual pointer hover, which would leave the column scattered while
+     nothing else in the gesture reacted. */
+  .column-rung {
+    transform: rotate(var(--r));
+    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .tilt-card:hover,
-  .tilt-card:focus-visible,
-  .tilt-card.tilt-card-active {
-    transform: rotate(0deg) translateY(-0.4rem) scale(1.025);
+  .discipline-column:hover .column-rung,
+  .discipline-column:focus-visible .column-rung,
+  .discipline-column.discipline-column-active .column-rung {
+    transform: rotate(0deg);
+  }
+  /* The column is layout, not a motion effect — the implication of more
+     has to survive with reduced motion, not disappear. Pin to the rest
+     rotation (never the squared-up one) and drop the transition, rather
+     than hiding .column-rung outright. */
+  @media (prefers-reduced-motion: reduce) {
+    .column-rung,
+    .discipline-column:hover .column-rung,
+    .discipline-column:focus-visible .column-rung,
+    .discipline-column.discipline-column-active .column-rung {
+      transform: rotate(var(--r));
+      transition: none;
+    }
   }
 
-  /* a strip of washi tape pinning a panel to the page */
-  .washi-tape {
-    transform: translateX(-50%) rotate(var(--tape-tilt, -5deg));
-    box-shadow: 0 1px 2px rgba(8, 11, 36, 0.15);
-    opacity: 0.9;
+  /* The three columns dissolve together into one shared fade near the
+     bottom of the section (§5 of the discipline-columns spec) — applied
+     once, to the container wrapping all three columns, not per column;
+     that's the entire mechanism behind "one horizon" rather than three
+     independent dissolves. A mask needs no colour knowledge and is correct
+     in both themes for free — unlike an overlay gradient, which would have
+     to match the page's own ground exactly, and with the card gone that
+     ground is `.night-vignette`'s radial gradients on <body>, not a flat
+     token. A percentage, not a fixed length: the fade is meant to read as
+     "the stack's last third," so its absolute size should track the
+     container's own height (the tallest column's) rather than stay a
+     constant number of rem as picks change and that height drifts. If
+     mask-image is unsupported the columns simply render whole with a clean
+     bottom edge — an acceptable degradation, since nothing else depends on
+     the clip.
+
+     §5's "one shared line" reasoning is specifically about the three
+     columns sitting *side by side* — below `md`, `DisciplinePanels` stacks
+     them instead (§6 says nothing about this; the spec is written for the
+     side-by-side arrangement throughout), and one mask spanning three
+     stacked columns' full combined height would only ever dissolve the
+     last one, leaving the first two with a hard, unfaded bottom edge. So
+     this is genuinely two rules, not one, split by the same breakpoint the
+     layout itself switches on: `.column-fade` fades each column
+     individually below `md` (this is what a plain `<PieceColumn>` gets),
+     and turns itself off at `md` and up, where `.columns-fade-shared`
+     (applied once, to the row wrapping all three `<PieceColumn>`s) takes
+     over instead. */
+  .column-fade {
+    -webkit-mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
   }
-  .washi-tape::before,
-  .washi-tape::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      -45deg,
-      rgba(255, 255, 255, 0.22) 0 4px,
-      transparent 4px 9px
-    );
+  .columns-fade-shared {
+    -webkit-mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 66.67%, transparent 100%);
+  }
+  /* narrow-screen-columns spec §2: the stacked 640-767 band is gone, so this
+     mask switch moves from `md` (768px) to the new `xs` breakpoint (500px,
+     31.25rem) — the same width DisciplinePanels now flips from tab+panel to
+     the three-across row at. */
+  @media (min-width: 31.25rem) {
+    .column-fade {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+  }
+  @media not all and (min-width: 31.25rem) {
+    .columns-fade-shared {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
   }
 
   /* an animation tile's centered play triangle, held at rest until hovered
@@ -257,22 +365,102 @@
       0%, 100% { opacity: 1; transform: scale(1.1); }
       50% { opacity: 0.75; transform: scale(1.18); }
     }
+
+    /* A wrong guess (components/guess-panel.tsx) shakes once. Defining the
+       keyframes only under no-preference means .guess-shake is a no-op for
+       reduced-motion users — the colour change on the input still lands,
+       same trick as media-badge-pulse above. */
+    @keyframes guess-shake {
+      10%, 90% { transform: translateX(-1px); }
+      20%, 80% { transform: translateX(2px); }
+      30%, 50%, 70% { transform: translateX(-4px); }
+      40%, 60% { transform: translateX(4px); }
+    }
+  }
+  .guess-shake {
+    animation: guess-shake 0.4s ease;
   }
 
   /* A collection stack's backing cards (CollectionStack / ChapbookStack in
      work-visuals.tsx) — bottom-anchored via negative margin-bottom so each
      card's peek is exactly its target regardless of the card's own content
-     height (see COLLECTION-CARDS.md §12h). Driven entirely by inline custom
-     properties set from the DECK table in JS, so the numbers exist in one
-     place instead of drifting between a literal class and a JS constant. */
+     height (see "Collection stack geometry" in docs/ARCHITECTURE.md). Driven
+     entirely by inline custom properties set from the DECK_WIDE/DECK_NARROW
+     tables in JS, so the numbers exist in one place instead of drifting
+     between a literal class and a JS constant.
+
+     Two geometries, keyed to the card's own column width via a container
+     query (narrow-screen-columns spec §9.3 — the container is declared
+     `@container/card` on MasonryGrid's column wrapper, so this rule reads
+     from the SAME width the column count now hangs on): an inline style
+     always wins over a container query on the same property, so a
+     `@container card (width < 16rem) { .deck-card { --y: … } }` block would
+     do nothing while the inline `--y` is set. `deckVars()` emits both
+     `--y-wide`/`--y-narrow` (and the `hy` pair) under different names
+     instead, and it's this rule's own container query that picks between
+     them — wide by default, narrow under the query. Tilts (`--r`/`--hr`)
+     don't differ between the two geometries, so they stay single-valued. */
   .deck-card {
-    margin-bottom: var(--y);
+    margin-bottom: var(--y-wide);
     transform: rotate(var(--r));
     transition: margin 300ms ease-out, transform 300ms ease-out, box-shadow 300ms ease-out;
   }
   .group:hover .deck-card {
-    margin-bottom: var(--hy);
+    margin-bottom: var(--hy-wide);
     transform: rotate(var(--hr));
+  }
+  @container card (width < 16rem) {
+    .deck-card {
+      margin-bottom: var(--y-narrow);
+    }
+    .group:hover .deck-card {
+      margin-bottom: var(--hy-narrow);
+    }
+  }
+
+  /* The deck's own container reserve (`deckReserveVars()`,
+     work-visuals.tsx) — same inline-beats-container-query trap as
+     `.deck-card` above, same fix: two named vars, one rule to choose
+     between them. */
+  .deck-reserve {
+    padding-bottom: var(--reserve-wide);
+  }
+  @container card (width < 16rem) {
+    .deck-reserve {
+      padding-bottom: var(--reserve-narrow);
+    }
+  }
+
+  /* Shiki's dual-theme output (see components/excerpt.tsx). Rendered with
+     `defaultColor: false`, so every span carries --shiki-light and
+     --shiki-dark and no `color` of its own — this is what picks between
+     them. It has to key off [data-theme], not prefers-color-scheme: the
+     site's toggle sets an attribute, and the media-query version of this
+     pattern would ignore it entirely. The block's own background comes from
+     the container's Tailwind classes, not from the theme. */
+  .excerpt-block .shiki,
+  .excerpt-block .shiki span {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style, normal);
+    background-color: transparent;
+  }
+  [data-theme='dark'] .excerpt-block .shiki,
+  [data-theme='dark'] .excerpt-block .shiki span {
+    color: var(--shiki-dark);
+    font-style: var(--shiki-dark-font-style, normal);
+    background-color: transparent;
+  }
+  .excerpt-block .shiki {
+    font-family: var(--font-recursive), ui-monospace, monospace;
+    font-variation-settings: 'MONO' 1, 'CASL' 0, 'slnt' 0;
+    line-height: 1.6;
+  }
+  /* Never wrap code — the container scrolls instead. */
+  .excerpt-block .shiki code {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    white-space: pre;
   }
 
   /* A speedpaint's persistent timeline (see SpeedpaintPlayer) — a real,

@@ -11,12 +11,13 @@ export const metadata: Metadata = {
 
 export default function WorkPage() {
   return (
-    <main className="mx-auto max-w-6xl px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14">
+    <main className="mx-auto max-w-6xl px-3 pb-16 pt-10 xs:px-5 sm:px-8 sm:pb-20 sm:pt-14">
       <header className="max-w-2xl">
         <div className="flex items-center gap-2 text-goldenrod">
           <LayoutGrid className="h-5 w-5" strokeWidth={1.75} />
           <span className="font-brand text-sm uppercase tracking-[0.3em]">work</span>
         </div>
+        <h1 className="sr-only">Work</h1>
       </header>
 
       <div className="mt-6">

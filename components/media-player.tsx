@@ -2,45 +2,92 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { CircleDot, Expand, Pause, Play } from 'lucide-react'
-import { hasAnimation, hasSpeedpaint, speedpaintAspect, toneFor, type WorkItem, type WorkPiece } from '@/lib/work'
+import {
+  animationPosterFor,
+  hasAnimation,
+  hasSpeedpaint,
+  isCodeDemo,
+  speedpaintAspect,
+  toneFor,
+  type EmbeddedVideo,
+  type WorkItem,
+  type WorkPiece,
+} from '@/lib/work'
 import { aspectStyleFor, WorkPlaceholder } from '@/components/work-visuals'
 import { ImageLightbox } from '@/components/image-lightbox'
+import { SpeedpaintIcon } from '@/components/speedpaint-icon'
 import { cn } from '@/lib/utils'
 
 /**
- * Quiet indicators for a gallery tile carrying extra media — a speedpaint, a
- * finished animation, or (rarely) both at once. Purely decorative: the
- * tile's own link still does the navigating. Meant to sit inside the same
- * `relative` box that bounds the tile's image (a plain sibling of the image
- * div, or passed as extra children into `ImageLightbox`, which already
- * wraps its children in one).
+ * Quiet indicators for a gallery tile carrying extra media — a speedpaint or
+ * a finished animation, plus the accessible announcement for a runnable code
+ * demo. Purely decorative: the badges themselves do nothing. On a
+ * collection-page tile the surrounding element is still a plain link and
+ * does the navigating; on a top-level gallery `ImageCard`, the image itself
+ * is now the button that opens the lightbox in place (see
+ * `opensInGalleryLightbox` in lib/work.ts) — a code demo is the one
+ * exception, since its `image` is only a poster still and stays a plain
+ * navigating link. Meant to sit inside the same `relative` box that bounds
+ * the tile's image (a plain sibling of the image div, or passed as extra
+ * children into `ImageLightbox`, which already wraps its children in one).
+ *
+ * A code demo no longer gets a corner icon here — its `ImageCard`
+ * (work-gallery.tsx) carries the same state rail + control rail as
+ * `CodeDemoFrame` and `PieceColumn`, which says "this is a program" far
+ * louder than a small glyph did. The sr-only fact stays, since that rail is
+ * `aria-hidden` decoration and something still has to announce the demo to
+ * assistive tech.
  */
-export function MediaBadges({ item }: { item: WorkItem }) {
-  const speedpaint = hasSpeedpaint(item)
+export function MediaBadges({
+  item,
+  showSpeedpaintBadge = true,
+}: {
+  item: WorkItem
+  /**
+   * false suppresses the corner speedpaint badge (and its sr-only mention)
+   * — for a caller that already surfaces the same fact through
+   * `StatusRail`, so the two don't announce it twice. The animation Play
+   * overlay is unaffected.
+   */
+  showSpeedpaintBadge?: boolean
+}) {
+  const speedpaint = hasSpeedpaint(item) && showSpeedpaintBadge
   const animation = hasAnimation(item)
-  if (!speedpaint && !animation) return null
+  const codeDemo = isCodeDemo(item)
+  if (!speedpaint && !animation && !codeDemo) return null
+
+  const facts = [
+    speedpaint && 'a speedpaint video',
+    animation && 'an animation',
+    codeDemo && 'a code demo you can run',
+  ].filter(Boolean) as string[]
 
   return (
     <>
       {/*
-        The icons are decorative, but "there's more here than a still image"
+        The icon is decorative, but "there's more here than a still image"
         isn't — so the fact itself is announced once, in text, while the
-        glyphs stay aria-hidden.
+        glyph stays aria-hidden.
       */}
       <span className="sr-only">
-        {speedpaint && animation
-          ? 'Includes a speedpaint video and an animation.'
-          : speedpaint
-            ? 'Includes a speedpaint video.'
-            : 'Includes an animation.'}
+        {`Includes ${facts.length > 1 ? `${facts.slice(0, -1).join(', ')} and ${facts[facts.length - 1]}` : facts[0]}.`}
       </span>
       {speedpaint && (
         <span
-          aria-hidden="true"
-          title="Includes a speedpaint video"
-          className="pointer-events-none absolute right-2.5 top-2.5 z-20 inline-flex items-center justify-center rounded-full bg-background/85 p-1.5 text-foreground/70 backdrop-blur-sm"
+          className={cn(
+            'pointer-events-none absolute right-2.5 z-20',
+            // A code demo's state rail pushes the poster (and this corner
+            // pill) down by its own height — see ImageCard.
+            codeDemo ? 'top-[calc(0.75rem+2rem)]' : 'top-2.5',
+          )}
         >
-          <CircleDot className="h-3.5 w-3.5" strokeWidth={1.75} />
+          <span
+            aria-hidden="true"
+            title="Includes a speedpaint video"
+            className="inline-flex items-center justify-center rounded-full bg-background/85 p-1.5 text-foreground/70 backdrop-blur-sm"
+          >
+            <SpeedpaintIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
+          </span>
         </span>
       )}
       {animation && (
@@ -70,16 +117,19 @@ function formatTime(seconds: number): string {
 /** Shared frame/border/rounding so the animation and speedpaint players never drift apart visually. */
 function PlayerFrame({
   aspect,
+  bare = false,
   className,
   children,
 }: {
   aspect?: string
+  /** Omits the border — for AnimationEmbed, whose YouTube iframe already has its own visible edge and doesn't need a second one drawn around it. */
+  bare?: boolean
   className?: string
   children: ReactNode
 }) {
   return (
     <div
-      className={cn('relative overflow-hidden rounded-2xl border border-border bg-black', className)}
+      className={cn('relative overflow-hidden rounded-2xl bg-black', !bare && 'border border-border', className)}
       style={aspect ? { aspectRatio: aspect } : undefined}
     >
       {children}
@@ -115,6 +165,74 @@ export function AnimationPlayer({
       <video controls muted playsInline preload="metadata" poster={poster} className="h-full w-full" aria-label={title}>
         <source src={src} type="video/mp4" />
       </video>
+    </PlayerFrame>
+  )
+}
+
+/**
+ * A finished animation that lives on YouTube — the embedded sibling of
+ * `AnimationPlayer`, for a clip too long or heavy to self-host (see TODO
+ * §14b's budget math). Built as a facade, the same principle `CodeDemoFrame`
+ * already uses for the same two reasons: reserve the box up front so
+ * pressing play never shifts the page, and don't pull YouTube's ~1MB of
+ * player script onto every visit — only once someone actually asks.
+ *
+ * No message contract or fullscreen plumbing here, unlike `CodeDemoFrame` —
+ * YouTube's own player already provides both, and re-implementing either
+ * would just be fighting the iframe for control it already has.
+ */
+export function AnimationEmbed({
+  video,
+  poster,
+  title,
+  className,
+}: {
+  video: EmbeddedVideo
+  poster?: string
+  title: string
+  className?: string
+}) {
+  const [playing, setPlaying] = useState(false)
+
+  return (
+    <PlayerFrame aspect={video.aspect} bare className={className}>
+      {playing ? (
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1`}
+          title={title}
+          className="h-full w-full border-0"
+          // No sandbox attribute: unlike CodeDemoFrame's exploratory local
+          // code, this is YouTube's own player, which needs same-origin
+          // access to itself to work at all — sandboxing it would just
+          // break playback, not add a real boundary.
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setPlaying(true)}
+          className="group relative block h-full w-full cursor-pointer"
+          aria-label={`Play ${title}`}
+        >
+          {poster ? (
+            // eslint-disable-next-line @next/next/no-img-element -- a plain
+            // <img> here, not next/image: the poster is the button's own
+            // background, sized by the reserved aspect box already, and
+            // Image's fill mode would need this to be a non-interactive div
+            // instead of the button it actually is.
+            <img src={poster} alt="" aria-hidden="true" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-black" />
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors group-hover:bg-black/35">
+            <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-background/85 text-foreground shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105">
+              <Play className="h-5 w-5 translate-x-[1px]" strokeWidth={1.75} fill="currentColor" aria-hidden="true" />
+            </span>
+          </span>
+        </button>
+      )}
     </PlayerFrame>
   )
 }
@@ -217,9 +335,9 @@ export function SpeedpaintPlayer({
           preload="metadata"
           // object-contain rather than the CSS default (which stretches
           // playing frames to fill but tends to letterbox the poster,
-          // depending on browser) — makes the two consistent. Matters most
-          // for a piece like Verdant, whose poster (a square photo) doesn't
-          // share the uncropped video's 9:16 shape.
+          // depending on browser) — makes the two consistent. A guard
+          // against a poster/video aspect mismatch in general, not any one
+          // piece's shape today.
           className="h-full w-full cursor-pointer object-contain"
           aria-label={`${item.title} — speedpaint video`}
           onLoadedMetadata={(e) => {
@@ -311,12 +429,11 @@ export function PieceMedia({
   lightboxIndex?: number
   className?: string
 }) {
-  if (!piece.image && !piece.animationSrc && !piece.speedpaintSrc) return null
+  const { animationSrc, animationEmbed, speedpaintSrc } = piece
+  const hasAnim = Boolean(animationSrc || animationEmbed)
+  if (!piece.image && !hasAnim && !speedpaintSrc) return null
 
-  const animation = hasAnimation(piece)
-  const speedpaint = hasSpeedpaint(piece)
-
-  if (!animation && !speedpaint) {
+  if (!hasAnim && !speedpaintSrc) {
     return (
       <ImageLightbox items={lightboxItems} initialIndex={lightboxIndex} className={className}>
         <div className="aspect-[16/10] w-full overflow-hidden" style={aspectStyleFor(piece)}>
@@ -326,31 +443,37 @@ export function PieceMedia({
     )
   }
 
-  const both = animation && speedpaint
+  const both = Boolean(hasAnim && speedpaintSrc)
 
   return (
     <div className={className}>
-      {animation && (
+      {hasAnim && (
         <div>
           {both && (
             <p className="font-brand mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">finished animation</p>
           )}
-          <AnimationPlayer
-            src={piece.animationSrc!}
-            poster={piece.image}
-            aspect={piece.imageAspect}
-            title={piece.title}
-          />
+          {animationSrc ? (
+            <AnimationPlayer
+              src={animationSrc}
+              poster={animationPosterFor(piece)}
+              aspect={piece.imageAspect}
+              title={piece.title}
+            />
+          ) : (
+            animationEmbed && (
+              <AnimationEmbed video={animationEmbed} poster={animationPosterFor(piece)} title={piece.title} />
+            )
+          )}
         </div>
       )}
-      {speedpaint && (
+      {speedpaintSrc && (
         <div className={both ? 'mt-8' : undefined}>
           {both && (
             <p className="font-brand mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">speedpaint</p>
           )}
           <SpeedpaintPlayer
             item={piece}
-            src={piece.speedpaintSrc!}
+            src={speedpaintSrc}
             poster={piece.image}
             aspect={speedpaintAspect(piece)}
           />

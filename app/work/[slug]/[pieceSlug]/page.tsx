@@ -4,8 +4,10 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Layers } from 'lucide-react'
 import {
   getCollectionPiece,
+  imageLightboxSlice,
   isChapbook,
   isCollection,
+  isGuessable,
   isHybrid,
   isTextForward,
   metaDescription,
@@ -14,10 +16,22 @@ import {
   toneFor,
   WORK,
 } from '@/lib/work'
-import { BookFolio, categoryLabel, Prose, TagLinks, VerseBlock } from '@/components/work-visuals'
+import {
+  BookFolio,
+  categoryLabel,
+  ProcessSection,
+  Prose,
+  SceneSection,
+  TagLinks,
+  VerseBlock,
+} from '@/components/work-visuals'
+import { GuessPanel } from '@/components/guess-panel'
+import { EssayBody } from '@/components/essay'
+import { mdxBody } from '@/lib/mdx-bodies'
 import { PieceMedia } from '@/components/media-player'
 import { BookPageNav } from '@/components/book-page-nav'
 import { cn } from '@/lib/utils'
+import { headingStyles } from '@/lib/heading-styles'
 
 export function generateStaticParams() {
   return WORK.filter(isCollection).flatMap((item) =>
@@ -53,6 +67,8 @@ export default async function CollectionPiecePage({
   const textForward = isTextForward(piece)
   const hybrid = isHybrid(piece)
   const chapbook = isChapbook(collection)
+  const lightboxSlice = imageLightboxSlice(collection, piece)
+  const Body = mdxBody(piece.slug)
 
   if (chapbook) {
     // A book's first page has no previous page, and its last has no next —
@@ -103,9 +119,7 @@ export default async function CollectionPiecePage({
             >
               {collection.title}
             </p>
-            <h1 className="font-brand mt-3 text-center text-lg font-bold lowercase text-foreground/80 text-balance sm:text-xl">
-              {piece.title}
-            </h1>
+            <h1 className={cn(headingStyles.h1, 'mt-3 text-center text-balance')}>{piece.title}</h1>
 
             <div className="mx-auto mt-6 h-px w-12" style={{ backgroundColor: `color-mix(in srgb, ${tone} 45%, transparent)` }} />
 
@@ -197,14 +211,12 @@ export default async function CollectionPiecePage({
       <article className="mt-8">
         <PieceMedia
           piece={piece}
-          lightboxItems={collection.pieces}
-          lightboxIndex={index}
-          className="mx-auto max-w-3xl shadow-sm"
+          lightboxItems={lightboxSlice.items}
+          lightboxIndex={lightboxSlice.index}
+          className="mx-auto max-w-3xl"
         />
         <div className={cn(!textForward && 'mx-auto mt-8 max-w-2xl')}>
-          <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-            {piece.title}
-          </h1>
+          <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
           <p
             className="font-brand mt-2 flex flex-wrap items-center gap-2 text-sm lowercase"
             style={{ color: tone }}
@@ -231,10 +243,19 @@ export default async function CollectionPiecePage({
                   {piece.description}
                 </p>
               )}
+              {isGuessable(piece) && <GuessPanel collection={collection} piece={piece} />}
             </>
           )}
 
-          {piece.writeup && <Prose text={piece.writeup} className="mt-6" />}
+          {Body ? (
+            <EssayBody tone={tone} className="mt-6">
+              <Body />
+            </EssayBody>
+          ) : (
+            piece.writeup && <Prose text={piece.writeup} className="mt-6" />
+          )}
+          <ProcessSection piece={piece} />
+          <SceneSection piece={piece} />
           <TagLinks tags={piece.tags} className="mt-8" />
         </div>
       </article>

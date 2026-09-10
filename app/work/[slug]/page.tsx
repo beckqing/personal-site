@@ -1,13 +1,18 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, BookOpen, Layers } from 'lucide-react'
+import { Archive, ArrowLeft, BookOpen, ExternalLink, Hourglass, Layers } from 'lucide-react'
+import { HeartIcon } from '@/components/heart-icon'
 import {
   collectionLayout,
   getWorkItem,
+  hasGuessablePieces,
+  isArchived,
   isChapbook,
   isCollection,
+  isFavorite,
   isHybrid,
+  isCodeDemo,
   isTextForward,
   itemTags,
   metaDescription,
@@ -18,15 +23,23 @@ import {
   type WorkCollection,
   type WorkPiece,
 } from '@/lib/work'
+import { GuessProgressProvider } from '@/components/guess-provider'
+import { GuessScorecard } from '@/components/guess-scorecard'
 import {
   categoryLabel,
   ChapbookContents,
   PieceTile,
+  ProcessSection,
   Prose,
+  SceneSection,
   TagLinks,
   VerseBlock,
 } from '@/components/work-visuals'
+import { EssayBody } from '@/components/essay'
+import { headingStyles } from '@/lib/heading-styles'
+import { mdxBody } from '@/lib/mdx-bodies'
 import { PieceMedia } from '@/components/media-player'
+import { CodeDemoFrame } from '@/components/code-demo-frame'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { cn } from '@/lib/utils'
 
@@ -55,7 +68,7 @@ export default async function WorkItemPage({ params }: { params: Promise<{ slug:
   const chapbook = isCollection(item) && isChapbook(item)
 
   return (
-    <main className={cn('mx-auto px-5 py-16 sm:px-8 sm:py-20', chapbook ? 'max-w-3xl' : 'max-w-5xl')}>
+    <main className={cn('mx-auto px-3 py-16 xs:px-5 sm:px-8 sm:py-20', chapbook ? 'max-w-3xl' : 'max-w-5xl')}>
       <Link
         href="/work"
         className="font-brand inline-flex items-center gap-1.5 text-sm lowercase text-muted-foreground transition-colors hover:text-foreground"
@@ -73,7 +86,8 @@ function CollectionView({ item }: { item: WorkCollection }) {
   const tone = toneFor(item)
   const layout = collectionLayout(item)
   const chapbook = layout === 'book'
-  return (
+  const guessable = hasGuessablePieces(item)
+  const view = (
     <>
       <header className={cn('mt-6', chapbook && 'mx-auto max-w-xl text-center')}>
         <div className={cn('flex items-center gap-2', chapbook && 'justify-center')} style={{ color: tone }}>
@@ -86,9 +100,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
             {chapbook ? 'chapbook' : 'collection'}
           </span>
         </div>
-        <h1 className="font-brand mt-2 text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-          {item.title}
-        </h1>
+        <h1 className={cn(headingStyles.h1, 'mt-2 text-balance')}>{item.title}</h1>
         {item.description && (
           <p
             className={cn(
@@ -102,6 +114,7 @@ function CollectionView({ item }: { item: WorkCollection }) {
         <p className="font-brand mt-2 text-sm lowercase text-muted-foreground">
           {item.pieces.length} pieces · {item.year}
         </p>
+        {guessable && <GuessScorecard collection={item} />}
         <TagLinks tags={Array.from(itemTags(item))} className={cn('mt-5', chapbook && 'justify-center')} />
         {chapbook && item.pieces.length > 0 && (
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -125,14 +138,14 @@ function CollectionView({ item }: { item: WorkCollection }) {
 
       {item.writeup && <Prose text={item.writeup} className={cn('mt-8', chapbook && 'mx-auto')} />}
 
-      <h2 className="font-brand mt-12 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+      <h2 className={cn(headingStyles.eyebrow, 'mt-12')}>
         {chapbook ? 'table of contents' : 'in this collection'}
       </h2>
 
       {chapbook ? (
         <ChapbookContents collection={item} />
       ) : (
-        <MasonryGrid className="mt-6" columns={layout === 'illustrated' ? { lg: 2 } : undefined}>
+        <MasonryGrid className="mt-6" columns={layout === 'illustrated' ? { lg: 2, base: 1 } : undefined}>
           {item.pieces.map((p, i) => (
             <PieceTile key={p.slug} collection={item} piece={p} index={i} />
           ))}
@@ -140,12 +153,16 @@ function CollectionView({ item }: { item: WorkCollection }) {
       )}
     </>
   )
+
+  return guessable ? <GuessProgressProvider>{view}</GuessProgressProvider> : view
 }
 
 function PieceView({ piece }: { piece: WorkPiece }) {
   const tone = toneFor(piece)
+  const codeDemo = isCodeDemo(piece)
   const textForward = isTextForward(piece)
   const hybrid = isHybrid(piece)
+  const Body = mdxBody(piece.slug)
 
   const meta = (
     <p className="font-brand mt-2 flex flex-wrap items-center gap-2 text-sm lowercase" style={{ color: tone }}>
@@ -154,16 +171,91 @@ function PieceView({ piece }: { piece: WorkPiece }) {
       <span>{primaryDiscipline(piece) ?? 'work'}</span>
       <span className="text-muted-foreground/50">·</span>
       <span>{piece.year}</span>
+      {/* Metadata about the piece, not a call to action — a button here would
+          make the page about the source instead of the demo. */}
+      {piece.codeDemo?.repo && (
+        <>
+          <span className="text-muted-foreground/50">·</span>
+          <a
+            href={piece.codeDemo.repo}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded underline decoration-transparent underline-offset-2 outline-none transition-colors hover:decoration-current focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            source
+            <ExternalLink className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
+          </a>
+        </>
+      )}
     </p>
   )
+
+  // §2.2 of the tiers-and-pins spec: "consistent with unfinished, the mark
+  // appears both on the gallery card and on the piece's own page." One row,
+  // same reasoning as the gallery cards' combined badge row (§6.2) — up to
+  // two of these can co-occur (a favorite or archived piece can also be
+  // unfinished), so they sit side by side rather than each claiming their
+  // own placement.
+  const statusFlags = (isFavorite(piece) || isArchived(piece) || piece.unfinished) && (
+    <div className="flex flex-wrap items-center gap-4">
+      {isFavorite(piece) && (
+        <div className="flex items-center gap-2" style={{ color: tone }}>
+          <HeartIcon className="h-4 w-4" aria-hidden="true" />
+          <span className="font-brand text-xs uppercase tracking-[0.3em]">favorite</span>
+        </div>
+      )}
+      {isArchived(piece) && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Archive className="h-4 w-4" aria-hidden="true" />
+          <span className="font-brand text-xs uppercase tracking-[0.3em]">archived</span>
+        </div>
+      )}
+      {piece.unfinished && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Hourglass className="h-4 w-4" aria-hidden="true" />
+          <span className="font-brand text-xs uppercase tracking-[0.3em]">in progress</span>
+        </div>
+      )}
+    </div>
+  )
+
+  // A code demo leads with the thing that runs — every other piece page leads
+  // with its subject, and a code demo's subject is the running thing. Checked
+  // before the image branch: a code demo carries `image` and no `text`, so it
+  // would otherwise render as a plain image piece and the failure would be
+  // silent. The frame is allowed to be wider than the prose below it.
+  if (codeDemo && piece.codeDemo) {
+    return (
+      <article className="mt-6">
+        <CodeDemoFrame piece={piece} codeDemo={piece.codeDemo} className="mx-auto max-w-3xl shadow-sm" />
+        <div className="mx-auto mt-8 max-w-2xl">
+          {statusFlags}
+          <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
+          {meta}
+          {piece.description && (
+            <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">{piece.description}</p>
+          )}
+          {Body ? (
+            <EssayBody tone={tone} className="mt-6">
+              <Body />
+            </EssayBody>
+          ) : (
+            piece.writeup && <Prose text={piece.writeup} className="mt-6" />
+          )}
+          <ProcessSection piece={piece} />
+          <SceneSection piece={piece} />
+          <TagLinks tags={piece.tags} className="mt-8" />
+        </div>
+      </article>
+    )
+  }
 
   // Text-forward pieces lead with the words; everything else leads with the image.
   if (textForward) {
     return (
       <article className="mt-6">
-        <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-          {piece.title}
-        </h1>
+        {statusFlags}
+        <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
         {meta}
         <div
           className="mt-8 max-w-2xl rounded-2xl border-l-2 py-1 pl-6"
@@ -171,7 +263,16 @@ function PieceView({ piece }: { piece: WorkPiece }) {
         >
           <VerseBlock text={piece.text ?? ''} className="text-xl text-foreground" />
         </div>
-        {piece.writeup && <Prose text={piece.writeup} className="mt-8" />}
+        <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto mt-8 max-w-3xl" />
+        {Body ? (
+          <EssayBody tone={tone} className="mt-8">
+            <Body />
+          </EssayBody>
+        ) : (
+          piece.writeup && <Prose text={piece.writeup} className="mt-8" />
+        )}
+        <ProcessSection piece={piece} />
+        <SceneSection piece={piece} />
         <TagLinks tags={piece.tags} className="mt-10" />
       </article>
     )
@@ -179,17 +280,24 @@ function PieceView({ piece }: { piece: WorkPiece }) {
 
   return (
     <article className="mt-6">
-      <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto max-w-3xl shadow-sm" />
+      <PieceMedia piece={piece} lightboxItems={[piece]} className="mx-auto max-w-3xl" />
       <div className="mx-auto mt-8 max-w-2xl">
-        <h1 className="font-brand text-3xl font-bold lowercase text-foreground/80 text-balance sm:text-4xl">
-          {piece.title}
-        </h1>
+        {statusFlags}
+        <h1 className={cn(headingStyles.h1, 'text-balance')}>{piece.title}</h1>
         {meta}
         {hybrid && <VerseBlock text={piece.text ?? ''} className="mt-4 text-lg text-foreground" />}
         {piece.description && (
           <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">{piece.description}</p>
         )}
-        {piece.writeup && <Prose text={piece.writeup} className="mt-6" />}
+        {Body ? (
+          <EssayBody tone={tone} className="mt-6">
+            <Body />
+          </EssayBody>
+        ) : (
+          piece.writeup && <Prose text={piece.writeup} className="mt-6" />
+        )}
+        <ProcessSection piece={piece} />
+        <SceneSection piece={piece} />
         <TagLinks tags={piece.tags} className="mt-8" />
       </div>
     </article>

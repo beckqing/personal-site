@@ -1,5 +1,23 @@
 import { SAMPLE_WORK } from './work.sample'
 
+export type WorkTier = 'favorite' | 'general' | 'archive'
+
+/**
+ * Every tier, in the order the gallery's tier control shows them — best
+ * regard to least, so the control reads as a shelf order rather than an
+ * arbitrary set.
+ */
+export const WORK_TIERS: readonly WorkTier[] = ['favorite', 'general', 'archive']
+
+/**
+ * The tiers a visitor sees without asking: everything except `archive`.
+ * This *is* §4's "out of the default browse" rule — expressed as a default
+ * rather than a special case, so the gallery's tier control starts in the
+ * state the spec describes and every other combination is just another
+ * selection.
+ */
+export const DEFAULT_TIERS: readonly WorkTier[] = ['favorite', 'general']
+
 /**
  * A single piece of work. Collections are pieces that contain other pieces,
  * so a collection and a standalone piece share the same shape and page layout.
@@ -54,9 +72,223 @@ export type WorkPiece = {
   speedpaintAspect?: string
   /**
    * A finished animation clip's video file (e.g. '/art/...mp4'), played with
-   * standard time-based controls on the piece's own page.
+   * standard time-based controls on the piece's own page. Mutually exclusive
+   * with `animationEmbed` in practice (a piece has the file or it doesn't) —
+   * both exist as separate fields, not a union, because `lib/work.ts` may
+   * only ever hold plain serializable data, and a discriminated union here
+   * would buy nothing a piece author can't already express by setting one
+   * field and leaving the other unset.
    */
   animationSrc?: string
+  /**
+   * A finished animation that lives on YouTube rather than in `public/` —
+   * for a clip too long or too heavy to self-host reasonably (TODO §14b's
+   * budget math). Rendered by `AnimationEmbed`: a local poster in a reserved
+   * box, with the actual `youtube-nocookie.com` iframe only injected once a
+   * viewer presses play — never a bare iframe, and never autoplaying.
+   */
+  animationEmbed?: EmbeddedVideo
+  /**
+   * The finished animation's runtime, hand-set as `m:ss` (e.g. `'4:13'`) —
+   * shown as a small badge on the gallery card. Not fetched automatically:
+   * YouTube's key-free oEmbed endpoint doesn't return duration at all, and
+   * the Data API that does needs an API key and a build-time fetch step,
+   * infrastructure this static, no-server site doesn't otherwise have. Unset
+   * on a piece with `animationSrc`/`animationEmbed` simply omits the badge.
+   */
+  duration?: string
+  /**
+   * When the piece went on the site, ISO YYYY-MM-DD — distinct from `year`,
+   * which is when the work was made. No item carries this yet; a 'recently
+   * added' sort mode should only appear once at least one does.
+   */
+  added?: string
+  /**
+   * WIP screenshots documenting how this piece got made — app chrome, tool
+   * palettes, reference photos. Rendered in their own "process" section after
+   * the writeup, not inline with the finished image. Not a `WorkPiece`: no
+   * slug, no page, never in the gallery or search — see "Three WIP
+   * screenshots" in TODO.md history for why.
+   */
+  process?: ProcessStill[]
+  /**
+   * Finished stills that supplement an animation — scenes from it, not WIP
+   * screenshots of making it (that's `process`). Same shape as `ProcessStill`
+   * on purpose; the distinction is semantic (what these stills show), not
+   * structural. Rendered by `SceneSection`, under its own "scenes" heading.
+   */
+  scenes?: ProcessStill[]
+  /**
+   * Marks a piece as still in progress rather than finished — surfaced
+   * honestly in the gallery and on the piece page rather than hidden until
+   * done. When the finished piece lands, drop this and move its WIP
+   * screenshot into `process` instead.
+   */
+  unfinished?: boolean
+  /**
+   * Where this piece sits in Beck's own regard. `favorite` is work worth
+   * leading with; `archive` stays out of the default browse; `general` (the
+   * default when unset) is everything else.
+   *
+   * Both named ends render a badge; `general` renders nothing — see
+   * docs/specs/2026-09-tiers-and-pins.md §2.2. An `archive` badge names
+   * where a piece sits, not how good it is, and appears only where archived
+   * work is actually shown.
+   *
+   * Distinct from `PINNED`, which is a page position rather than a property
+   * of the work.
+   */
+  tier?: WorkTier
+  /**
+   * A runnable code demo — the piece's subject is a thing that runs, and
+   * this is how to run it. Its `image` is the poster (a still capture of the
+   * demo running), which is why there's no separate poster field: every
+   * card, aspect helper, lightbox slice, and OG image path keeps working
+   * unchanged. See docs/specs/2026-08-coding-explorations.md.
+   */
+  codeDemo?: CodeDemo
+  /**
+   * This piece withholds its own subject and asks you to name it. See
+   * docs/specs/2026-09-guessing-game.md.
+   */
+  guess?: Guess
+}
+
+/**
+ * A runnable code demo: a self-contained page that this piece embeds and runs.
+ * Plain data on purpose — `lib/work.ts` is imported by client components and
+ * may never hold a component reference, and an iframe over a `public/` file
+ * is a real boundary around exploratory code besides. See "Why an iframe" in
+ * docs/specs/2026-08-coding-explorations.md.
+ */
+export type CodeDemo = {
+  /** The demo's own HTML entry, e.g. '/code-demos/flow-field/index.html'. */
+  src: string
+  /**
+   * The canvas's aspect ratio ('4/3', '1/1', '16/9'). Required: the frame
+   * reserves its box before the iframe exists, so booting a demo never
+   * shifts the page. Normally equal to `imageAspect`, but kept separate —
+   * the card is showing a picture and the frame is reserving a canvas, and a
+   * cropped poster is allowed to diverge.
+   */
+  aspect: string
+  /**
+   * Skip auto-run on scroll-into-view — show the poster and wait for a
+   * press. For demos heavy enough that starting unasked is rude.
+   */
+  manual?: boolean
+  /** The demo responds to a reseed message; shows the reseed control. */
+  seedable?: boolean
+  /** Public source, if there is any. Rendered as a header link. */
+  repo?: string
+}
+
+/**
+ * A finished video embedded from YouTube rather than self-hosted. Plain data
+ * on the same principle as `CodeDemo` — `lib/work.ts` may never hold a
+ * component reference — and the id is kept bare (not a full URL) so
+ * `AnimationEmbed` is the one place that builds an actual embed URL,
+ * consistently, off `-nocookie.com`. See TODO §14.
+ */
+export type EmbeddedVideo = {
+  /** The YouTube video id — the `v=` value, or the path segment after `youtu.be/`. Not a full URL. */
+  youtubeId: string
+  /**
+   * The player's aspect ratio ('16/9' for nearly everything on YouTube).
+   * Required for the same reason `CodeDemo.aspect` is: the frame reserves
+   * its box before the iframe exists, so pressing play never shifts the page.
+   */
+  aspect: string
+}
+
+/**
+ * A guessing game attached to this piece: the subject is deliberately
+ * withheld, and the page asks the visitor to name it. Optional on any piece;
+ * a collection whose pieces carry it becomes a scorecard.
+ *
+ * Answers are stored in plaintext on purpose. The site is statically
+ * exported with no API, so anything shipped to the browser is readable by
+ * anyone who opens devtools; hashing would buy obscurity, not secrecy, at
+ * the cost of a build step and an unreadable data file. Decided by Beck,
+ * 2026-09-02: it's an honor system, and peeking is the visitor's business.
+ */
+export type Guess = {
+  /**
+   * The question, in Beck's voice. Not a generic "what is this?" — the
+   * phrasing is content. Falls back to `'what animal is this?'` only if
+   * genuinely omitted.
+   */
+  prompt?: string
+  /**
+   * Every answer counted correct, most canonical first. `accepts[0]` is
+   * what the reveal prints, so it is the *answer*, not merely an alias.
+   *
+   * Matching is normalized (see `normalizeGuess`), so don't list case or
+   * article variants — `['cow']` already accepts "Cow", "a cow", and
+   * "  COW  ". Do list real synonyms and the near-misses you're willing to
+   * be generous about: `['cow', 'cattle', 'calf', 'bull', 'ox']`.
+   */
+  accepts: string[]
+  /**
+   * Hints for this piece alone, overriding the collection's shared ladder.
+   * Kept as the escape hatch for a guessable piece with no set behind it —
+   * see `WorkCollection.guessHints`.
+   */
+  hints?: string[]
+  /**
+   * The photograph this painting was studied from, shown on reveal. See
+   * `ReferencePhoto` — this is the reveal's payoff while `note` is
+   * outstanding, not a decoration.
+   */
+  reference?: ReferencePhoto
+  /**
+   * Beck's note, shown once the piece is solved or revealed. New copy, not
+   * the archive caption. Paragraphs split on \n\n and render through
+   * `Prose`, same rung as `writeup`.
+   */
+  note?: string
+}
+
+/**
+ * The photograph a study was painted from, revealed alongside the answer.
+ *
+ * Not `WorkPiece['image']` and not a `ProcessStill`: it isn't Beck's work
+ * and it isn't a screenshot of Beck working. It's someone else's photograph,
+ * shown with credit, and the credit fields are required for that reason.
+ */
+export type ReferencePhoto = {
+  /**
+   * Self-hosted under `public/art/<collection>/reference/`. Named by the
+   * piece's number, never by its subject — `03.webp`, never `cow.webp`. The
+   * `src` is in the page source whether or not the photo has loaded, so a
+   * descriptive filename hands over the answer to anyone who opens
+   * view-source.
+   */
+  src: string
+  /** Describes the photo plainly, subject included. Safe: it lives inside the collapsed reveal. */
+  alt: string
+  /** The photographer's name as they publish it. */
+  photographer: string
+  /** Their Unsplash profile URL. */
+  photographerUrl: string
+  /** The photo's own Unsplash page — not the raw image URL. */
+  sourceUrl: string
+}
+
+/**
+ * A single WIP screenshot documenting a piece's making — see `WorkPiece.process`.
+ */
+export type ProcessStill = {
+  src: string
+  /**
+   * Authored commentary — what stage this is and what changed after it. Same
+   * rung as `writeup`: a plain string, paragraphs split on `\n\n`, rendered
+   * through Prose. Not alt text, and not generated from what's visible in
+   * the screenshot — this is the piece owner's own words.
+   */
+  caption?: string
+  /** Accessibility description, distinct from `caption`. */
+  alt?: string
 }
 
 export type CollectionLayout = 'book' | 'illustrated' | 'gallery'
@@ -85,16 +317,41 @@ export type WorkCollection = WorkPiece & {
    * for the image-stack case).
    */
   stackPieces?: string[]
+  /**
+   * A hint ladder shared by every guessable piece in this collection, taken
+   * in order. Shared because the hints are about the *set* — knowing them
+   * helps with all eight at once, so unlocking one on any piece unlocks it
+   * everywhere. Hints are allowed to be questions rather than statements.
+   */
+  guessHints?: string[]
 }
 
 export type WorkItem = WorkPiece | WorkCollection
+
+/**
+ * The hint ladder for a piece: its own, if it has one, else the set's.
+ * Per-piece hints are unset everywhere today — this resolves to the
+ * collection's ladder for all eight eyes.
+ */
+export function hintsFor(collection: WorkCollection | undefined, piece: WorkPiece): string[] {
+  return piece.guess?.hints ?? collection?.guessHints ?? []
+}
 
 export function isCollection(item: WorkItem): item is WorkCollection {
   return Array.isArray((item as WorkCollection).pieces)
 }
 
+/**
+ * Pieces whose write-up is an MDX body (content/essays/ for essays,
+ * content/code-demos/ for code demos) rather than the plain `writeup`
+ * string. Kept here (as plain strings) because hasWriteup() runs in client
+ * components and must not import the MDX map. The keys of lib/mdx-bodies.ts
+ * must match this list exactly.
+ */
+export const MDX_BODY_SLUGS = ['chinese-emoji-poetry', 'first-art-fair', 'note-systems', 'transformation'] as const
+
 export function hasWriteup(item: WorkPiece): boolean {
-  return Boolean(item.writeup)
+  return Boolean(item.writeup) || (MDX_BODY_SLUGS as readonly string[]).includes(item.slug)
 }
 
 /** Every top-level item gets its own page at /work/[slug]. */
@@ -109,11 +366,12 @@ export function piecePath(collection: WorkCollection, piece: WorkPiece): string 
 
 /**
  * A page's `<meta name="description">` text — `description`, since not every
- * piece has one, falling back to `preview` then the first line of `text`,
+ * piece has one, falling back to `preview`, then the first line of `text`,
+ * then the piece's own title so a wordless piece never ships an empty tag,
  * truncated to a meta-tag-friendly length.
  */
 export function metaDescription(item: WorkPiece): string {
-  const raw = (item.description ?? item.preview ?? item.text ?? '').split('\n')[0]
+  const raw = (item.description ?? item.preview ?? item.text ?? item.title).split('\n')[0]
   return raw.length > 160 ? `${raw.slice(0, 159)}…` : raw
 }
 
@@ -126,6 +384,60 @@ export function isHybrid(item: WorkItem): boolean {
 export function isTextForward(item: WorkItem): boolean {
   if (isCollection(item)) return false
   return Boolean(item.text) && !item.image
+}
+
+/**
+ * A piece whose subject is a thing that runs. Checked *before* the image
+ * branch everywhere a layout is chosen: a code demo carries `image` and no
+ * `text`, so without an earlier branch it renders as a plain image piece and
+ * the failure is silent.
+ */
+export function isCodeDemo(item: WorkItem): boolean {
+  return !isCollection(item) && Boolean(item.codeDemo)
+}
+
+export function tierOf(item: WorkItem): WorkTier {
+  return item.tier ?? 'general'
+}
+export function isFavorite(item: WorkItem): boolean {
+  return tierOf(item) === 'favorite'
+}
+export function isArchived(item: WorkItem): boolean {
+  return tierOf(item) === 'archive'
+}
+
+/** A piece that asks you to name its subject. */
+export function isGuessable(piece: WorkPiece): piece is WorkPiece & { guess: Guess } {
+  return Boolean(piece.guess)
+}
+
+/** A collection with at least one guessable piece — renders a scorecard. */
+export function hasGuessablePieces(item: WorkItem): boolean {
+  return isCollection(item) && item.pieces.some(isGuessable)
+}
+
+/**
+ * Normalize a guess for comparison: lowercase, strip accents, drop a leading
+ * article, collapse whitespace, drop everything that isn't a letter or an
+ * internal space. Deliberately forgiving — the game is "do you recognize the
+ * animal," not "can you type."
+ */
+export function normalizeGuess(input: string): string {
+  return input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/^(a|an|the)\s+/, '')
+    .replace(/[^a-z\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Exact match after normalization — no fuzzy matching, no edit distance. */
+export function isCorrectGuess(guess: Guess, input: string): boolean {
+  const normalized = normalizeGuess(input)
+  if (!normalized) return false
+  return guess.accepts.some((a) => normalizeGuess(a) === normalized)
 }
 
 /**
@@ -144,9 +456,65 @@ export function hasSpeedpaint(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.speedpaintSrc)
 }
 
+export type StatusFlag = 'favorite' | 'archive' | 'unfinished' | 'speedpaint'
+
+/**
+ * Which status flags apply to an item, in fixed display order. `favorite`
+ * and `archive` are mutually exclusive (both come from the single-valued
+ * `tierOf()`), so at most one of the two is ever present — the practical
+ * ceiling is 3 flags (tier, unfinished, speedpaint), not 4.
+ */
+export function statusFlagsFor(item: WorkItem): StatusFlag[] {
+  const flags: StatusFlag[] = []
+  if (isFavorite(item)) flags.push('favorite')
+  else if (isArchived(item)) flags.push('archive')
+  if (item.unfinished) flags.push('unfinished')
+  if (hasSpeedpaint(item)) flags.push('speedpaint')
+  return flags
+}
+
 /** A piece with a finished animation clip. Collections don't carry media directly. */
 export function hasAnimation(item: WorkItem): boolean {
-  return !isCollection(item) && Boolean(item.animationSrc)
+  return !isCollection(item) && Boolean(item.animationSrc || item.animationEmbed)
+}
+
+/**
+ * YouTube's own thumbnail for an embedded video — `hqdefault` (480×360),
+ * guaranteed to exist for any public video, unlike `maxresdefault` (only
+ * present for uploads that opted into a high-res source, and 404s silently
+ * otherwise — there's no client-side recovery from that in this codebase).
+ */
+export function youtubeThumbnail(youtubeId: string): string {
+  return `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`
+}
+
+/**
+ * The picture that represents this item. For a YouTube-embedded animation,
+ * that's the video's own thumbnail, unconditionally — a curated still (even
+ * a hand-set `image`) doesn't outrank the thing the piece actually is. Every
+ * other item — including a self-hosted `animationSrc` piece, which has no
+ * separate video-thumbnail source to prefer — falls through to its own
+ * `image`. Collections are excluded from the embed branch, matching
+ * `hasAnimation()`'s own rule: a collection doesn't carry a single
+ * animation of its own, one of its pieces does.
+ */
+export function animationPosterFor(item: WorkItem): string | undefined {
+  if (!isCollection(item) && item.animationEmbed) return youtubeThumbnail(item.animationEmbed.youtubeId)
+  return item.image
+}
+
+/**
+ * The aspect of whatever `animationPosterFor()` just returned — the embed's
+ * own aspect when the poster is YouTube's thumbnail, else the item's
+ * `imageAspect`. **Must branch exactly the way `animationPosterFor` does:**
+ * these two answer one question together (what fills the box, and what shape
+ * the box is), and a box sized for a 1:1 still while a 16:9 thumbnail
+ * `cover`-fills it crops the thumbnail. `EmbeddedVideo.aspect` is required,
+ * so the embed branch always resolves.
+ */
+export function posterAspectFor(item: WorkItem): string | undefined {
+  if (!isCollection(item) && item.animationEmbed) return item.animationEmbed.aspect
+  return item.imageAspect
 }
 
 /** The aspect a speedpaint video's player should take — its own, falling back to the finished image's. */
@@ -186,20 +554,39 @@ export type Facet = { name: string; tags: readonly string[] }
 /**
  * Category filters that only make sense inside one discipline. These stay
  * hidden until their discipline is selected, which keeps the panel quiet.
+ *
+ * **Pruned to the data 2026-09-02 (Beck), reversing the earlier "the
+ * vocabulary is deliberately wider than the data" decision.** Eight tags
+ * matching nothing came out: `oil` from `medium`; `neuroscience`,
+ * `material science`, and `dataviz` from `field`; and `nature`, `the body`,
+ * `memory`, and `food` from `theme`. The old rule was written when `science`
+ * itself was empty and holding it open was the point; `delirium` and
+ * `transformation` closed that gap, and what was left was headroom for work
+ * that hasn't been imagined yet rather than for work that exists. Every tag
+ * here now matches at least one item, and a new one goes back in when the
+ * piece that needs it does — vocabulary follows the data now, not ahead of
+ * it.
+ *
+ * `lib/work.sample.ts` still tags its fake items with the pruned words. That
+ * is deliberate: the file is dev-only scaffolding (`SHOW_SAMPLE_WORK`), and
+ * with it on those tags simply stop being filterable — `ALL_TAGS` gates both
+ * the chip list and the `?tags=` parser, so an unknown tag is dropped rather
+ * than erroring.
  */
 export const DISCIPLINE_FACETS: Record<Discipline, Facet> = {
-  art: { name: 'medium', tags: ['watercolor', 'oil', 'digital', 'ink'] },
-  writing: { name: 'form', tags: ['poem', 'essay', 'blog'] },
-  science: {
-    name: 'field',
-    tags: ['biology', 'neuroscience', 'material science', 'dataviz'],
-  },
+  art: { name: 'medium', tags: ['watercolor', 'digital', 'ink'] },
+  // Form is poem | essay. `blog` was removed 2026-09-03: every item that
+  // carried it also carried `essay`, and since formFor() takes the first
+  // match in this array's order, `blog` never won on any piece — it rendered
+  // as "essay" everywhere while the taxonomy claimed two forms. Beck doesn't
+  // consider any of this writing to be blog posts. Don't re-add it without a
+  // piece that is one and isn't also an essay.
+  writing: { name: 'form', tags: ['poem', 'essay'] },
+  science: { name: 'field', tags: ['biology', 'code'] },
 }
 
 /** Categories that apply to every piece regardless of discipline. */
-export const UNIVERSAL_FACETS: Facet[] = [
-  { name: 'theme', tags: ['nature', 'color', 'the body', 'memory', 'language', 'food'] },
-]
+export const UNIVERSAL_FACETS: Facet[] = [{ name: 'theme', tags: ['color', 'language'] }]
 
 export const ALL_TAGS: string[] = [
   ...DISCIPLINES,
@@ -207,9 +594,21 @@ export const ALL_TAGS: string[] = [
   ...UNIVERSAL_FACETS.flatMap((f) => f.tags),
 ]
 
-/** Each discipline gets one of the brand tones, used to tint cards and chips. */
+/**
+ * Each discipline gets one of the brand tones, used to tint cards and chips.
+ * `art` reads `--hero-accent-art` (denim in light mode, swapping to --sky in
+ * dark), not the flat `--art` denim the hero's own icon wash still uses —
+ * the same distinction hero-icon-collage.tsx draws between its CATEGORY_VAR
+ * (legible text/accent color) and ICON_CATEGORY_VAR (decorative wash, stays
+ * on the standard hue). Every consumer here is the CATEGORY_VAR kind: a
+ * heart tint, a tag chip's text/border, a quote glyph — foreground color
+ * that needs to read against the page, not a wash — so denim's ~2.6:1
+ * contrast against dark mode's midnight background is a real legibility
+ * problem here, not a deliberate low-contrast pick the way the hero
+ * crescent's is.
+ */
 export const DISCIPLINE_TONE: Record<Discipline, string> = {
-  art: 'var(--art)',
+  art: 'var(--hero-accent-art)',
   writing: 'var(--writing)',
   science: 'var(--science)',
 }
@@ -218,14 +617,33 @@ export function isDiscipline(tag: string): tag is Discipline {
   return (DISCIPLINES as readonly string[]).includes(tag)
 }
 
-/** The first discipline tag an item carries — drives its accent tone. */
+/**
+ * Which discipline wins when a piece carries more than one — the order the
+ * *accent* is picked in, deliberately not `DISCIPLINES`' order. `DISCIPLINES`
+ * is the reading order the site says out loud ("art, writing, and science" in
+ * the hero, the filter chips, the home columns) and is left alone.
+ *
+ * `science` outranks `writing` (Beck, 2026-09-03): the essays tagged both are
+ * science writing, and the emerald is the thing worth saying about them — a
+ * `writing`-first order gave them pumpkin, the same accent as the poems.
+ * `art` still outranks both, which is what keeps `delirium` denim; see the
+ * note on its tags below.
+ */
+const DISCIPLINE_PRECEDENCE: readonly Discipline[] = ['art', 'science', 'writing']
+
+/** The discipline an item's accent tone comes from — see DISCIPLINE_PRECEDENCE. */
 export function primaryDiscipline(item: WorkItem): Discipline | undefined {
-  return DISCIPLINES.find((d) => item.tags.includes(d))
+  return DISCIPLINE_PRECEDENCE.find((d) => item.tags.includes(d))
 }
 
-/** An art piece's medium (oil, ink, watercolor, digital), if it has one. */
+/** An art piece's medium (ink, watercolor, digital), if it has one. */
 export function mediumFor(item: WorkItem): string | undefined {
   return DISCIPLINE_FACETS.art.tags.find((tag) => item.tags.includes(tag))
+}
+
+/** A writing piece's form (poem or essay) — falls back to 'essay' for text-forward work carrying neither tag. */
+export function formFor(item: WorkItem): string {
+  return DISCIPLINE_FACETS.writing.tags.find((tag) => item.tags.includes(tag)) ?? 'essay'
 }
 
 /** The accent tone (CSS value) for an item, based on its primary discipline. */
@@ -327,6 +745,7 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'color'],
     image: '/art/april-colors-19/01.jpg',
     imageAspect: '1/1',
+    tier: 'favorite',
     stackAccent: '#682f29',
     stackPieces: ['10-fire-protection', '13-grounding-hopes', '26-aphrodite'],
     pieces: [
@@ -640,6 +1059,7 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'watercolor'],
     image: '/art/april-colors-24/01.webp',
     imageAspect: '1/1',
+    tier: 'favorite',
     pieces: [
       {
         slug: '01-favorite-color',
@@ -954,7 +1374,7 @@ const REAL_WORK: WorkItem[] = [
     description:
       "31 ink drawings for Inktober, finished seven and a half months late — a confidence exercise as much as a daily prompt.",
     tags: ['art', 'ink'],
-    stackAccent: '#ffffff',
+    stackAccent: '#c9c2b0',
     writeup:
       "Seven and a half months late, I have completed Inktober. What an accomplishment.\n\nTruly though, it's been a good exercise, even if not as a daily drawing prompt. I have used it as a confidence exercise. If a design was drafted, it was only done in thumbnail form (with ink), and once the design was begun, it was completed completely in ink (with the exception of 4, 7, and 14, which were all redone).",
     image: '/art/inktober-17/01.jpg',
@@ -1089,6 +1509,7 @@ const REAL_WORK: WorkItem[] = [
       "Traditional collage made out of pictures of meat in grocery store advertisements.\n\nSomething different. I honestly got pretty attached to this piece, though I'm still uncertain as to whether I'd put it in my house. I'd love to hear reactions though, since some sharing in preliminary stages got a stronger response than I expected.",
     image: '/art/2019/one-flesh.jpg',
     imageAspect: '1/1',
+    tier: 'favorite',
   },
   {
     slug: 'rabbit-in-the-moon',
@@ -1112,6 +1533,7 @@ const REAL_WORK: WorkItem[] = [
       "This one has been sitting around a bit, waiting to be completed. Also, I don't really know Latin, and I wasn't expecting five declensions, so I just went with what looked like the easiest method: genitive plural of a first declension noun to describe this king here.",
     image: '/art/2019/rex-materialistarum.jpg',
     imageAspect: '1/1',
+    tier: 'archive',
   },
   {
     slug: 'transparent-eyeball',
@@ -1126,47 +1548,51 @@ const REAL_WORK: WorkItem[] = [
     imageAspect: '1/1',
   },
   {
-    slug: 'philosophy-animation',
-    title: 'Philosophy Animation',
+    // Was the `philosophy-animation` collection of three sub-pieces until
+    // 2026-09-10. All three shared one `animationEmbed`, so the gallery
+    // showed the same video's thumbnail three times — the sign that the
+    // finished animation is the piece and the three stills are scenes of it,
+    // not top-level works. Collapsed per
+    // docs/specs/2026-09-animation-pieces.md §6. Titled from the video
+    // itself: it's "Honey | Personal Animation feat. Luca Schmidt" on
+    // YouTube, retitled since this piece's 2019 captions were written (which
+    // is why they call it a philosophy animation) — confirmed by Beck
+    // 2026-09-09. The old `/work/philosophy-animation` URLs are gone with no
+    // redirect, Beck's call.
+    slug: 'honey',
+    title: 'Honey',
     year: '2019',
     description: 'Three scenes from an animation made for a philosophy class, on adoption and identity.',
     tags: ['art', 'digital'],
+    // Kept, though the gallery card now shows YouTube's thumbnail instead
+    // (`animationPosterFor`): it's what `PieceMedia`'s "view still image"
+    // trigger opens, and `imageAspect` still describes it truthfully — the
+    // card sizes itself from `posterAspectFor` now, not from this.
     image: '/art/2019/philosophy-animation-01.jpg',
     imageAspect: '1/1',
-    pieces: [
+    animationEmbed: { youtubeId: 'RTGjy1jDMyM', aspect: '16/9' },
+    duration: '1:56',
+    // The three former sub-pieces. Each caption is that piece's own
+    // `description` and `writeup` joined verbatim, in the order its page
+    // rendered them — imported captions don't get rewritten or trimmed.
+    scenes: [
       {
-        slug: 'privilege',
-        title: 'Privilege',
-        year: '2019',
-        description:
-          'A scene from an animation I did recently for a philosophy class! This is on being privileged with well-off adoptive parents who care for me.',
-        tags: ['art', 'digital'],
-        writeup:
-          '[ link to animation in bio ]\n\nNot every adoptee is so lucky. Adoption can be viewed as trauma -- there is no adoption without abandonment. With international adoption, there is also a loss of culture. Not all adoptees are the same. Not everyone views it the same way.',
-        image: '/art/2019/philosophy-animation-01.jpg',
-        imageAspect: '1/1',
+        src: '/art/2019/philosophy-animation-01.jpg',
+        alt: 'Privilege',
+        caption:
+          'A scene from an animation I did recently for a philosophy class! This is on being privileged with well-off adoptive parents who care for me.\n\n[ link to animation in bio ]\n\nNot every adoptee is so lucky. Adoption can be viewed as trauma -- there is no adoption without abandonment. With international adoption, there is also a loss of culture. Not all adoptees are the same. Not everyone views it the same way.',
       },
       {
-        slug: 'reidentification',
-        title: 'Reidentification',
-        year: '2019',
-        description: 'Another bit of artwork from the philosophy animation.',
-        tags: ['art', 'digital'],
-        writeup:
-          "[ link to animation in bio ]\n\nI have made no modifications to my flesh since the start of my disidentification and reconciliation with my sex, and I think that's also important part of my identity. I am, in many ways, not a detransitioner, because I never really transitioned in the first place. I am, however, reidentified with my sex, not because I feel female, but because I am.\n\nI still feel agender. But I don't see this as being truly important to how people treat me, because, outside of sports, medicine, and statistics, everyone should treat everyone with as a unique individual to be respected regardless of sex or gender identity.",
-        image: '/art/2019/philosophy-animation-02.jpg',
-        imageAspect: '1/1',
+        src: '/art/2019/philosophy-animation-02.jpg',
+        alt: 'Reidentification',
+        caption:
+          "Another bit of artwork from the philosophy animation.\n\n[ link to animation in bio ]\n\nI have made no modifications to my flesh since the start of my disidentification and reconciliation with my sex, and I think that's also important part of my identity. I am, in many ways, not a detransitioner, because I never really transitioned in the first place. I am, however, reidentified with my sex, not because I feel female, but because I am.\n\nI still feel agender. But I don't see this as being truly important to how people treat me, because, outside of sports, medicine, and statistics, everyone should treat everyone with as a unique individual to be respected regardless of sex or gender identity.",
       },
       {
-        slug: 'origins',
-        title: 'Origins',
-        year: '2019',
-        description: "The last scene from this animation that I'll be posting.",
-        tags: ['art', 'digital'],
-        writeup:
-          "[ link to animation in bio ]\n\nWhile I don't know how it why I was given up to the Social Welfare Institute, it could be that I was taken from my parents by government workers, and not that I was abandoned.\n\nMore on this topic is found in the documentary @onechildnation.",
-        image: '/art/2019/philosophy-animation-03.jpg',
-        imageAspect: '1/1',
+        src: '/art/2019/philosophy-animation-03.jpg',
+        alt: 'Origins',
+        caption:
+          "The last scene from this animation that I'll be posting.\n\n[ link to animation in bio ]\n\nWhile I don't know how it why I was given up to the Social Welfare Institute, it could be that I was taken from my parents by government workers, and not that I was abandoned.\n\nMore on this topic is found in the documentary @onechildnation.",
       },
     ],
   },
@@ -1175,20 +1601,37 @@ const REAL_WORK: WorkItem[] = [
     title: 'Eye Studies',
     year: '2022',
     description:
-      'Extreme close-up digital paintings of eyes. The subjects are hidden on purpose — a guessing game is coming; for now, titles are placeholders.',
+      'Extreme close-up digital paintings of eyes. The subjects are hidden on purpose — guess each one below, or check the hints if you get stuck.',
     tags: ['art', 'digital'],
     image: '/art/eye-studies/01.jpg',
     imageAspect: '1/1',
+    tier: 'favorite',
     stackAccent: '#bcb5ac',
+    guessHints: [
+      'What do all these animals have in common?',
+      'All of these are farmed animals.',
+    ],
     pieces: (() => {
       // Process notes from the original posts, subject redacted to keep the
       // guessing game intact — the caption text itself often named the animal.
-      // Order: turkey, pig, cow, sheep, chicken, goose, goat, fish.
       const notes: Record<string, string> = {
         '01': "Leaning into realism and photo studies, something I haven't done in a while. Stopping here for now — hoping to finish an eye a day this week.",
+        '02': 'thinking about recognizability & beauty',
         '03': 'The lashes on this one are so lovely.',
         '04': "Very enjoyable to draw — the first left eye I've done for this series.",
-        '06': 'Do you know what animal this is? Thinking about recognizability and beauty.',
+        '05': "hard to believe this isn't where anime eyes came from",
+        '08': '❝ Now at last I can look at you in peace, I don’t eat you anymore. ❞ — Franz Kafka',
+      }
+      // Reviewed by Beck, 2026-09-02 — accepts[0] is what the reveal prints.
+      const accepts: Record<string, string[]> = {
+        '01': ['turkey'],
+        '02': ['pig', 'hog', 'boar', 'piglet', 'swine'],
+        '03': ['cow', 'cattle', 'calf', 'bull', 'ox', 'heifer'],
+        '04': ['sheep', 'lamb', 'ewe', 'ram'],
+        '05': ['chicken', 'hen', 'rooster', 'chick'],
+        '06': ['goose', 'geese', 'gosling'],
+        '07': ['goat', 'kid', 'billy goat'],
+        '08': ['tuna', 'fish', 'bluefin', 'bluefin tuna', 'ahi'],
       }
       return Array.from({ length: 8 }, (_, i) => {
         const n = String(i + 1).padStart(2, '0')
@@ -1196,11 +1639,12 @@ const REAL_WORK: WorkItem[] = [
           slug: n,
           title: n,
           year: '2022',
-          description: notes[n] ?? 'Subject hidden for now. Title coming soon.',
+          description: notes[n],
           tags: ['art', 'digital'],
           image: `/art/eye-studies/${n}.jpg`,
           thumb: `/art/eye-studies/thumb/${n}.jpg`,
           imageAspect: '1/1',
+          guess: { accepts: accepts[n] },
         }
       })
     })(),
@@ -1501,7 +1945,7 @@ const REAL_WORK: WorkItem[] = [
   },
   {
     slug: 'womens-history-month',
-    title: "Women's History Month",
+    title: 'when a woman...',
     year: '2022',
     description:
       "Made for Women's History Month, supplies courtesy of a work event, but not posted until now.",
@@ -1531,6 +1975,7 @@ const REAL_WORK: WorkItem[] = [
       'Used steel wool to scratch off the decals, no harm done to the ceramic.\n\nAlso, treating the white as cream color, based on previous exp baking at 400F for 30min. Might reduce temp.\n\nOil paint @sharpie mug: I\'m happy with this! The colors shifted, but it was slighter than I expected based on previous experience baking at a higher temperature.\n\nblue - warmed lightened somewhat\npink - cooled slightly\nred - cooled to dark magenta\nyellow - negligible\nwhite - negligible\n\nComparison image on the third slide is lq bc different lighting conditions.',
     image: '/art/portfolio-22/painted-mug.webp',
     imageAspect: '1/1',
+    tier: 'archive',
   },
   {
     slug: 'adoption-minizine',
@@ -1554,16 +1999,6 @@ const REAL_WORK: WorkItem[] = [
     speedpaintSrc: '/art/portfolio-22/speedpaint/presidential-pardon.mp4',
   },
   {
-    slug: 'waterfowl-and-motherhood',
-    title: 'Waterfowl and Motherhood',
-    year: '2022',
-    description: 'Thinking about waterfowl and motherhood.',
-    tags: ['art', 'digital'],
-    writeup: "Apparently I'm on a bird kick.",
-    image: '/art/portfolio-22/waterfowl-and-motherhood.webp',
-    imageAspect: '1/1',
-  },
-  {
     slug: 'child-not-adult',
     title: 'Child, Not Adult',
     year: '2022',
@@ -1574,6 +2009,13 @@ const REAL_WORK: WorkItem[] = [
     image: '/art/portfolio-22/child-not-adult.webp',
     imageAspect: '4/5',
     speedpaintSrc: '/art/portfolio-22/speedpaint/child-not-adult.mp4',
+    process: [
+      {
+        src: '/art/portfolio-22/waterfowl-and-motherhood.webp',
+        caption: "Apparently I'm on a bird kick.",
+        alt: 'In-progress screenshot of the duck illustration in the drawing app, layer panel and two mallard reference photos visible.',
+      },
+    ],
   },
   {
     slug: 'why-be-afraid',
@@ -1585,6 +2027,7 @@ const REAL_WORK: WorkItem[] = [
     writeup: 'Collage inspired by security envelopes and halftone screen printing.\n\n"Security". July 2022.',
     image: '/art/portfolio-22/why-be-afraid.webp',
     imageAspect: '4/5',
+    tier: 'archive',
   },
   {
     slug: 'lady-bird',
@@ -1612,15 +2055,6 @@ const REAL_WORK: WorkItem[] = [
     imageAspect: '1087/763',
   },
   {
-    slug: 'hand-study',
-    title: 'Hand Study',
-    year: '2023',
-    description: 'Studying hands, hearts, and progress.',
-    tags: ['art', 'digital'],
-    image: '/art/portfolio-22/hand-study.webp',
-    imageAspect: '1/1',
-  },
-  {
     slug: 'security-camera',
     title: 'Security Camera',
     year: '2023',
@@ -1628,6 +2062,8 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art'],
     image: '/art/portfolio-22/security-camera.webp',
     imageAspect: '1/1',
+    unfinished: true,
+    tier: 'archive',
   },
   {
     slug: 'desire-and-distance',
@@ -1637,6 +2073,13 @@ const REAL_WORK: WorkItem[] = [
     tags: ['art', 'digital'],
     image: '/art/portfolio-22/desire-and-distance.webp',
     imageAspect: '4/5',
+    process: [
+      {
+        src: '/art/portfolio-22/hand-study.webp',
+        caption: 'Studying hands, hearts, and progress.',
+        alt: 'In-progress screenshot of the hand study in the drawing app, tool palette and layer panel visible.',
+      },
+    ],
   },
   {
     slug: 'projection',
@@ -1834,33 +2277,84 @@ const REAL_WORK: WorkItem[] = [
     title: 'emoji poetry, translated from chinese',
     year: '2022',
     description: 'An exploration in poetry and a reflection on language.',
-    tags: ['writing', 'essay', 'blog', 'language'],
+    tags: ['writing', 'essay', 'language'],
     text:
       "In my emoji translation, I tried to take into account the character choice of the Mandarin and the meaning behind each glyph — an attempt at a translation that reads the same on any platform.",
-    writeup:
-      "This poem is the focus of 19 Ways of Looking at Wang Wei, a classic study of translation that compares how different translators have rendered 鹿柴 (Deer Enclosure). As an exploration in communication and poetry, I translated this poem and another, 月夜憶舍弟, into emoji.\n\n🦌🏞️ (鹿柴): 空山不见人 / 但闻人语响 / 返景入深林 / 复照青苔上 → 📂🗻🚫👁️👥 / ↪️👂👥💬🔊 / ↩️🌳🔆🌳🌳 / 🔄🔆🌿🌿🔼\n\n🌙🌃💭🧒🧒 (月夜憶舍弟): 戍鼓斷人行，邊秋一雁聲。/ 露從今夜白，月是故鄉明。/ 有弟皆分散，無家問死生。/ 寄書長不達，況乃未休兵。 → 💂🥁🛑🚶‍♂️🚶‍♀️ · 🍂🍁1️⃣🦆🔉 / 👇🌃🌱💧⬜ · 🌙🔆🤱🏡🔆 / 🌬️🍃👦🍃👦 · 🌱☠️❓❌👨‍👩‍👧‍👦 / 📜✉️📤🚫📩 · 📍⚔️⛔☮️⚔️\n\nWhen translating, I like to see a pretty translation and a gloss translation. For 月夜憶舍弟, pretty translations came from David Hinton, Stephen Owen, Witter Bynner, and David Young. I sought out a gloss as well, at first in Google Translate — gradually separating the characters from each other — and then in the MDBG Chinese Dictionary.\n\nGoogle Translate's version of 月夜憶舍弟, unadulterated, from January 2020, reads: \"Drumming breaks the pedestrian, Bianqiu a wild goose. Lu Cong is white tonight, and the month is hometown. All the younger brothers were scattered, and the family asked about life and death. The length of the book to be sent was not reached, and the condition was not a truce.\" Although it doesn't capture the poetry or a good chunk of the meaning — look! There are no personal pronouns, unlike some human translations. I actually like the last couple of lines of this.\n\nIn my emoji translation, I tried to take into account the character choice of the Mandarin and the CLDR descriptions and text that accompany each emoji, in an effort to reflect the original beauty of Chinese and create a translation that can be perceived similarly across platforms. I haven't yet found a convenient way to see how my emoji translation varies from platform to platform, but I was amused by the differences between my phone and my computer.\n\nWith 鹿柴, I glanced at the Google translation but was surprised that I could read it — not perfectly, but the characters are simpler, within reach of someone roughly HSK 3. Because of that relative simplicity, I decided to stick closer to the Chinese, though the third line deviates a bit. I'd almost call it significant, but then I look at some of the poems in 19 Ways of Looking at Wang Wei and think it's hardly significant at all.\n\n(This is a modified version of work done in January 2020.)",
   },
   {
     slug: 'first-art-fair',
     title: 'my first art fair season',
     year: '2023',
     description: 'Reflecting on what went well and what I would do differently.',
-    tags: ['writing', 'essay', 'blog', 'art'],
+    tags: ['writing', 'essay', 'art'],
     text:
       "Since I am not trying to live off of my art, I frame it as an experience that I am paying for, with the opportunity to break even and even profit.",
-    writeup:
-      "Reflections on my first few times selling at art markets — all different venues and organizers with varying rules and practices. It was a great learning experience, and I think I'm going to keep doing markets for a little while. My setup isn't perfect, but it's come a long way in three tries.\n\nI always thought it'd be cool to sell my work at a street fair, and I imagined doing this my senior year of college in Worcester, where I lived close to the annual art festival StART on the Street. Unfortunately, my senior year was 2021 — no StART on the Street that year. (I had applied to StART at the Station in 2019 and was rejected.) So I applied again in 2022 on a whim, with no high hopes, and wasn't even living in Worcester anymore.\n\nI opened the acceptance email a couple of weeks late. I was excited but also concerned — no experience, and this market was outdoors with no tents provided. I'd volunteered in 2019, so I figured I'd at least have some sense of setup. I practiced putting up the tent alone once and hanging my walls, but despite spending many hours on tent design, furniture, pricing, and inventory, I wasn't as prepared as I could have been.\n\nThings that went well at stART on the Street: I sold enough to make back the $150 vendor fee and then some, and learned that the skills a market takes weren't so far out of reach for me. I was happy with my booth's overall design — the tent, table cloths, banner, pegboard, and a rug that was actually a Worcester curb find from a year prior. I packed the car the night before, left early, and bought jugs of water for weight before the hour drive. I'm not thrilled that so much of the work was improvised on the fly, but I'm proud I could come up with and execute ideas like clamping down prints with reeds and folding labels around canvas frames. I also set my eye prints up as a guessing game, which turned out to be great for engagement and sparked a lot of good conversations.\n\nThings to change for next time: setup took around 4.5 hours when I'd been allotted a little short of three, mostly because I hadn't found a good system for the reed walls or pegboard before hanging art. Wind blew art off walls and tables multiple times throughout the show — nothing was lost or damaged, but the anxiety was maddening, and paperweights would have been an easy fix. I knew I should have had clear labels printed ahead of time, but ended up handwriting them throughout the show. Point of sale was a hassle; my hands would shake doing the mental math to charge someone on Square. And the advice not to eat in one's booth just meant I wasn't eating at all — I brought overnight oats and eventually decided a smoothie would be easier to manage next time. I was usually too excited to sit in the director's chair I'd brought, and while I wanted to demo art, I couldn't figure out how to fit it in.\n\nI was incredibly tired at 7pm, which is rare for me. I was content enough with how the day went, but it felt like a lot of work and a lot of stress for not much payoff.\n\nA couple of days later I was looking for another market and ended up going with the Brighton Bazaar, even though I'd never been — some makers I followed on Instagram vended there. As part of the application I wrote a short pitch: \"I'm Beck, scientist by day and artist by night — or is it the other way around? I value creativity and discovery in all facets of my life, and my art reflects that with a diverse range of subjects, styles, and mediums. For October, I'll be showcasing darker work, much of which was made during inktobers of years past. Common themes include mental health, interpersonal conflict, and farmed animals. I find creating art a great outlet for emotions and an opportunity to connect with others.\"\n\nBrighton Bazaar was indoors and close to home. I was waitlisted for a small space that wouldn't fit much more than a 6ft table, and this time I actually practiced my setup at home with the artwork placement, rather than just the furniture. The Monday before, I was notified of an opening and confirmed by Wednesday.\n\nThis time, setup took 1 hour 20 minutes thanks to practice and a reference photo, and breakdown took 30 minutes. Interactivity was still good, though less so than at stART — I suspected that had more to do with the different demographics than my particular setup. I was still writing labels during the show, but since I was set up in time, it didn't feel stressful. Point of sale was still a struggle, and I'd forgotten my 4.5-inch square envelopes for packaging prints. I brought a smoothie again and didn't drink it — maybe a straw would have helped. I still didn't demo art, but at least made art during the event itself. This market was much easier than my first, and I'm confident being indoors was a game changer — I still can't believe I chose an outdoor market, where I had to supply all my own furniture, as my very first one.\n\nMy third market, \"Winter Hassle\" hosted by Hassle Flea, was my best in some ways and not in others. I had a hard time communicating with the organizer and an even harder time parking on tight Cambridge streets. Setup was about 1 hour 20 minutes again, with no practice in between. Point of sale was mostly good — almost everyone paid with Venmo, and I recorded all my sales on paper so I had a linear log at the end.\n\nFor next time: vendors were told to arrive early since parking is competitive, but I left ten minutes late and ended up waiting in line for entry — my first market where load-in wasn't close to my parked car. I'd ditched my chair since I'd barely used it before, and was surprised when I wanted it three hours in. I tried to demo an interactive art piece but couldn't disable the browser's gestures — it still seemed to draw people in for the brief while I had it running. I'd like to write up more about my inspirations and process for people to read while browsing, including an improved version of the eye guessing game. And this market was shorter than the other two, yet I found myself really wishing I'd packed a sandwich.\n\nAll in all, I thought this was a very successful first season. I'm still paying off some of what I bought, and my time definitely wasn't compensated, but it was a great experience. Since I'm not trying to live off my art, I frame it as an experience I'm paying for, with the opportunity to break even and even profit.",
   },
   {
     slug: 'note-systems',
     title: 'note systems',
     year: '2023',
     description: 'My preferred tools and strategies for taking notes, analog and digital.',
-    tags: ['writing', 'essay', 'blog'],
+    tags: ['writing', 'essay'],
+    tier: 'favorite',
     text:
       "I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
-    writeup:
-      "Current setup as of January 2023 — digital: TickTick for personal tasks, Google Calendar for events and scheduled tasks (Outlook for work as needed), and Samsung Notes for musings and spontaneous notes. Analog: sticky notes for lab tasks and data, stored in a notebook; a dedicated notebook to reflect on therapy sessions; and dedicated notebooks for high-information-density events, like classes and conferences.\n\nI need some tool to manage daily to-dos and keep them in line with my goals, both personal and professional. I don't want my note systems to feel like chores — once something feels like a chore, or like a refined art, I no longer want to do it, whether from the pressure of obligation or of perfectionism.\n\nSince I won't equip my phone with company security features, and invites aren't meant to be forwarded to personal accounts, there's some inevitable separation between my professional and personal spheres, at least digitally. A physical notebook could bridge that gap, or it could enforce the divide — I'm currently leaning toward keeping a professional-only notebook. I've bought spiral-bound notebooks, which lay flat, to make lab record keeping easier, and which could extend to other parts of my work, but likely no further if I intend to share it.\n\nMy current notebook, started when I was hired, mixes personal reflection within the professional sphere, private business-related information, and notes from work — organized but incomplete in places, with a few systems still being tested. Of those, I enjoy seeing a week at a time; week spreads help me focus my work and coordinate wetlab protocols. I do need a better task migration and assignment system, though, since I don't readily remember to check the past in order to structure the present.\n\nI don't relish the idea of separate sections or collections, but it might be the path to more regular ones, so each week looks about the same and takes up about the same amount of space no matter how much data that week generates. It would also separate what's personal from what could be shared — a separate notebook could be handed off with little personal loss. Corporate social gatherings can lead to insights about a company or department's history and culture that are relevant to my work, and external conferences provide even more context, but I struggle with not being able to duplicate information across two notebooks, or without a system for referencing one from the other. The personal and professional are so interwoven that it's hard to design a system that treats them as separate.\n\nI've found that I benefit from taking notes on the people I meet. I've looked into personal CRMs for this but haven't managed to make a habit of it, or separated the idea from feeling overly transactional and impersonal toward others. Instead my contact notes are scattered across my other notebooks, and I'm still looking for a solution — I'm hesitant about reinventing the wheel, but maybe it's not a bad way to learn. I enjoy the unobtrusiveness of a small paper notebook in a lecture, meeting, or even a chance encounter. It's slightly odder than a phone in that last case, but it wouldn't be my only joyful oddity.\n\nI've poked around a fair number of digital note-taking tools, and none are particularly satisfying. The best I've found is honestly the native Samsung Notes app, which integrates well with the S Pen — being able to pull the pen out of a locked phone and jot something down or draw a diagram has been priceless. For reminders and events I use TickTick and Google Calendar.\n\nHandwriting and stylus integration matter a lot to me, which narrows the field significantly. I want to love OneNote, given the range of what can go on a page and where, but it takes too long to load and I perpetually have sync problems, on both business and personal accounts — I still occasionally use it for recording melodies arranged in 2D space, but otherwise find it no better than Samsung Notes. I've tried Nebo too; the handwriting conversion is impressive and I like the tool selection and written commands (strike-through to erase, a vertical bar for a new line), but having to distinguish text from drawings within the structure of the page is enough friction to keep me from using it regularly, and not being able to pinch to zoom makes it feel even less aligned with how I actually work. Squid and Bamboo Paper didn't feel as intuitive as OneNote or Samsung Notes either. At a certain point, if I need more drawing tools than the Notes app offers, I switch to Infinite Painter, my primary drawing app — overkill for most note-taking, but familiar and easy for me to use, with layers, blend modes, and fast tool and color switching that the note apps lack.\n\nOf the project management tools that don't support handwriting, I've used TickTick, Todoist, Notion, and Trello. I can appreciate aspects of all of them, but TickTick is the only one I use regularly — I occasionally reach for Notion and Trello for shared task boards and ongoing but infrequently tackled projects. In January 2023 I switched from Todoist to TickTick, because on TickTick, completing a daily recurring task late (after midnight) still creates the next instance of that task the same day — ideal if the goal is just brushing your teeth before bed, whether that happens at 1am one night or 10pm the next. It also has Habits you can track and retroactively edit. Beyond that I use Google Calendar for events; I once synced it with Todoist but found that wasn't how I actually planned my day.\n\nWriting out a daily sticky note with hours and tasks is satisfying, and it does increase my productivity. But productivity isn't the only thing I want to optimize for, and I'm not interested in the transactional thinking that comes with tracking every hour of the day. My note systems are designed to maximize my personal satisfaction and minimize resistance, in hopes of encouraging consistency. I am not trying to be the most \"productive\" person I can be. I am trying to remember to do what I find important.",
+  },
+  {
+    slug: 'transformation',
+    title: 'transformation',
+    year: '2026',
+    description: 'Explaining heat shock transformation, and finding out that a decades-old, widely used lab protocol still isn\'t mechanistically understood.',
+    tags: ['science', 'writing', 'essay', 'biology'],
+    text:
+      "Cold → hot → cold, and somehow, some fraction of your cells end up with your DNA inside them. Somehow. We still somehow don't know how this works.",
+  },
+  // Two essays Beck has in progress, carrying a title and nothing else on
+  // purpose: `unfinished` is the site's own way of showing work honestly
+  // before it's done (see that field's own doc comment), and inventing a
+  // description or a pull quote for an unwritten essay is exactly what
+  // lib/content.ts's PROJECTS did. A text rung, a gallery card, and a piece
+  // page all fall back to the title when there's no preview/text/description,
+  // so these render as what they are. Fill in `description` and `text` as Beck
+  // finishes them, and drop `unfinished` when they land.
+  {
+    slug: 'colony-selection',
+    title: 'colony selection',
+    year: '2026',
+    tags: ['science', 'writing', 'essay', 'biology'],
+    unfinished: true,
+  },
+  {
+    slug: 'designing-dna',
+    title: 'designing dna',
+    year: '2026',
+    tags: ['science', 'writing', 'essay', 'biology'],
+    unfinished: true,
+  },
+  {
+    slug: 'delirium',
+    title: '🌊🐠 delirium',
+    // From the commit that created delirium.html in github.com/beckqing/whims
+    // (2022-05-21, with an interactivity fix the next day) — not stated by
+    // Beck. The illustration itself may predate the interactive version.
+    year: '2022',
+    // `art` first is not what picks the tone — primaryDiscipline() iterates
+    // DISCIPLINE_PRECEDENCE in its own order, so `art` would win from any
+    // position.
+    // Carrying it is deliberate (decided with Beck 2026-08-29): this is Beck's
+    // own illustration made interactive, and the denim tone is honest about
+    // that even though it costs the emerald that would flag `science` finally
+    // having work in it.
+    tags: ['art', 'science', 'code'],
+    // The demo's own coloured layer, doing double duty as the poster — one
+    // file, two uses, and it is a true still of the piece at rest.
+    image: '/code-demos/delirium/surface.webp',
+    imageAspect: '1/1',
+    codeDemo: {
+      src: '/code-demos/delirium/index.html',
+      aspect: '1/1',
+      repo: 'https://github.com/beckqing/whims',
+    },
   },
 ]
 
@@ -1874,6 +2368,43 @@ const SHOW_SAMPLE_WORK = false
 
 export const WORK: WorkItem[] =
   process.env.NODE_ENV === 'production' || !SHOW_SAMPLE_WORK ? REAL_WORK : [...REAL_WORK, ...SAMPLE_WORK]
+
+/** The most pins any gallery viewport can seat — `MasonryGrid`'s widest column count. */
+export const MAX_PINS = 3
+
+/**
+ * Slugs that hold the head of each masonry column in the gallery's default
+ * view, left to right. A page position, not a judgement — see
+ * docs/specs/2026-09-tiers-and-pins.md §1.
+ *
+ * Hand-picked rather than derived, the same idiom as `stackPieces` and
+ * `app/page.tsx`'s `CARDS[].pieces`: the choice is a composition no predicate
+ * expresses, and hand-picking means adding work never silently changes what
+ * fronts the gallery.
+ *
+ * At most `MAX_PINS`. Narrower viewports seat fewer, and the surplus falls
+ * back to its chronological position rather than crowding the head row (§3.4).
+ */
+export const PINNED: readonly string[] = []
+
+// Unconditional (not NODE_ENV-guarded) so a bad hand-maintained list fails
+// `next build` rather than only `next dev` — same precedent as
+// lib/mdx-bodies.ts's BODIES/MDX_BODY_SLUGS check.
+if (new Set(PINNED).size !== PINNED.length) {
+  throw new Error(`PINNED contains duplicate slugs: ${PINNED.join(', ')}`)
+}
+if (PINNED.length > MAX_PINS) {
+  throw new Error(`PINNED has ${PINNED.length} slugs, more than MAX_PINS (${MAX_PINS})`)
+}
+for (const slug of PINNED) {
+  const item = WORK.find((w) => w.slug === slug)
+  if (!item) {
+    throw new Error(`PINNED lists "${slug}", but no top-level WorkItem in lib/work.ts has that slug`)
+  }
+  if (isArchived(item)) {
+    throw new Error(`PINNED lists "${slug}", but its tier is 'archive' — an archived piece can't be pinned`)
+  }
+}
 
 /**
  * How selected tags combine. Shared with the little venn toggle:
@@ -1893,13 +2424,39 @@ export function nextMode(m: FilterMode): FilterMode {
   return m === 'and' ? 'or' : m === 'or' ? 'not' : 'and'
 }
 
-/** Tag combination (and/or/not) plus a free-text search over title, description, and tags. */
+/**
+ * Tag combination (and/or/not) plus a free-text search over an item's own
+ * title, description, text, preview, and tags — and, for collections, the
+ * same title/description/text/preview fields on each of their children.
+ * `includeArchived` defaults to `false`, so every existing caller keeps
+ * excluding `archive`-tier items without an edit; the policy for *when* a
+ * caller should pass `true` lives with the caller (see `WorkGallery`'s
+ * `digging`), not here.
+ */
 export function filterWork(
   items: WorkItem[],
-  { query, tags, mode }: { query: string; tags: string[]; mode: FilterMode },
+  {
+    query,
+    tags,
+    mode,
+    tiers = DEFAULT_TIERS,
+  }: {
+    query: string
+    tags: string[]
+    mode: FilterMode
+    /**
+     * Which tiers to include. Defaults to `DEFAULT_TIERS` (everything but
+     * `archive`), so every existing caller keeps the default browse without
+     * an edit. One list covers all of §4's cases — "archive only" is
+     * `['archive']`, "browse plus archive" is all three — where a boolean
+     * `includeArchived` could only ever express the second.
+     */
+    tiers?: readonly WorkTier[]
+  },
 ): WorkItem[] {
   const q = query.trim().toLowerCase()
   return items.filter((item) => {
+    if (!tiers.includes(tierOf(item))) return false
     if (tags.length > 0) {
       const owned = itemTags(item)
       const has = (t: string) => owned.has(t)
@@ -1911,15 +2468,115 @@ export function filterWork(
     const children = isCollection(item)
       ? item.pieces.flatMap((p) => [p.title, p.description, p.text, p.preview])
       : []
-    const haystack = [item.title, item.description, ...itemTags(item), ...children]
+    const haystack = [item.title, item.description, item.text, item.preview, ...itemTags(item), ...children]
       .join(' ')
       .toLowerCase()
     return haystack.includes(q)
   })
 }
 
+export type SortMode = 'newest' | 'oldest'
+
+export const SORT_MODES: SortMode[] = ['newest', 'oldest']
+
+export const SORT_LABEL: Record<SortMode, string> = {
+  newest: 'newest first',
+  oldest: 'oldest first',
+}
+
+/**
+ * Authored position, kept only as a tiebreaker. A `curated` sort mode ("in my
+ * order") used to be the gallery's default; Beck retired it 2026-09-09 —
+ * chronology is the honest default for a body of work that spans 2017–2026,
+ * and an authored order nobody but the author can read is not a thing a
+ * visitor can navigate by. The array order still breaks ties inside a year,
+ * where chronology has nothing left to say.
+ */
+const AUTHORED_INDEX = new Map(WORK.map((item, i) => [item.slug, i]))
+
+function tie(a: WorkItem, b: WorkItem): number {
+  return (AUTHORED_INDEX.get(a.slug) ?? 0) - (AUTHORED_INDEX.get(b.slug) ?? 0)
+}
+
+/**
+ * Order a filtered result set. Never mutates its input. `newest` is the
+ * default, so it stays out of the URL.
+ */
+export function sortWork(items: WorkItem[], mode: SortMode): WorkItem[] {
+  const dir = mode === 'newest' ? -1 : 1
+  return [...items].sort((a, b) => {
+    const ya = Number.parseInt(a.year, 10)
+    const yb = Number.parseInt(b.year, 10)
+    // An unparseable year sorts last in either direction rather than poisoning
+    // the comparator with NaN.
+    if (Number.isNaN(ya) && Number.isNaN(yb)) return tie(a, b)
+    if (Number.isNaN(ya)) return 1
+    if (Number.isNaN(yb)) return -1
+    if (ya !== yb) return (ya - yb) * dir
+    return tie(a, b)
+  })
+}
+
+/**
+ * Pull the pinned items out of a sorted result set, in `PINNED` order, up to
+ * `limit` (the live column count). Slugs past `limit` — and slugs filtered
+ * out of `items` entirely — stay in `rest` at their sorted position, so a
+ * narrow viewport demotes a pin rather than dropping or misplacing it.
+ */
+export function splitPinned(
+  items: WorkItem[],
+  limit: number,
+): { pins: WorkItem[]; rest: WorkItem[] } {
+  const wanted = PINNED.slice(0, Math.max(0, Math.min(limit, MAX_PINS)))
+  const pins = wanted
+    .map((slug) => items.find((item) => item.slug === slug))
+    .filter((item): item is WorkItem => Boolean(item))
+  const taken = new Set(pins.map((p) => p.slug))
+  return { pins, rest: items.filter((item) => !taken.has(item.slug)) }
+}
+
 export function getWorkItem(slug: string): WorkItem | undefined {
   return WORK.find((item) => item.slug === slug)
+}
+
+/**
+ * A collection's pieces that actually carry an image, and where `piece`
+ * lands among them — the domain a lightbox scoped to that collection should
+ * page through, since paging onto a piece with no image renders nothing to
+ * look at. `Math.max(0, ...)` guards a `piece` with no image of its own.
+ */
+export function imageLightboxSlice(
+  collection: WorkCollection,
+  piece: WorkPiece,
+): { items: WorkPiece[]; index: number } {
+  const items = collection.pieces.filter((p) => p.image)
+  return { items, index: Math.max(0, items.indexOf(piece)) }
+}
+
+/**
+ * Whether this gallery card opens the lightbox in place rather than
+ * navigating. A code demo is excluded on purpose: its `image` is only a
+ * poster still, and the thing it advertises runs on its own page. An
+ * animation is excluded for the same reason, as of 2026-09-10 — a finished
+ * animation is the piece, not its poster, and it leads straight to itself.
+ * A piece with only a speedpaint (no finished animation) stays included:
+ * there, the still genuinely is the piece, and the speedpaint is process —
+ * the framing `PieceMedia` still uses for that case.
+ */
+export function opensInGalleryLightbox(item: WorkItem): item is WorkPiece {
+  return (
+    !isCollection(item) &&
+    !isHybrid(item) &&
+    !isTextForward(item) &&
+    !isCodeDemo(item) &&
+    !hasAnimation(item) &&
+    Boolean(item.image)
+  )
+}
+
+/** The ordered lightbox domain for a rendered gallery — the visible cards that open it. */
+export function galleryLightboxItems(items: WorkItem[]): WorkPiece[] {
+  return items.filter(opensInGalleryLightbox)
 }
 
 /** Resolve a piece inside a collection, with its index for prev/next links. */
