@@ -3,17 +3,14 @@
 import { Children, useEffect, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
-/** Column count at `lg`; `sm` always gets 2 (or `lg`'s count, if lower). `base` (default 2) is the count below `sm`. */
+/** Column count at `lg`, now reached at the `xs` breakpoint (~500px) — narrow-screen-columns spec §9.3. `base` (default 2) is the count below it. */
 export type MasonryColumns = { lg: number; base?: number }
 
 const DEFAULT_COLUMNS: MasonryColumns = { lg: 3 }
 
-/** Widest first — the same sm/lg breakpoints the grids used as CSS columns. */
+/** One boundary — `xs` (31.25rem/500px), the same width the home page's own regimes split on (§9.3 of narrow-screen-columns: "the site would carry exactly one narrow-screen boundary instead of two"). */
 function columnQueries(columns: MasonryColumns) {
-  return [
-    { query: '(min-width: 1024px)', columns: columns.lg },
-    { query: '(min-width: 640px)', columns: Math.min(2, columns.lg) },
-  ] as const
+  return [{ query: '(min-width: 31.25rem)', columns: columns.lg }] as const
 }
 
 /** The live column count for a given `columns` config — exported so a caller (the gallery, for `PINNED`) can size itself to the same value the grid renders with. */
@@ -83,25 +80,34 @@ export function MasonryGrid({
     // written out in full rather than interpolated.
     <div
       className={cn(
-        // gap-3/xs:gap-5/sm:gap-8 match the page's own px-3/xs:px-5/sm:px-8
-        // gutter at each step, so the gap between cards is never wider than
-        // the gap between a card and the page edge — narrower at every step
-        // than the flat gap-5 this had, which leaves more width for the
-        // cards themselves.
-        'grid gap-3 xs:gap-5 sm:gap-8',
+        // gap-2/xs:gap-4/sm:gap-6, a step tighter than the page's own
+        // px-3/xs:px-5/sm:px-8 gutter at each step, so the gap between cards
+        // stays narrower than the gap between a card and the page edge.
+        // Kept on its own viewport scale (§9.3 of narrow-screen-columns):
+        // it's tuned to the *page's* gutter, not a fact about a column, so
+        // it doesn't move with the column-count breakpoint below.
+        'grid gap-2 xs:gap-4 sm:gap-6',
         base === 1 ? 'grid-cols-1' : 'grid-cols-2',
-        columns.lg === 2 ? 'sm:grid-cols-2 lg:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3',
+        columns.lg === 2 ? 'xs:grid-cols-2' : 'xs:grid-cols-3',
         className,
       )}
     >
       {cols.map((column, i) => (
-        // min-w-0: a grid track can't shrink below its content's min-content
-        // width by default, and a card's title row (WorkCard, work-gallery.tsx)
-        // can out-measure a narrow paired column — §9.2 of the
-        // narrow-screen-columns spec. Without this the whole grid (and with
-        // it the page) overflows its viewport and gets scaled down to fit,
-        // rather than showing a scrollbar.
-        <div key={i} className="flex min-w-0 flex-col gap-3 xs:gap-5 sm:gap-8">
+        // @container/card (§9.3): names this column so a card inside it can
+        // dress itself by its own width instead of the viewport's — see
+        // work-gallery.tsx's TextCard/HybridCard, work-visuals.tsx's
+        // CollectionMark/WorkPlaceholder/VerseBlock/TextCardFace, and
+        // globals.css's .deck-card/.deck-reserve. min-w-0: a grid track
+        // can't shrink below its content's min-content width by default,
+        // and a card's title row (WorkCard, work-gallery.tsx) can
+        // out-measure a narrow column — §9.2 of the narrow-screen-columns
+        // spec. `container-type: inline-size` (from @container/card) already
+        // zeroes this column's min-content contribution, but min-w-0 stays
+        // anyway: it costs one class and keeps working if the container is
+        // ever removed. Without it the whole grid (and with it the page)
+        // overflows its viewport and gets scaled down to fit, rather than
+        // showing a scrollbar.
+        <div key={i} className="@container/card flex min-w-0 flex-col gap-2 xs:gap-4 sm:gap-6">
           {column}
         </div>
       ))}

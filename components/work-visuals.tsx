@@ -142,10 +142,13 @@ export function ArchiveMark({ className }: { className?: string }) {
 }
 
 /**
- * Badge showing how many pieces a collection holds. Two sizes split at `sm`
- * (narrow-screen-columns spec §9.1): below it the deck's card 4 strip
- * shrinks along with the pill, so the pill shrinks too, dropping the word
- * `pieces` — `sr-only sm:not-sr-only`, not `hidden sm:inline`, so the count
+ * Badge showing how many pieces a collection holds. Two sizes, wide by
+ * default and narrow under the card's own column width (`@max-3xs/card`,
+ * 256px — narrow-screen-columns spec §9.3, superseding §9.1's `sm` media
+ * query so this moves in lockstep with the deck below, which keys off the
+ * same container): narrow shrinks the deck's card 4 strip along with the
+ * pill, so the pill shrinks too, dropping the word `pieces` —
+ * `not-sr-only @max-3xs/card:sr-only`, not `hidden`/`inline`, so the count
  * keeps its noun in the accessible name at every width even though it's
  * dropped visually. The narrow line-height is set explicitly
  * (`leading-[14px]`, not inherited): `CARD4_STRIP_PX_NARROW` is measured
@@ -156,14 +159,14 @@ export function CollectionMark({ count, className }: { count: number; className?
   return (
     <span
       className={cn(
-        'font-brand inline-flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 text-[10px] leading-[14px] lowercase text-foreground backdrop-blur-sm sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs sm:leading-normal',
+        'font-brand inline-flex items-center gap-1.5 rounded-full bg-background/80 px-2.5 py-1 text-xs leading-normal lowercase text-foreground backdrop-blur-sm @max-3xs/card:gap-1 @max-3xs/card:px-2 @max-3xs/card:py-0.5 @max-3xs/card:text-[10px] @max-3xs/card:leading-[14px]',
         className,
       )}
     >
-      <Layers className="h-3 w-3 sm:h-3.5 sm:w-3.5" strokeWidth={1.75} aria-hidden="true" />
+      <Layers className="h-3.5 w-3.5 @max-3xs/card:h-3 @max-3xs/card:w-3" strokeWidth={1.75} aria-hidden="true" />
       <span className="text-muted-foreground">
         {count}
-        <span className="sr-only sm:not-sr-only"> pieces</span>
+        <span className="not-sr-only @max-3xs/card:sr-only"> pieces</span>
       </span>
     </span>
   )
@@ -218,7 +221,7 @@ export const WorkPlaceholder = forwardRef<
           src={src}
           alt={item.title}
           fill
-          sizes="(max-width: 1024px) 50vw, 33vw"
+          sizes="(max-width: 31.25rem) 50vw, 33vw"
           className="object-cover"
         />
       </div>
@@ -251,7 +254,7 @@ export const WorkPlaceholder = forwardRef<
       )}
       <span
         aria-hidden="true"
-        className="font-brand pointer-events-none absolute bottom-2 right-3 max-w-[calc(100%-1.5rem)] truncate text-right text-3xl font-bold lowercase leading-none tracking-tight sm:text-4xl"
+        className="font-brand pointer-events-none absolute bottom-2 right-3 max-w-[calc(100%-1.5rem)] truncate text-right text-4xl font-bold lowercase leading-none tracking-tight @max-3xs/card:text-3xl"
         style={{ color: tone, opacity: 0.26 }}
       >
         {categoryLabel(item)}
@@ -291,12 +294,17 @@ export function VerseBlock({
   context?: 'reading' | 'card'
   className?: string
 }) {
-  // The hanging indent marks a wrapped line as a wrap, not a new one — at a
-  // card's narrow, paired ~130px column (below `sm`) a 1ch indent eats a
-  // disproportionate share of the already-tight measure, so 'card' drops it
-  // there and picks it back up at `sm`, where a card has the room again.
-  // 'reading' keeps it unconditionally — that context never goes this narrow.
-  const wrapIndent = context === 'card' ? 'sm:[text-indent:-1ch] sm:pl-[1ch]' : '[text-indent:-1ch] pl-[1ch]'
+  // The hanging indent marks a wrapped line as a wrap, not a new one — in a
+  // card's own narrow column (`@max-3xs/card`, 256px — §9.3 of
+  // narrow-screen-columns, superseding §12.1's `sm` media query) a 1ch
+  // indent eats a disproportionate share of the already-tight measure, so
+  // 'card' drops it there and picks it back up once the column has the room
+  // again. 'reading' keeps it unconditionally — that context never renders
+  // inside a narrow column.
+  const wrapIndent =
+    context === 'card'
+      ? '[text-indent:-1ch] pl-[1ch] @max-3xs/card:[text-indent:0] @max-3xs/card:pl-0'
+      : '[text-indent:-1ch] pl-[1ch]'
   return (
     <div className={cn('font-brand-italic max-w-[58ch] text-pretty leading-relaxed', className)}>
       {text.split('\n\n').map((stanza, s) =>
@@ -343,7 +351,7 @@ function TextCardFace({
   const excerpt = piece.preview ?? piece.text ?? piece.description ?? ''
   return (
     <div
-      className={cn('flex h-full w-full flex-col p-3 sm:p-6', className)}
+      className={cn('flex h-full w-full flex-col p-6 @max-3xs/card:p-3', className)}
       style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))`, ...style }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -360,16 +368,17 @@ function TextCardFace({
 
       {/* flex-1 + min-h-0 (not mt-auto on the title row) keeps the title in
           the visible peek whether the card has slack or is clamped — see
-          "Collection stack geometry" in docs/ARCHITECTURE.md. text-sm +
-          line-clamp-4 below sm: the cover card (card 1 in ChapbookStack) is
-          `h-auto`, so unlike cards 2/3 (bounded by `max-h-96`, where
-          flex-1/overflow-hidden alone already clipped it) nothing capped
-          its height before this — same excerpt-towers-the-card bug as
-          WorkGallery's TextCard/HybridCard, fixed the same way. */}
+          "Collection stack geometry" in docs/ARCHITECTURE.md. text-lg by
+          default, line-clamp-4 text-sm under the card's own column width
+          (`@max-3xs/card` — §9.3 of narrow-screen-columns): the cover card
+          (card 1 in ChapbookStack) is `h-auto`, so unlike cards 2/3 (bounded
+          by `max-h-96`, where flex-1/overflow-hidden alone already clipped
+          it) nothing caps its height before this — same excerpt-towers-the-
+          card bug as WorkGallery's TextCard/HybridCard, fixed the same way. */}
       <VerseBlock
         text={excerpt}
         context="card"
-        className="mt-3 line-clamp-4 min-h-0 flex-1 overflow-hidden text-sm text-foreground sm:line-clamp-none sm:text-lg"
+        className="mt-3 min-h-0 flex-1 overflow-hidden text-lg text-foreground @max-3xs/card:line-clamp-4 @max-3xs/card:text-sm"
       />
 
       <p className="mt-4 truncate font-brand text-sm lowercase tracking-wide text-muted-foreground">

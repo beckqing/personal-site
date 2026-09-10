@@ -18,13 +18,13 @@
 > into a width that spec never addressed: it was written throughout for the
 > side-by-side arrangement, and says so.
 >
-> **Addendum §9.3 (2026-09-09) is not built** and is the only part of this
-> spec that isn't. It moves the gallery's three-across from `lg` down to
-> ~500 and re-keys every card's narrow dress from the viewport to its own
-> column, via container queries. It touches `components/masonry-grid.tsx`,
-> `components/work-gallery.tsx`, `components/work-visuals.tsx` and
-> `app/globals.css` — so the "no CSS change is needed" line above, already
-> overtaken by §2's own revision, does not hold for it either.
+> **Addendum §9.3 (2026-09-09) is now built.** It moves the gallery's
+> three-across from `lg` down to ~500 and re-keys every card's narrow dress
+> from the viewport to its own column, via container queries. It touched
+> `components/masonry-grid.tsx`, `components/work-gallery.tsx`,
+> `components/work-visuals.tsx` and `app/globals.css` — so the "no CSS
+> change is needed" line above, already overtaken by §2's own revision,
+> did not hold for it either.
 
 ---
 

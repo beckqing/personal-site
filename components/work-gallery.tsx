@@ -238,7 +238,7 @@ function TextCard({ item }: { item: WorkItem }) {
   const excerpt = item.preview ?? item.text ?? item.description ?? ''
   return (
     <article
-      className="group flex flex-col rounded-2xl border border-border p-3 transition-all hover:-translate-y-0.5 hover:shadow-lg sm:p-6"
+      className="group flex flex-col rounded-2xl border border-border p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg @max-3xs/card:p-3"
       style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}
     >
       <Link href={workHref(item)} className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -265,16 +265,19 @@ function TextCard({ item }: { item: WorkItem }) {
           </div>
         </div>
 
-        {/* text-sm + line-clamp-4 below sm: `excerpt` falls back to a
-            piece's full `text` when it has no hand-set `preview`, and at a
-            paired ~130px gallery column that can tower over every image
-            card beside it even clamped at the sm+ text size — reported
-            directly against this build, not spec-driven. sm+ keeps the
-            size and room a 3-column card already had. */}
+        {/* text-lg by default, dropping to line-clamp-4 text-sm under the
+            card's own column width (§9.3 of narrow-screen-columns —
+            `@max-3xs/card`, 256px): `excerpt` falls back to a piece's full
+            `text` when it has no hand-set `preview`, and in a narrow column
+            that can tower over every image card beside it even clamped at
+            the wide text size — reported directly against this build, not
+            spec-driven. Keyed to the card's own width rather than the
+            viewport since the column count no longer maps to one viewport
+            band. */}
         <VerseBlock
           text={excerpt}
           context="card"
-          className="mt-3 line-clamp-4 text-sm text-foreground sm:line-clamp-none sm:text-lg"
+          className="mt-3 text-lg text-foreground @max-3xs/card:line-clamp-4 @max-3xs/card:text-sm"
         />
 
         <CardTitleRow title={item.title} />
@@ -300,7 +303,7 @@ function HybridCard({ item }: { item: WorkItem }) {
           <WorkPlaceholder item={item} />
         </div>
 
-        <div className="p-3 sm:p-6" style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}>
+        <div className="p-6 @max-3xs/card:p-3" style={{ background: `color-mix(in srgb, ${tone} 8%, var(--card))` }}>
           {/* flex-wrap + ml-auto — same reasoning as TextCard's identical row above. */}
           <div className="flex flex-wrap items-start gap-3">
             <Quote
@@ -317,11 +320,13 @@ function HybridCard({ item }: { item: WorkItem }) {
             </div>
           </div>
 
-          {/* text-sm + line-clamp-4 below sm — same reasoning as TextCard's identical excerpt above. */}
+          {/* text-lg by default, line-clamp-4 text-sm under the card's own
+              column width — same reasoning as TextCard's identical excerpt
+              above. */}
           <VerseBlock
             text={excerpt}
             context="card"
-            className="mt-3 line-clamp-4 text-sm text-foreground sm:line-clamp-none sm:text-lg"
+            className="mt-3 text-lg text-foreground @max-3xs/card:line-clamp-4 @max-3xs/card:text-sm"
           />
 
           <CardTitleRow title={item.title} />

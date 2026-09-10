@@ -389,41 +389,45 @@
      tables in JS, so the numbers exist in one place instead of drifting
      between a literal class and a JS constant.
 
-     Two geometries, split at `sm` (narrow-screen-columns spec §9.1): an
-     inline style always wins over a media query on the same property, so a
-     `@media (max-width: 639px) { .deck-card { --y: … } }` block would do
-     nothing while the inline `--y` is set. `deckVars()` emits both
+     Two geometries, keyed to the card's own column width via a container
+     query (narrow-screen-columns spec §9.3 — the container is declared
+     `@container/card` on MasonryGrid's column wrapper, so this rule reads
+     from the SAME width the column count now hangs on): an inline style
+     always wins over a container query on the same property, so a
+     `@container card (width < 16rem) { .deck-card { --y: … } }` block would
+     do nothing while the inline `--y` is set. `deckVars()` emits both
      `--y-wide`/`--y-narrow` (and the `hy` pair) under different names
-     instead, and it's this rule's own media query that picks between them —
-     narrow by default, wide from `sm` up. Tilts (`--r`/`--hr`) don't differ
-     between the two geometries, so they stay single-valued. */
+     instead, and it's this rule's own container query that picks between
+     them — wide by default, narrow under the query. Tilts (`--r`/`--hr`)
+     don't differ between the two geometries, so they stay single-valued. */
   .deck-card {
-    margin-bottom: var(--y-narrow);
+    margin-bottom: var(--y-wide);
     transform: rotate(var(--r));
     transition: margin 300ms ease-out, transform 300ms ease-out, box-shadow 300ms ease-out;
   }
   .group:hover .deck-card {
-    margin-bottom: var(--hy-narrow);
+    margin-bottom: var(--hy-wide);
     transform: rotate(var(--hr));
   }
-  @media (min-width: 640px) {
+  @container card (width < 16rem) {
     .deck-card {
-      margin-bottom: var(--y-wide);
+      margin-bottom: var(--y-narrow);
     }
     .group:hover .deck-card {
-      margin-bottom: var(--hy-wide);
+      margin-bottom: var(--hy-narrow);
     }
   }
 
   /* The deck's own container reserve (`deckReserveVars()`,
-     work-visuals.tsx) — same inline-beats-media-query trap as `.deck-card`
-     above, same fix: two named vars, one rule to choose between them. */
+     work-visuals.tsx) — same inline-beats-container-query trap as
+     `.deck-card` above, same fix: two named vars, one rule to choose
+     between them. */
   .deck-reserve {
-    padding-bottom: var(--reserve-narrow);
+    padding-bottom: var(--reserve-wide);
   }
-  @media (min-width: 640px) {
+  @container card (width < 16rem) {
     .deck-reserve {
-      padding-bottom: var(--reserve-wide);
+      padding-bottom: var(--reserve-narrow);
     }
   }
 
