@@ -20,7 +20,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       type="button"
       onClick={() => flip()}
       className={cn(
-        'relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border text-foreground transition-colors duration-500 hover:bg-card',
+        'relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border text-foreground transition-colors duration-500 hover:bg-card',
         mounted && !isDark ? 'bg-goldenrod/15' : 'bg-moon/10',
         className,
       )}
@@ -34,7 +34,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       {/* Render both and cross-fade with a slight overshoot, like the sun/moon swinging into place; before mount, keep it neutral to avoid a hydration flash */}
       <Sun
         className={cn(
-          'absolute h-[1.05rem] w-[1.05rem] text-goldenrod transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+          'absolute h-4 w-4 text-goldenrod transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
           mounted && !isDark
             ? 'rotate-0 scale-100 opacity-100'
             : '-rotate-90 scale-0 opacity-0',
@@ -42,7 +42,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       />
       <Moon
         className={cn(
-          'absolute h-[1.05rem] w-[1.05rem] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+          'absolute h-4 w-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
           !mounted || isDark
             ? 'rotate-0 scale-100 opacity-100'
             : '-rotate-90 scale-0 opacity-0',
