@@ -687,16 +687,24 @@ circle" above) and `app/icon.svg` was added alongside `app/favicon.ico` and
 ## Component layers
 
 - **`work-gallery.tsx`** — the `/work` client island: filter panel, URL state,
-  a docked copy of the filter panel that slides in beneath the nav once the
-  real one scrolls out of view (`DockedFilterBar`, built 2026-09-10 from
-  [history/2026-09-docked-filter-bar.md](history/2026-09-docked-filter-bar.md)),
-  and `WorkCard`, which dispatches to `HybridCard` / `TextCard` / `ImageCard`
-  / `CollectionTile`. `HybridCard` is currently unreached — no top-level item
-  carries both `text` and `image`. The filter controls themselves
-  (`FilterPanelContent`, `SearchField`) are shared components mounted twice —
-  once in-flow, once inside the docked bar's expansion — rather than
-  duplicated, since all filter state is URL state and a second mount has
-  nothing to keep in sync.
+  a docked copy of the filter panel beneath the nav once the real one scrolls
+  out of view (`DockedFilterBar`, built 2026-09-10 from
+  [history/2026-09-docked-filter-bar.md](history/2026-09-docked-filter-bar.md),
+  reworked 2026-09-11 — see the dated note in `TODO.md`), and `WorkCard`,
+  which dispatches to `HybridCard` / `TextCard` / `ImageCard` /
+  `CollectionTile`. `HybridCard` is currently unreached — no top-level item
+  carries both `text` and `image`. Search is `InlineSearch`, an icon-only
+  pill that expands in place (leading the discipline chip row, and the
+  docked bar's compact row) rather than a full-width field of its own — the
+  earlier `SearchField` is gone. `FilterPanelContent` (toolbar + both chip
+  rows, with the in-flow panel's zero-shift reservation) mounts once, in the
+  real panel; the docked bar builds its own compact row and expansion out of
+  the same lower-level pieces (`InlineSearch`, `TagRow`, `ToolbarRow`)
+  instead, since its collapsed state shows only search + disciplines + any
+  otherwise-hidden selected tags, not the whole panel, and — being
+  `position: fixed` — it has no zero-shift guarantee to keep in the first
+  place. All of it reads/writes the same URL state regardless of which
+  mount it's in.
 - **`site-nav.tsx` publishes `--nav-h`**, a CSS custom property on
   `document.documentElement` holding the nav's own measured height (it wraps
   to two lines below ~363px, so this isn't a constant). The only consumer

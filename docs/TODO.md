@@ -170,7 +170,106 @@ panel's interior into `FilterPanelContent`/`SearchField` so both the in-flow
 panel and the docked bar's expansion mount the same controls, and
 `site-nav.tsx` now publishes `--nav-h` so the bar can pin itself directly
 below a header whose height isn't constant. Nothing in this file tracked
-this either, so nothing else closes.
+this either, so nothing else closes. **The scroll-up/scroll-down reveal
+logic and the `SearchField` component it describes are both superseded by
+the next day's rework, below.**
+
+**2026-09-11: search became an inline collapsible pill, and the docked bar's
+compact row was rebuilt around it — ad hoc, no spec.** `SearchField` (a
+separate full-width row) is gone; `InlineSearch` is a ~32px icon-only pill
+that heads the discipline chip row instead, expanding to ~240px on focus (or
+while it holds a query) and collapsing back on blur if empty — driven
+entirely by `focused || value.length > 0`, so the stated collapse rule falls
+out of that derivation rather than needing its own effect. `TagRow` gained
+`before`/`after`/`bare` props to let it co-wrap with the search pill (and,
+for the docked bar, with other tag groups sharing one flex-wrap row without
+its own wrapping div).
+
+The docked bar's compact row was rebuilt to carry the same hierarchy as the
+in-flow panel's search-led chip row: search pill, then discipline chips
+(with active subtags), then — collapsed only — any selected universal tags
+that wouldn't otherwise be visible, so an active filter stays removable
+without opening anything. The glyph still trails, still expands the same
+toolbar + universal row as before, now via a shared `ToolbarRow` component
+(pulled out of `FilterPanelContent`) rather than mounting that whole
+component a second time — the docked bar builds its compact row and
+expansion from lower-level pieces directly, since it needs a different split
+of the same content and, being `position: fixed`, has no zero-shift
+guarantee to protect the way the in-flow panel does. Also **removed the
+scroll-direction hide/reveal**: the bar now stays visible for as long as the
+in-flow panel is offscreen, full stop, rather than retracting on scroll-down
+and only reappearing on scroll-up — Beck's call, mid-session, that hiding it
+while actively scrolling made it disappear exactly when it might be wanted.
+`useScrollDirection` is deleted along with it. No spec exists for any of
+this; this paragraph is the only record.
+
+**2026-09-11, later the same day: the docked bar's reveal became
+scroll-linked instead of a snap.** Beck: "I would also like the sticky
+scroll to be smoother somehow" — planned as three options (polish the
+existing binary transition; a continuous JS reveal tied to scroll position;
+a native CSS `animation-timeline: scroll()` reveal) before touching code,
+per Beck's ask to think it through first. Went with the middle one: `useOffscreen`
+(an `IntersectionObserver` boolean) is now `useDockedReveal`, a rAF-throttled
+scroll listener returning 0–1 — 0 while the in-flow panel is still visibly
+above the nav's bottom edge, ramping to 1 over the next 64px of scroll once
+it's scrolled behind it — driving the bar's transform/opacity directly as
+inline style rather than toggling a Tailwind class pair. A short CSS
+transition rides on top purely to smooth the gaps between scroll/rAF ticks
+(a chunky mouse-wheel can jump in bigger steps than a touch scroll) — it's
+polish on the scroll-driven motion, not what drives it. `prefers-reduced-motion`
+collapses the 64px range to 1px, so it's still the same code path but reads
+as an instant step rather than a scroll-tied animation. It also listens
+for resize and a `ResizeObserver` on the panel itself, since the panel's own
+height can change (the mobile "more tags" expansion, again) with no scroll
+event at all.
+
+**Same day, next: the trigger moved from the viewport edge to the nav's
+bottom edge.** Beck: "I think the sticky should appear a little sooner?
+like based on the bottom of the filter box disappearing behind the nav
+bar." The first pass triggered off `el.bottom <= 0` — the actual viewport
+top — which left a dead zone, since the nav is `position: sticky` and
+already covers the panel's tail well before its bottom edge would cross
+that line. Now it's `el.bottom <= navH`, with `--nav-h` (`site-nav.tsx`)
+read fresh on every measurement rather than cached once, since the nav's
+own height isn't constant. Verified live: the ramp now starts at
+`panelBottom ≈ navH` instead of `≈ 0`, about 60px (one nav-height) sooner.
+No spec exists for any of this; this paragraph is the record.
+
+**Same day, last: the docked bar's tap-to-expand now fades/slides too,
+instead of popping.** Beck: "maybe for smoothness it should also have a
+fade in / out?" — the compact bar's own scroll reveal already faded; its
+expansion (the toolbar + universal row that drops down on tapping the
+glyph) still hard-mounted/unmounted with `{open && (...)}`. Couldn't just
+toggle opacity on an always-mounted copy the way the bar itself does: this
+content sits in normal flow *inside* the bar, so an always-mounted-but-
+transparent copy would hold its full height permanently, leaving a dead gap
+under the bar whenever "closed." So it's a hand-rolled enter/exit instead —
+`mounted` (spans the whole transition) and `entered` (drives the actual
+opacity/translate) as two separate booleans, `EXPANSION_TRANSITION_MS`
+(150ms) gating when `mounted` finally goes false after a close.
+
+Two real bugs caught live, not just theorized, while wiring this up:
+
+1. The transition class listed `transform`, but Tailwind's `translate-y-*`
+   utilities animate the native CSS `translate` property in this version of
+   Tailwind — `transform` was never actually set, so only opacity was
+   transitioning; the slide was snapping instantly. Caught by sampling
+   `getComputedStyle(...).translate` mid-transition, not by eye — a
+   `transform` reading `"none"` throughout a supposedly-animating slide was
+   the tell. Fixed by listing `translate` instead.
+2. The open path (`setMounted(true)` then one `requestAnimationFrame(() =>
+   setEntered(true))`) never painted its own closed frame — a single rAF
+   after a synchronous state update isn't a reliable enough delay, and
+   polling `getComputedStyle` every frame at ~2ms resolution showed the
+   element going straight from absent to `opacity: 1` with no step between.
+   React was committing both state updates before the browser's next actual
+   paint. Fixed with the standard double-rAF: schedule the real flip from
+   *inside* the first rAF's callback, which forces a genuine paint of the
+   closed state first. (The close path never needed this — it starts from
+   an already-painted open frame, so there's always something to transition
+   from.)
+
+No spec exists for any of this; this paragraph is the record.
 
 **2026-09-10, last: the universal tag row collapses on mobile, ad hoc —
 Beck's request mid-build, no spec.** Below `sm` (640px), row 2 shows only

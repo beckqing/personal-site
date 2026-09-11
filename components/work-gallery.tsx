@@ -735,8 +735,10 @@ function TagRow({
   onToggleTag,
   chipTone,
   chipClassName,
+  before,
   after,
   className,
+  bare,
 }: {
   tags: readonly string[]
   selectedTags: Set<string>
@@ -747,14 +749,23 @@ function TagRow({
    *  changing which tags are in the array, so a ghost mirroring this row
    *  can apply the exact same function and stay in sync automatically. */
   chipClassName?: (tag: string) => string | undefined
+  /** A leading, non-tag element in the same flex-wrap flow as the chips —
+   *  e.g. the inline search pill that heads the discipline row. */
+  before?: ReactNode
   /** An extra, non-tag element in the same flex-wrap flow as the chips —
    *  e.g. a trailing "more tags" affordance that should wrap naturally
    *  alongside them rather than sit outside the row. */
   after?: ReactNode
   className?: string
+  /** Skip the wrapping flex div and return the chips as a fragment instead,
+   *  so a caller that needs several tag groups (plus other controls) to
+   *  co-wrap in one shared flex-wrap container can supply that container
+   *  itself — used by the docked bar's compact row. */
+  bare?: boolean
 }) {
-  return (
-    <div className={cn('flex flex-wrap gap-1.5', className)}>
+  const content = (
+    <>
+      {before}
       {tags.map((tag) => (
         <TagChip
           key={tag}
@@ -766,8 +777,10 @@ function TagRow({
         />
       ))}
       {after}
-    </div>
+    </>
   )
+  if (bare) return content
+  return <div className={cn('flex flex-wrap items-center gap-1.5', className)}>{content}</div>
 }
 
 /**
@@ -924,47 +937,95 @@ type FilterControls = {
 }
 
 /**
- * The search field — icon, input, clear button — pulled out of the panel so
- * the in-flow panel and the docked bar's compact row can each mount their
- * own without drifting apart. Both read and write the same `queryInput`
- * state (passed down as `value`/`onChange`), so there is still exactly one
+ * The search control: an icon-only pill that heads the discipline chip row
+ * (and the docked bar's compact row), rather than a separate full-width bar.
+ * Collapsed, it's a plain 32px circle matching the toolbar controls' height;
+ * focusing it expands to a 240px input, animated over the container's own
+ * width so the chips beside it reflow rather than jump. `expanded` is driven
+ * entirely by focus-or-has-a-value — no separate click handler — so the
+ * stated collapse rule ("empty on blur collapses, a query stays expanded")
+ * falls out of that derivation for free rather than needing its own effect.
+ *
+ * The input itself never resizes: it's laid out at its full 240px width
+ * inside an `overflow-hidden` wrapper that animates instead, with the search
+ * icon absolutely positioned on top so it stays put (and visible) through
+ * the transition. Pulled out of the panel so the in-flow row and the docked
+ * bar's compact row can each mount their own without drifting apart — both
+ * read and write the same `queryInput` state, so there is still exactly one
  * debounce effect and typing in either updates both.
  */
-function SearchField({
+function InlineSearch({
   value,
   onChange,
   label,
-  className,
 }: {
   value: string
   onChange: (value: string) => void
   /** Distinct per mount, so a screen reader moving between the two can tell
    *  which one it landed on. */
   label: string
-  className?: string
 }) {
+  const [focused, setFocused] = useState(false)
+  const expanded = focused || value.length > 0
   return (
-    <div className={cn('relative', className)}>
+    <div
+      className={cn(
+        'relative h-8 shrink-0 rounded-full border border-border bg-card transition-[width] duration-200 ease-out focus-within:border-goldenrod',
+        expanded ? 'w-60' : 'w-8',
+      )}
+    >
       <Search
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute left-[7px] top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
         aria-hidden="true"
       />
+      {/* `w-full`, not a fixed width: the input's own box tracks the
+          wrapper's animated width every frame (percentage sizing recomputes
+          continuously during a CSS transition), so it's never wider than
+          what's visible — a fixed-width input clipped by `overflow-hidden`
+          measured correctly on screen but left its real layout box 208px
+          wider than the visible circle while collapsed, which is invisible
+          to a pointer but broke hit-testing/tooling that reads the actual
+          box. The native WebKit cancel button is suppressed since it would
+          otherwise render as a second "×" beside the custom clear button
+          below.
+
+          Only the *right* padding is conditional on `expanded` — `pl-7`
+          stays on permanently, both to keep the placeholder text tucked
+          behind the icon rather than peeking out from under it at 0
+          left-padding, and because 28px alone is well under the collapsed
+          box's 32px width, so it never trips the padding-exceeds-width
+          problem below. `pr-7` can't stay on the same way: 28px+28px is
+          *more* than 32px, and Chromium refuses to shrink an `<input>`
+          below what its own padding needs — with both paddings always on,
+          it silently ignored `w-full` and rendered at the padding sum
+          (56px) regardless of the wrapper's actual size. Collapsed, `value`
+          is always empty (that's what "collapsed" means here), so there's
+          no clear button to leave room for on the right — zero right
+          padding is correct, not just convenient. */}
       <input
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="search titles, descriptions, text, tags…"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder="search…"
         aria-label={label}
-        className="font-brand w-full truncate rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm lowercase text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-goldenrod"
+        className={cn(
+          'font-brand h-full w-full appearance-none bg-transparent pl-7 text-sm lowercase text-foreground outline-none transition-[padding] duration-200 ease-out placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none',
+          expanded ? 'pr-7' : 'pr-0',
+        )}
       />
-      {value && (
+      {expanded && value && (
         <button
           type="button"
+          // Keeps focus on the input through the click, so clearing doesn't
+          // blur-and-collapse the box out from under the pointer mid-click.
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => onChange('')}
           aria-label="Clear search"
-          className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
       )}
     </div>
@@ -972,56 +1033,62 @@ function SearchField({
 }
 
 /**
- * The panel's interior — toolbar row, optional search row, both chip rows —
- * with no border/fill/padding of its own, so the in-flow panel and the
- * docked bar's expansion can each wrap it in their own shell while sharing
- * one row-to-row rhythm (`space-y-3 sm:space-y-4`, owned here rather than by
- * either caller, since the docked expansion has no border/padding to hang it
- * on). Lifted out of `WorkGallery` verbatim; every comment about
- * right-alignment, the h-8 row, and the chip-block reservation moves with it
+ * Reset / tiers / sort / venn — right-aligned to this content's inner edge,
+ * the same edge the search pill's clear button sits on. All four controls
+ * are exactly h-8 so the row is optically even.
+ *
+ * `reset` goes first, not last. Against a right edge the *trailing* control
+ * is the one flush to it, and reset is the only one of the four that isn't
+ * always live — trailing it would leave the visible cluster floating a
+ * button's width short of the edge whenever there's nothing to reset. At the
+ * head of the cluster its reserved box eats left-hand space that was empty
+ * anyway, so tiers/sort/venn stay pinned to the edge in both states. It
+ * still occupies that box when inactive rather than unmounting, so the wrap
+ * point doesn't move with `activeCount` either.
+ *
+ * Pulled out of `FilterPanelContent` so the docked bar's expansion — which
+ * no longer mounts that whole component — can render the same row on its
+ * own, alongside the universal chip row, without duplicating this JSX.
+ */
+function ToolbarRow({ controls, className }: { controls: FilterControls; className?: string }) {
+  const { activeCount, reset, tiers, toggleTier, sort, cycleSort, mode, cycleMode } = controls
+  return (
+    <div className={cn('flex flex-wrap items-center justify-end gap-3', className)}>
+      <ResetButton active={activeCount > 0} onClick={reset} />
+      <TierRow tiers={tiers} onToggleTier={toggleTier} />
+      <SortToggle sort={sort} onToggle={cycleSort} />
+      <VennMode mode={mode} onCycle={cycleMode} />
+    </div>
+  )
+}
+
+/**
+ * The panel's interior — toolbar row, then the two chip rows — with no
+ * border/fill/padding of its own, so the in-flow panel can wrap it in its
+ * own shell while `FilterPanelContent` owns the row-to-row rhythm
+ * (`space-y-3 sm:space-y-4`). Lifted out of `WorkGallery` verbatim; every
+ * comment about the h-8 row and the chip-block reservation moves with it
  * unchanged.
  *
- * `showSearch` is false in the docked bar's expansion, whose own
- * always-visible compact row already carries the search field — rendering
- * it twice would put two live search inputs on screen at once. That also
- * means the docked bar's full reading order is search (compact row) →
- * toolbar → chips (expansion), rather than the in-flow panel's toolbar →
- * search → chips.
- *
- * Mounts independently wherever it's placed, including its own chip-block
- * height measurement (see below) — there are two live mounts of this
- * component at once whenever the docked bar is open, each with its own
- * layout to measure.
+ * Search is no longer a row of its own — it's `InlineSearch`, the leading
+ * chip in the discipline row (see the `before` prop below), collapsed to an
+ * icon by default and expanding in place. The docked bar builds its own
+ * compact row out of the same pieces (`InlineSearch`, `TagRow`) rather than
+ * mounting this component, since its collapsed state needs only the search
+ * pill and the discipline chips, not the toolbar or the universal row —
+ * this component stays the in-flow panel's alone.
  */
 function FilterPanelContent({
   controls,
-  showSearch = true,
   onChipSlackChange,
 }: {
   controls: FilterControls
-  showSearch?: boolean
   /** Reports the *outside* half of this mount's chip-block reservation (see
-   *  below) to the caller. Only the in-flow panel's mount uses this — the
-   *  docked expansion's mount leaves it unset. */
+   *  below) to the caller. */
   onChipSlackChange?: (outsideSlack: number) => void
 }): ReactNode {
-  const {
-    queryInput,
-    setQueryInput,
-    selectedTags,
-    toggleTag,
-    subtagTone,
-    disciplineChips,
-    universalChips,
-    tiers,
-    toggleTier,
-    sort,
-    cycleSort,
-    mode,
-    cycleMode,
-    reset,
-    activeCount,
-  } = controls
+  const { queryInput, setQueryInput, selectedTags, toggleTag, subtagTone, disciplineChips, universalChips } =
+    controls
 
   // The chip block's height reservation. Two unlabeled chip rows —
   // disciplines (+ their subtags) above, universal tags below — sized to
@@ -1124,33 +1191,17 @@ function FilterPanelContent({
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      {/* Toolbar, right-aligned to this content's inner edge — the same edge
-          the search field's clear button sits on. All four controls are
-          exactly h-8 so the row is optically even.
-
-          `reset` goes first, not last. Against a right edge the *trailing*
-          control is the one flush to it, and reset is the only one of the
-          four that isn't always live — trailing it would leave the visible
-          cluster floating a button's width short of the edge whenever
-          there's nothing to reset. At the head of the cluster its reserved
-          box eats left-hand space that was empty anyway, so tiers/sort/venn
-          stay pinned to the edge in both states. It still occupies that box
-          when inactive rather than unmounting, so the wrap point doesn't
-          move with `activeCount` either. */}
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <ResetButton active={activeCount > 0} onClick={reset} />
-        <TierRow tiers={tiers} onToggleTier={toggleTier} />
-        <SortToggle sort={sort} onToggle={cycleSort} />
-        <VennMode mode={mode} onCycle={cycleMode} />
-      </div>
-
-      {showSearch && (
-        <SearchField value={queryInput} onChange={setQueryInput} label="Search all work" />
-      )}
+      <ToolbarRow controls={controls} />
 
       {/*
         Two unlabeled chip rows, gapped tighter than this content's own
-        rhythm so they read as one block.
+        rhythm so they read as one block. Row 1 leads with `InlineSearch` —
+        expanding it reflows/wraps the discipline chips beside it, which is a
+        self-caused shift (the reader just clicked into the row being
+        resized) rather than the discipline-toggle shift the reservation
+        below guards against, so the ghost's leading placeholder stays fixed
+        at the collapsed width regardless of the real search's state — same
+        precedent as the mobile "more tags" affordance in row 2.
       */}
       <div className="relative">
         <div ref={chipRealRef} className="flex flex-col gap-1.5">
@@ -1159,6 +1210,7 @@ function FilterPanelContent({
             selectedTags={selectedTags}
             onToggleTag={toggleTag}
             chipTone={(tag) => subtagTone.get(tag)}
+            before={<InlineSearch value={queryInput} onChange={setQueryInput} label="Search all work" />}
           />
           {/* `chipTone` deliberately not passed: universal tags are
               neutral, and `subtagTone` only ever holds discipline subtags. */}
@@ -1188,7 +1240,12 @@ function FilterPanelContent({
           aria-hidden="true"
           className="invisible absolute inset-x-0 top-0 flex flex-col gap-1.5"
         >
-          <TagRow tags={MAX_DISCIPLINE_CHIPS} selectedTags={EMPTY_TAG_SET} onToggleTag={noop} />
+          <TagRow
+            tags={MAX_DISCIPLINE_CHIPS}
+            selectedTags={EMPTY_TAG_SET}
+            onToggleTag={noop}
+            before={<div className="h-8 w-8 shrink-0" />}
+          />
           <TagRow
             tags={universalChips}
             selectedTags={selectedTags}
@@ -1206,58 +1263,74 @@ function FilterPanelContent({
   )
 }
 
-/**
- * Scroll direction, rAF-throttled off a passive listener, with a dead zone.
- * The dead zone is not tuning — on iOS, momentum scrolling and rubber-banding
- * at the document ends emit tiny alternating deltas that would otherwise flap
- * the docked bar in and out several times a second.
- */
-function useScrollDirection(threshold = 8): 'up' | 'down' {
-  const [dir, setDir] = useState<'up' | 'down'>('up')
-  useEffect(() => {
-    let last = window.scrollY
-    let frame = 0
-    const onScroll = () => {
-      if (frame) return
-      frame = requestAnimationFrame(() => {
-        frame = 0
-        const y = window.scrollY
-        if (Math.abs(y - last) < threshold) return
-        setDir(y > last ? 'down' : 'up')
-        last = y
-      })
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      if (frame) cancelAnimationFrame(frame)
-    }
-  }, [threshold])
-  return dir
-}
+// Fallback only — matches the `var(--nav-h, 4rem)` fallback already used
+// everywhere else this custom property is read, for whatever instant the
+// property hasn't been published yet (see `site-nav.tsx`).
+const DEFAULT_NAV_H = 64
 
 /**
- * Whether `ref`'s element is entirely out of the viewport.
+ * How revealed the docked bar should be, as a continuous 0–1 rather than a
+ * boolean: 0 while any part of `ref`'s element (the in-flow panel) is still
+ * visibly above the nav's bottom edge, ramping up to 1 over the next `range`
+ * pixels of further scroll, and back down the same way on the way back up.
  *
- * No `rootMargin`: the nav is translucent, so a panel tucked just under it is
- * arguably already gone, but compensating for the nav's (variable) height
- * would mean reading `--nav-h` back out of the DOM to configure an observer.
- * The untuned version has one harmless consequence — a narrow band where the
- * panel's last few pixels sit under the nav and the docked bar hasn't
- * arrived — and nothing is ever duplicated on screen.
+ * The threshold is `el.bottom <= navH`, not `el.bottom <= 0` — the nav is
+ * `position: sticky`, so the panel is already hidden behind it well before
+ * its bottom edge would cross the actual viewport top. Triggering off the
+ * viewport instead of the nav left a dead zone where the panel had already
+ * disappeared but the bar hadn't started appearing yet. `--nav-h` is read
+ * fresh on every measurement rather than cached once, since the nav's own
+ * height isn't constant (it wraps to two lines below ~363px).
+ *
+ * A plain rAF-throttled scroll listener rather than `IntersectionObserver`:
+ * a boolean observer can only ever report "in or out" against the viewport
+ * specifically, but a continuous reveal against an arbitrary (and moving)
+ * threshold needs the actual distance past it on every frame, which means
+ * reading `getBoundingClientRect()` ourselves. Also listens for resize (the
+ * viewport, or `--nav-h` changing the layout above the fold) and a
+ * `ResizeObserver` on the panel itself (its own height can change — e.g.
+ * the mobile "more tags" expansion — without any scroll happening at all,
+ * which a scroll-only listener would otherwise miss).
+ *
+ * Collapses `range` to a single pixel under `prefers-reduced-motion`, so
+ * the reveal is still driven by the same code path but reads as an instant
+ * step rather than a scroll-tied animation — the sort of motion most likely
+ * to bother someone who's asked for less of it.
  */
-function useOffscreen(ref: RefObject<HTMLElement | null>): boolean {
-  const [offscreen, setOffscreen] = useState(false)
+function useDockedReveal(ref: RefObject<HTMLElement | null>, range = 64): number {
+  const [progress, setProgress] = useState(0)
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const io = new IntersectionObserver(([entry]) => setOffscreen(!entry.isIntersecting), {
-      threshold: 0,
-    })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [ref])
-  return offscreen
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const effectiveRange = reducedMotion ? 1 : range
+    let frame = 0
+    const measure = () => {
+      frame = 0
+      const el = ref.current
+      if (!el) return
+      const navH =
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) ||
+        DEFAULT_NAV_H
+      const bottom = el.getBoundingClientRect().bottom
+      const next = Math.min(1, Math.max(0, (navH - bottom) / effectiveRange))
+      setProgress((prev) => (prev === next ? prev : next))
+    }
+    const onScrollOrResize = () => {
+      if (frame) return
+      frame = requestAnimationFrame(measure)
+    }
+    measure()
+    window.addEventListener('scroll', onScrollOrResize, { passive: true })
+    window.addEventListener('resize', onScrollOrResize, { passive: true })
+    const ro = new ResizeObserver(onScrollOrResize)
+    if (ref.current) ro.observe(ref.current)
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize)
+      window.removeEventListener('resize', onScrollOrResize)
+      ro.disconnect()
+      if (frame) cancelAnimationFrame(frame)
+    }
+  }, [ref, range])
+  return progress
 }
 
 /** e.g. "Filters, 3 tags selected. Activate to open." */
@@ -1271,38 +1344,119 @@ function dockedGlyphLabel({ selectedTags, activeCount }: FilterControls): string
 
 /**
  * The slim bar that docks directly beneath the site nav once the in-flow
- * panel has scrolled out of view: a search field and a filter glyph badged
- * with the active tag count. Tapping the glyph unfolds the same controls
- * `FilterPanelContent` renders in the real panel, in place, without losing
- * scroll position.
+ * panel has scrolled out of view. Its always-visible compact row mirrors the
+ * in-flow panel's own row 1: the search pill first, then discipline chips
+ * (with active subtags), then — collapsed only — any selected universal tags
+ * that wouldn't otherwise be visible, so an active filter stays removable
+ * without opening anything. A trailing glyph, badged with the selected tag
+ * count, expands the rest — the toolbar and the full universal row — in
+ * place, without losing scroll position.
+ *
+ * Built from the same pieces (`InlineSearch`, `TagRow`, `ToolbarRow`) rather
+ * than mounting `FilterPanelContent` wholesale: that component's chip block
+ * is a single reservation across both rows, sized for the in-flow panel's
+ * zero-shift guarantee, and this bar has no such guarantee to keep — it's
+ * `position: fixed`, so a discipline toggle growing its compact row just
+ * grows the bar itself and never pushes page content.
  *
  * Non-modal disclosure, not a dialog: no focus trap, no scroll lock, no
  * scrim. The grid behind stays scrollable and clickable; the bar's own
  * translucent-blurred fill is what dims and blurs whatever sits directly
  * behind the expansion — the visual effect of a scrim, without the
  * semantics of one.
+ *
+ * `progress` (0–1, from `useDockedReveal`) drives the slide/fade directly as
+ * inline style rather than toggling a Tailwind class pair — the reveal
+ * tracks scroll position continuously, not a boolean, so there's no fixed
+ * "revealed" state to hang a CSS transition class off. The short
+ * `transition-[transform,opacity]` in the className is only there to smooth
+ * over the gaps *between* scroll/rAF ticks (a chunky mouse-wheel can jump in
+ * coarser steps than a touch/trackpad scroll) — it's a polish layer on top
+ * of the scroll-driven motion, not the thing driving it.
  */
+// Matched to the expansion's own `duration-150` class below — see the
+// `mounted`/`entered` state inside the component for why the two have to
+// agree.
+const EXPANSION_TRANSITION_MS = 150
+
 function DockedFilterBar({
   controls,
-  revealed,
+  progress,
   open,
   onOpenChange,
 }: {
   controls: FilterControls
-  revealed: boolean
+  progress: number
   open: boolean
   onOpenChange: (open: boolean) => void
 }): ReactNode {
   const barRef = useRef<HTMLDivElement>(null)
   const glyphRef = useRef<HTMLButtonElement>(null)
   const expansionRef = useRef<HTMLDivElement>(null)
+  // Same threshold `useDockedReveal` uses as its own 0-point (`el.bottom <=
+  // 0`) — everything that isn't the visual slide/fade itself (a11y tree
+  // membership, tab order, closing the expansion when the panel scrolls
+  // back into view) still wants a boolean, not a float.
+  const revealed = progress > 0
 
-  // Move focus into the expansion the moment it opens, so a keyboard user
-  // who just activated the glyph lands inside it rather than staying on a
-  // button that's about to scroll off-screen under new content.
+  // Selected universal tags — the only tags row 1 doesn't already show
+  // (discipline selections are already visible as active chips in
+  // `disciplineChips`). Only rendered while collapsed: once the expansion is
+  // open, the full universal row below already carries this same
+  // information, and showing both would just be the same chips twice.
+  const activeUniversalTags = controls.universalChips.filter((t) => controls.selectedTags.has(t))
+
+  // The expansion fades/slides in and out rather than popping, matching the
+  // compact bar's own scroll-driven fade — but it can't just toggle opacity
+  // on an always-mounted element the way the bar does: this content sits in
+  // normal flow (below the compact row), so an always-mounted copy would
+  // hold its full height at all times, leaving a permanent dead gap under
+  // the bar whenever it's "closed." So it's mounted only across the
+  // transition (`mounted`) and driven to its entered state a frame later
+  // (`entered`), the standard hand-rolled enter/exit pattern: paint the
+  // closed frame first, *then* flip to the open state so the browser has
+  // something to transition from, rather than snapping straight to it.
+  // `EXPANSION_TRANSITION_MS` has to match the CSS transition duration
+  // below, since nothing else tells this effect when the animation is
+  // actually done. Collapsed to 0 under `prefers-reduced-motion`, so a
+  // closed panel is removed immediately rather than lingering, invisible,
+  // for a duration whose CSS transition never runs.
+  const [mounted, setMounted] = useState(open)
+  const [entered, setEntered] = useState(open)
   useEffect(() => {
-    if (open) expansionRef.current?.focus()
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (open) {
+      setMounted(true)
+      // Double rAF, not one: a single `requestAnimationFrame` after
+      // `setMounted(true)` isn't a reliable enough delay — React can (and,
+      // measured live, reliably did) commit *both* the mount and the
+      // `setEntered(true)` that follows before the browser's next actual
+      // paint, so the closed frame never painted and the "transition"
+      // silently snapped straight to open. Waiting for a first rAF (queued
+      // for the frame after the mount commits) and then scheduling the real
+      // flip from *inside* that callback (for the frame after that) forces
+      // a genuine paint of the closed state in between — the standard
+      // workaround for this exact gap.
+      let inner = 0
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => setEntered(true))
+      })
+      return () => {
+        cancelAnimationFrame(outer)
+        cancelAnimationFrame(inner)
+      }
+    }
+    setEntered(false)
+    const timeout = setTimeout(() => setMounted(false), reducedMotion ? 0 : EXPANSION_TRANSITION_MS)
+    return () => clearTimeout(timeout)
   }, [open])
+
+  // Move focus into the expansion once it's actually mounted and entered —
+  // not just once `open` flips true, which happens a render (and, for
+  // `entered`, a frame) before the element exists to focus.
+  useEffect(() => {
+    if (entered) expansionRef.current?.focus()
+  }, [entered])
 
   // Escape closes and returns focus to the glyph. A pointerdown outside the
   // bar closes without redirecting focus — whatever was clicked already
@@ -1343,25 +1497,38 @@ function DockedFilterBar({
       // let through here, only cards to cover.
       className={cn(
         'fixed inset-x-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md',
-        'transition-transform duration-200 motion-reduce:transition-none',
-        revealed ? 'translate-y-0' : '-translate-y-full',
-        // Held in the DOM rather than unmounted so it can transition, but
-        // taken out of the a11y tree and out of the tab order while
-        // retracted — the same treatment `ResetButton` gets, for the same
-        // reason.
+        'transition-[transform,opacity] duration-75 ease-out motion-reduce:transition-none',
+        // Held in the DOM rather than unmounted so it can animate, but taken
+        // out of the a11y tree and out of the tab order while retracted —
+        // the same treatment `ResetButton` gets, for the same reason.
         !revealed && 'invisible',
       )}
-      style={{ top: 'var(--nav-h, 4rem)' }}
+      style={{ top: 'var(--nav-h, 4rem)', transform: `translateY(${(progress - 1) * 100}%)`, opacity: progress }}
       inert={!revealed || undefined}
     >
       <div className="mx-auto max-w-6xl px-3 py-2 xs:px-5 sm:px-8">
-        <div className="flex items-center gap-2">
-          <SearchField
-            value={controls.queryInput}
-            onChange={controls.setQueryInput}
-            label="Search all work (docked)"
-            className="flex-1"
+        {/* Compact row: search pill, then disciplines, then (collapsed only)
+            any selected universal tags — the glyph trails via `ml-auto`,
+            which resolves per flex line, so it stays pinned to the right
+            edge even once the row has wrapped to two or three lines. */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <TagRow
+            bare
+            tags={controls.disciplineChips}
+            selectedTags={controls.selectedTags}
+            onToggleTag={controls.toggleTag}
+            chipTone={(tag) => controls.subtagTone.get(tag)}
+            before={
+              <InlineSearch
+                value={controls.queryInput}
+                onChange={controls.setQueryInput}
+                label="Search all work (docked)"
+              />
+            }
           />
+          {!open && activeUniversalTags.length > 0 && (
+            <TagRow bare tags={activeUniversalTags} selectedTags={controls.selectedTags} onToggleTag={controls.toggleTag} />
+          )}
           <button
             ref={glyphRef}
             type="button"
@@ -1370,7 +1537,7 @@ function DockedFilterBar({
             aria-controls="docked-filter-panel"
             aria-label={dockedGlyphLabel(controls)}
             className={cn(
-              'relative inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors',
+              'relative ml-auto inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors',
               // Goldenrod whenever anything at all is narrowing the view,
               // not just when tags are selected: the badge counts tags
               // only, so a non-default tier selection or an active query
@@ -1392,20 +1559,36 @@ function DockedFilterBar({
             )}
           </button>
         </div>
-        {open && (
+        {mounted && (
           <div
             id="docked-filter-panel"
             ref={expansionRef}
             tabIndex={-1}
             // Capped and scrollable: with every discipline open at phone
-            // widths the chip block alone reserves four lines, and the
-            // toolbar wraps — unbounded, the expansion would run off the
+            // widths the compact row alone can run several lines, and the
+            // toolbar wraps too — unbounded, the expansion would run off the
             // bottom of the screen with no way to reach the last row.
             // `100dvh`, not `100vh`, so mobile browser chrome collapsing
             // doesn't leave the last chip row unreachable.
-            className="mt-2 max-h-[calc(100dvh-var(--nav-h,4rem)-7rem)] overflow-y-auto outline-none"
+            //
+            // `entered` (not `open`) drives the fade/slide — see the state
+            // above for why they're briefly out of sync across a mount.
+            // `duration-150` has to match `EXPANSION_TRANSITION_MS`.
+            className={cn(
+              'mt-2 max-h-[calc(100dvh-var(--nav-h,4rem)-7rem)] space-y-3 overflow-y-auto outline-none',
+              // `translate`, not `transform`: Tailwind's `translate-y-*`
+              // utilities animate the native CSS `translate` property, and
+              // listing `transform` here (which nothing actually sets)
+              // silently transitioned nothing but opacity — caught by
+              // sampling `getComputedStyle` mid-transition, not by eye.
+              'transition-[opacity,translate] duration-150 ease-out motion-reduce:transition-none',
+              entered ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0',
+            )}
           >
-            <FilterPanelContent controls={controls} showSearch={false} />
+            <ToolbarRow controls={controls} />
+            {/* The full universal row — row 1 (disciplines + search) is
+                already showing above, in the always-visible compact row. */}
+            <TagRow tags={controls.universalChips} selectedTags={controls.selectedTags} onToggleTag={controls.toggleTag} />
           </div>
         )}
       </div>
@@ -1734,19 +1917,19 @@ export function WorkGallery() {
   // so it has no zero-shift guarantee to keep and needs no outside half.
   const [chipSlackOutside, setChipSlackOutside] = useState(0)
 
-  // The docked filter bar: revealed once the in-flow panel (`panelRef`) is
-  // entirely out of view, and only while scrolling up or already unfolded —
-  // see `useScrollDirection`/`useOffscreen`'s own comments for why each is
-  // measured the way it is. Scrolling back up far enough to see the real
+  // The docked filter bar: eased in continuously (`dockedProgress`, 0–1) as
+  // the in-flow panel (`panelRef`) scrolls behind the nav, rather than
+  // popping in — see `useDockedReveal`'s own comment. No scroll-direction
+  // gate: it used to hide itself while scrolling down and only reappear
+  // scrolling back up, but that made it disappear right when a reader
+  // mid-scroll might want it. Scrolling back up far enough to see the real
   // panel again closes the docked copy, so there are never two open panels.
   const panelRef = useRef<HTMLDivElement>(null)
-  const panelOffscreen = useOffscreen(panelRef)
-  const scrollDir = useScrollDirection()
+  const dockedProgress = useDockedReveal(panelRef)
   const [dockedOpen, setDockedOpen] = useState(false)
   useEffect(() => {
-    if (!panelOffscreen) setDockedOpen(false)
-  }, [panelOffscreen])
-  const dockedRevealed = panelOffscreen && (scrollDir === 'up' || dockedOpen)
+    if (dockedProgress === 0) setDockedOpen(false)
+  }, [dockedProgress])
 
   // Everything the filter controls need, passed as one object so the two
   // mounts of `FilterPanelContent` (in-flow panel, docked expansion) and
@@ -1811,7 +1994,7 @@ export function WorkGallery() {
 
       <DockedFilterBar
         controls={controls}
-        revealed={dockedRevealed}
+        progress={dockedProgress}
         open={dockedOpen}
         onOpenChange={setDockedOpen}
       />
@@ -1833,7 +2016,7 @@ export function WorkGallery() {
           wrapper supplying it, since the docked bar's expansion below needs
           the same rhythm with no border/padding of its own to hang it on.
 
-          `panelRef` is how the docked bar knows to appear — `useOffscreen`
+          `panelRef` is how the docked bar knows to appear — `useDockedReveal`
           below watches this exact element. */}
       <div ref={panelRef} className="rounded-2xl border border-border p-3 sm:p-4">
         <FilterPanelContent controls={controls} onChipSlackChange={setChipSlackOutside} />
