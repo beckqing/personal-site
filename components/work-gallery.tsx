@@ -5,17 +5,32 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   useTransition,
   type ComponentType,
   type ReactNode,
+  type RefObject,
   type SVGProps,
 } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Archive, ArrowDownUp, Circle, Maximize2, Play, Quote, RotateCcw, RotateCw, Search, X } from 'lucide-react'
+import {
+  Archive,
+  ArrowDown,
+  ChevronDown,
+  Circle,
+  Maximize2,
+  Play,
+  Quote,
+  RotateCcw,
+  RotateCw,
+  Search,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react'
 import { HeartIcon } from '@/components/heart-icon'
 import {
   ALL_TAGS,
@@ -32,6 +47,7 @@ import {
   isDiscipline,
   isHybrid,
   isTextForward,
+  MAX_DISCIPLINE_CHIPS,
   mediumFor,
   MODE_LABEL,
   nextMode,
@@ -117,12 +133,14 @@ function TagChip({
   onClick,
   size = 'md',
   tone: toneOverride,
+  className,
 }: {
   tag: string
   active: boolean
   onClick: () => void
   size?: 'sm' | 'md'
   tone?: string
+  className?: string
 }) {
   const tone = toneOverride ?? tagTone(tag)
   return (
@@ -134,6 +152,7 @@ function TagChip({
         'font-brand inline-flex cursor-pointer items-center rounded-full border lowercase transition-colors',
         size === 'sm' ? 'px-2 py-0.5 text-[0.7rem]' : 'px-3 py-1 text-sm',
         active ? 'text-[var(--card)]' : 'bg-transparent text-muted-foreground hover:text-foreground',
+        className,
       )}
       style={
         active
@@ -161,7 +180,7 @@ function VennMode({ mode, onCycle }: { mode: FilterMode; onCycle: () => void }) 
       onClick={onCycle}
       title={`${mode}: ${MODE_LABEL[mode]} — tap to change`}
       aria-label={`Tag combine mode: ${mode}. ${MODE_LABEL[mode]}. Activate to cycle.`}
-      className="group inline-flex cursor-pointer items-center gap-1.5 rounded-full px-1.5 py-1 text-muted-foreground transition-colors hover:text-foreground"
+      className="group inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-1.5 py-1 text-muted-foreground transition-colors hover:text-foreground"
     >
       <svg viewBox="0 0 30 20" className="h-5 w-[30px]" aria-hidden="true">
         <defs>
@@ -203,9 +222,100 @@ function VennMode({ mode, onCycle }: { mode: FilterMode; onCycle: () => void }) 
           </g>
         )}
       </svg>
-      <span className="font-brand text-[0.7rem] uppercase tracking-wider opacity-0 transition-opacity group-hover:opacity-100 sm:opacity-60">
+      {/*
+        `hidden` below `sm`, not just transparent. It used to be `opacity-0`
+        at every width, brightening on hover — but a phone has no hover, so
+        below `sm` the word was permanently invisible *and* permanently
+        occupying its width plus the flex gap. That dead space went unnoticed
+        while the toolbar was left-aligned; with the row right-aligned it
+        pushes the venn a word's width clear of the panel edge. `display:none`
+        drops the box and collapses the gap with it, and nothing visible is
+        lost — the `title` and `aria-label` carry the mode either way.
+      */}
+      <span className="font-brand hidden text-[0.7rem] uppercase tracking-wider transition-opacity group-hover:opacity-100 sm:inline sm:opacity-60">
         {mode}
       </span>
+    </button>
+  )
+}
+
+/**
+ * The sort toggle: one down arrow, and `NEW`/`OLD` stacked beside it in the
+ * order the results actually come out. Clicking swaps the two words.
+ *
+ * The arrow never changes direction — it is the reading direction of the
+ * stack ("start at the top word, work down"), not a second encoding of the
+ * state. Only the word order and the emphasis carry the state, so there is
+ * exactly one thing to read.
+ *
+ * Both words are always rendered, and both are uppercase; the lower one is
+ * muted. Rendering both in every state is also what keeps the control's
+ * width from changing when it flips.
+ */
+function SortToggle({
+  sort,
+  onToggle,
+  className,
+}: {
+  sort: SortMode
+  onToggle: () => void
+  className?: string
+}) {
+  const [top, bottom] = sort === 'newest' ? (['new', 'old'] as const) : (['old', 'new'] as const)
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      // The glyphs are decorative; the accessible name carries the whole
+      // meaning, exactly as `TierRow` and `VennMode` do for theirs.
+      aria-label={`Sort: ${SORT_LABEL[sort]}. Activate to change.`}
+      className={cn(
+        'font-brand inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-border px-2.5 text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground',
+        className,
+      )}
+    >
+      <ArrowDown className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+      <span
+        aria-hidden="true"
+        className="flex flex-col text-[0.7rem] uppercase leading-[1.15] tracking-wider"
+      >
+        <span className="font-bold text-foreground">{top}</span>
+        <span className="text-muted-foreground">{bottom}</span>
+      </span>
+    </button>
+  )
+}
+
+/** Clears every filter. Heads the toolbar row, which is right-aligned. */
+function ResetButton({
+  active,
+  onClick,
+  className,
+}: {
+  active: boolean
+  onClick: () => void
+  className?: string
+}) {
+  return (
+    // Held in the layout even when there's nothing to reset, rather than
+    // unmounted: at narrow widths its arrival could otherwise wrap the
+    // toolbar onto a second line and shove the search field down. `invisible`
+    // takes it out of the a11y tree and `inert` (React 19 supports the bare
+    // boolean attribute) makes doubly sure it can't be tabbed to or clicked.
+    <button
+      type="button"
+      onClick={onClick}
+      inert={!active || undefined}
+      aria-hidden={!active || undefined}
+      tabIndex={active ? undefined : -1}
+      className={cn(
+        'font-brand inline-flex h-8 cursor-pointer items-center gap-1 rounded-full border border-border px-2.5 text-[0.7rem] uppercase tracking-wider text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground',
+        !active && 'invisible',
+        className,
+      )}
+    >
+      <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+      reset
     </button>
   )
 }
@@ -624,12 +734,23 @@ function TagRow({
   selectedTags,
   onToggleTag,
   chipTone,
+  chipClassName,
+  after,
   className,
 }: {
   tags: readonly string[]
   selectedTags: Set<string>
   onToggleTag: (tag: string) => void
   chipTone?: (tag: string) => string | undefined
+  /** Per-chip class override — used to CSS-hide specific chips (e.g. the
+   *  mobile "collapse unselected universal tags" treatment) without
+   *  changing which tags are in the array, so a ghost mirroring this row
+   *  can apply the exact same function and stay in sync automatically. */
+  chipClassName?: (tag: string) => string | undefined
+  /** An extra, non-tag element in the same flex-wrap flow as the chips —
+   *  e.g. a trailing "more tags" affordance that should wrap naturally
+   *  alongside them rather than sit outside the row. */
+  after?: ReactNode
   className?: string
 }) {
   return (
@@ -641,8 +762,10 @@ function TagRow({
           tone={chipTone?.(tag)}
           active={selectedTags.has(tag)}
           onClick={() => onToggleTag(tag)}
+          className={chipClassName?.(tag)}
         />
       ))}
+      {after}
     </div>
   )
 }
@@ -674,6 +797,40 @@ const TIER_CONTROL: Record<WorkTier, { Icon: ComponentType<SVGProps<SVGSVGElemen
  * their own glyphs). Grouped inside one bordered shell so three loose glyphs
  * read as a single control.
  */
+// Shared by both of TierRow's layers (the blob and the real buttons) so
+// their boxes stay pixel-identical — same idiom as MAX_DISCIPLINE_CHIPS:
+// deriving one source rather than keeping two class strings in sync by hand.
+const TIER_BUTTON_BOX = 'flex h-6 w-6 items-center justify-center rounded-full'
+
+/**
+ * Two stacked copies of the same three-item row: an invisible blur+contrast
+ * "goo" layer behind carrying only fill color, and the real buttons on top,
+ * transparent, carrying the icons and all interactivity. `feGaussianBlur`
+ * softens each filled circle into its neighbor when they're close enough to
+ * overlap, and the steep `feColorMatrix` contrast snaps every blurred edge
+ * back to fully opaque or fully transparent — so two *adjacent* selected
+ * tiers fuse into one continuous shape instead of two circles with a gap
+ * between them, while an isolated selection still reads as a plain circle
+ * (nothing nearby to fuse with). `favorite`/`archive` fusing with `general`
+ * between them is what "adjacent" means here — there's no case where the
+ * two ends fuse without it.
+ *
+ * A single instance is safe: `id="tier-goo"` collides if `TierRow` ever
+ * renders twice on one page, which it doesn't today (one gallery, one
+ * toolbar) — same fixed-id precedent as `VennMode`'s `work-venn-left`
+ * clipPath just above.
+ */
+function TierGoo() {
+  return (
+    <svg aria-hidden="true" className="absolute h-0 w-0">
+      <filter id="tier-goo">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+        <feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 21 -10" />
+      </filter>
+    </svg>
+  )
+}
+
 function TierRow({
   tiers,
   onToggleTier,
@@ -687,8 +844,20 @@ function TierRow({
     <div
       role="group"
       aria-label="Which work to show"
-      className={cn('inline-flex items-center rounded-full border border-border p-0.5', className)}
+      // `h-8` is redundant with what p-0.5 + h-6 buttons already compute
+      // to — stated anyway so a future padding change here can't silently
+      // break the toolbar row's optical alignment. `relative` makes this
+      // the goo layer's containing block.
+      className={cn(
+        'relative inline-flex h-8 items-center rounded-full border border-border p-0.5',
+        className,
+      )}
     >
+      <div aria-hidden="true" className="absolute inset-0.5 flex items-center" style={{ filter: 'url(#tier-goo)' }}>
+        {WORK_TIERS.map((tier) => (
+          <div key={tier} className={cn(TIER_BUTTON_BOX, tiers.has(tier) ? 'bg-goldenrod' : 'bg-transparent')} />
+        ))}
+      </div>
       {WORK_TIERS.map((tier) => {
         const { Icon, label } = TIER_CONTROL[tier]
         const on = tiers.has(tier)
@@ -700,25 +869,546 @@ function TierRow({
             aria-pressed={on}
             title={label}
             aria-label={label}
-            // On/off is a solid accent pill against a bare one — TagChip's
-            // exact active idiom, so a wordless control still reads as "the
-            // selected ones" on sight. Deliberately not a filled-vs-outline
-            // *glyph*: `HeartIcon` and `Circle` fill into legible solids but
-            // `Archive` is a container shape, and filling it turns the box
-            // into an unreadable blob.
+            // On/off is solid-icon-on-goo against a bare glyph — the goo
+            // layer behind carries the "selected" fill now, so the button
+            // itself only ever changes icon color. Deliberately not a
+            // filled-vs-outline *glyph*: `HeartIcon` and `Circle` fill into
+            // legible solids but `Archive` is a container shape, and filling
+            // it turns the box into an unreadable blob.
+            //
+            // `relative` (z-index: auto, same as the goo layer) plus coming
+            // later in the DOM is what paints these above the goo layer —
+            // both are "positioned" elements, and among those, tree order
+            // decides. See TierGoo's doc comment for the filter itself.
             className={cn(
-              'inline-flex cursor-pointer items-center justify-center rounded-full transition-colors',
-              // p-1.5 either way so the row's width never shifts on toggle.
-              'p-1.5',
-              on
-                ? 'bg-goldenrod text-[var(--card)]'
-                : 'text-muted-foreground/50 hover:text-foreground',
+              TIER_BUTTON_BOX,
+              'relative cursor-pointer transition-colors',
+              on ? 'text-[var(--card)]' : 'text-muted-foreground/50 hover:text-foreground',
             )}
           >
             <Icon className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
           </button>
         )
       })}
+      <TierGoo />
+    </div>
+  )
+}
+
+// The chip row's height reservation renders a real `TagRow` it never
+// interacts with. Module-level so neither identity changes between renders.
+const EMPTY_TAG_SET: Set<string> = new Set()
+const noop = () => {}
+
+/**
+ * Everything the filter controls need, passed as one object so multiple call
+ * sites can mount the same controls without a fifteen-prop signature. Every
+ * field is computed once in `WorkGallery`; nothing here is derived again.
+ */
+type FilterControls = {
+  queryInput: string
+  setQueryInput: (value: string) => void
+  selectedTags: Set<string>
+  toggleTag: (tag: string) => void
+  subtagTone: Map<string, string>
+  disciplineChips: string[]
+  universalChips: string[]
+  tiers: Set<WorkTier>
+  toggleTier: (tier: WorkTier) => void
+  sort: SortMode
+  cycleSort: () => void
+  mode: FilterMode
+  cycleMode: () => void
+  reset: () => void
+  activeCount: number
+}
+
+/**
+ * The search field — icon, input, clear button — pulled out of the panel so
+ * the in-flow panel and the docked bar's compact row can each mount their
+ * own without drifting apart. Both read and write the same `queryInput`
+ * state (passed down as `value`/`onChange`), so there is still exactly one
+ * debounce effect and typing in either updates both.
+ */
+function SearchField({
+  value,
+  onChange,
+  label,
+  className,
+}: {
+  value: string
+  onChange: (value: string) => void
+  /** Distinct per mount, so a screen reader moving between the two can tell
+   *  which one it landed on. */
+  label: string
+  className?: string
+}) {
+  return (
+    <div className={cn('relative', className)}>
+      <Search
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="search titles, descriptions, text, tags…"
+        aria-label={label}
+        className="font-brand w-full truncate rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm lowercase text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-goldenrod"
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          aria-label="Clear search"
+          className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The panel's interior — toolbar row, optional search row, both chip rows —
+ * with no border/fill/padding of its own, so the in-flow panel and the
+ * docked bar's expansion can each wrap it in their own shell while sharing
+ * one row-to-row rhythm (`space-y-3 sm:space-y-4`, owned here rather than by
+ * either caller, since the docked expansion has no border/padding to hang it
+ * on). Lifted out of `WorkGallery` verbatim; every comment about
+ * right-alignment, the h-8 row, and the chip-block reservation moves with it
+ * unchanged.
+ *
+ * `showSearch` is false in the docked bar's expansion, whose own
+ * always-visible compact row already carries the search field — rendering
+ * it twice would put two live search inputs on screen at once. That also
+ * means the docked bar's full reading order is search (compact row) →
+ * toolbar → chips (expansion), rather than the in-flow panel's toolbar →
+ * search → chips.
+ *
+ * Mounts independently wherever it's placed, including its own chip-block
+ * height measurement (see below) — there are two live mounts of this
+ * component at once whenever the docked bar is open, each with its own
+ * layout to measure.
+ */
+function FilterPanelContent({
+  controls,
+  showSearch = true,
+  onChipSlackChange,
+}: {
+  controls: FilterControls
+  showSearch?: boolean
+  /** Reports the *outside* half of this mount's chip-block reservation (see
+   *  below) to the caller. Only the in-flow panel's mount uses this — the
+   *  docked expansion's mount leaves it unset. */
+  onChipSlackChange?: (outsideSlack: number) => void
+}): ReactNode {
+  const {
+    queryInput,
+    setQueryInput,
+    selectedTags,
+    toggleTag,
+    subtagTone,
+    disciplineChips,
+    universalChips,
+    tiers,
+    toggleTier,
+    sort,
+    cycleSort,
+    mode,
+    cycleMode,
+    reset,
+    activeCount,
+  } = controls
+
+  // The chip block's height reservation. Two unlabeled chip rows —
+  // disciplines (+ their subtags) above, universal tags below — sized to
+  // their own real content (`chipRealRef`, normal flow — this is what the
+  // wrapping panel's border hugs).
+  //
+  // Toggling a discipline must never shift whatever comes after this
+  // mount, so the widest-possible state (every discipline selected, every
+  // subtag showing) is measured via an inert `chipGhostRef` ghost — that
+  // ghost is `absolute`, so it's out of flow and can't inflate this block.
+  // `chipSlack`, the gap between its height and the real content's, splits
+  // in half: `chipSlackInside` renders here as this mount's own trailing
+  // padding (so a wrapping border doesn't cut off flush against the last
+  // chip); the other half is reported to `onChipSlackChange`, for a caller
+  // that wants it spent as margin *outside* its own shell instead of blank
+  // room inside it — reserving the whole thing as blank room inside a
+  // border read as a stray empty row of chips at most widths with 0–1
+  // disciplines selected, which is the common case.
+  //
+  // It holds only while active and inactive `TagChip`s are the same size —
+  // they share every box class today and differ only in colour. If that
+  // ever stops being true, the measurement stops being a faithful upper
+  // bound.
+  const chipRealRef = useRef<HTMLDivElement>(null)
+  const chipGhostRef = useRef<HTMLDivElement>(null)
+  const [chipSlack, setChipSlack] = useState(0)
+  // `useLayoutEffect`, not `useEffect`, so it settles before the browser's
+  // first paint of this block — every mount of this component only ever
+  // exists client-side (`WorkGallery` is `'use client'`, and either renders
+  // behind a bare-placeholder `<Suspense>` or, for the docked expansion,
+  // only mounts once `open` is already true), so there is no
+  // server-rendered version of this content to flash before the measurement
+  // corrects it.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const realH = chipRealRef.current?.getBoundingClientRect().height ?? 0
+      const ghostH = chipGhostRef.current?.getBoundingClientRect().height ?? 0
+      setChipSlack((prev) => {
+        const next = Math.max(0, ghostH - realH)
+        return prev === next ? prev : next
+      })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    if (chipRealRef.current) ro.observe(chipRealRef.current)
+    if (chipGhostRef.current) ro.observe(chipGhostRef.current)
+    return () => ro.disconnect()
+  }, [])
+  // Rounding the inside half and letting the outside half absorb the
+  // remainder keeps the two exactly summing to `chipSlack` regardless of
+  // odd-pixel measurements, so the zero-shift guarantee (the *total*
+  // reserved height) never drifts by a stray half-pixel.
+  const chipSlackInside = Math.round(chipSlack / 2)
+  const chipSlackOutside = chipSlack - chipSlackInside
+  useEffect(() => {
+    onChipSlackChange?.(chipSlackOutside)
+  }, [chipSlackOutside, onChipSlackChange])
+
+  // Below `sm`, the universal row collapses to just the selected tags plus
+  // a "more tags" affordance, so the panel takes less of the fold on a
+  // phone and the masonry starts sooner. `sm:` and up always show the full
+  // row regardless of this state — `universalChipClassName` only hides a
+  // chip below that breakpoint (`sm:inline-flex` wins it back), so there's
+  // no JS viewport check anywhere here; the collapse simply has no visible
+  // effect once the CSS breakpoint takes over.
+  //
+  // Expanding is a peek, not a commitment: the moment the reader scrolls —
+  // either direction, they're reading rather than still filtering — it
+  // collapses back to the same selected-plus-more state rather than staying
+  // open indefinitely. A selected tag is never hidden regardless of expand
+  // state, so an active filter stays visible and removable throughout.
+  const [universalExpanded, setUniversalExpanded] = useState(false)
+  useEffect(() => {
+    if (!universalExpanded) return
+    const startY = window.scrollY
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - startY) > 24) setUniversalExpanded(false)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [universalExpanded])
+
+  const hiddenUniversalCount = universalChips.filter((t) => !selectedTags.has(t)).length
+  const universalChipClassName = (tag: string) =>
+    selectedTags.has(tag) || universalExpanded ? undefined : 'hidden sm:inline-flex'
+  // Rendered identically in the real row and its ghost (see below), under
+  // the exact same condition, so the ghost's measured height always matches
+  // whether or not this is showing — no separate reservation needed for it.
+  const moreTagsButton =
+    !universalExpanded && hiddenUniversalCount > 0 ? (
+      <button
+        type="button"
+        onClick={() => setUniversalExpanded(true)}
+        className="font-brand inline-flex cursor-pointer items-center gap-1 rounded-full border border-border px-3 py-1 text-sm lowercase text-muted-foreground transition-colors hover:text-foreground sm:hidden"
+      >
+        more tags
+        <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
+    ) : null
+
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      {/* Toolbar, right-aligned to this content's inner edge — the same edge
+          the search field's clear button sits on. All four controls are
+          exactly h-8 so the row is optically even.
+
+          `reset` goes first, not last. Against a right edge the *trailing*
+          control is the one flush to it, and reset is the only one of the
+          four that isn't always live — trailing it would leave the visible
+          cluster floating a button's width short of the edge whenever
+          there's nothing to reset. At the head of the cluster its reserved
+          box eats left-hand space that was empty anyway, so tiers/sort/venn
+          stay pinned to the edge in both states. It still occupies that box
+          when inactive rather than unmounting, so the wrap point doesn't
+          move with `activeCount` either. */}
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <ResetButton active={activeCount > 0} onClick={reset} />
+        <TierRow tiers={tiers} onToggleTier={toggleTier} />
+        <SortToggle sort={sort} onToggle={cycleSort} />
+        <VennMode mode={mode} onCycle={cycleMode} />
+      </div>
+
+      {showSearch && (
+        <SearchField value={queryInput} onChange={setQueryInput} label="Search all work" />
+      )}
+
+      {/*
+        Two unlabeled chip rows, gapped tighter than this content's own
+        rhythm so they read as one block.
+      */}
+      <div className="relative">
+        <div ref={chipRealRef} className="flex flex-col gap-1.5">
+          <TagRow
+            tags={disciplineChips}
+            selectedTags={selectedTags}
+            onToggleTag={toggleTag}
+            chipTone={(tag) => subtagTone.get(tag)}
+          />
+          {/* `chipTone` deliberately not passed: universal tags are
+              neutral, and `subtagTone` only ever holds discipline subtags. */}
+          <TagRow
+            tags={universalChips}
+            selectedTags={selectedTags}
+            onToggleTag={toggleTag}
+            chipClassName={universalChipClassName}
+            after={moreTagsButton}
+          />
+        </div>
+        {/* Measurement only — `absolute` takes it out of flow, so it can't
+            affect `chipRealRef`'s height or this content's own. Same
+            horizontal extent as the real content (`inset-x-0`), so it wraps
+            at exactly the same width.
+
+            Row 2's ghost passes the *real* `selectedTags`, `chipClassName`,
+            and `after` — unlike row 1's, which stays at its hardcoded
+            absolute worst case regardless of selection. Row 2 has no
+            "worst case wider than what's currently possible": mirroring
+            exactly what the real row 2 shows, collapsed or not, is already
+            its own maximum, the same property §2.5 originally relied on
+            when the row couldn't change shape at all. */}
+        <div
+          ref={chipGhostRef}
+          inert
+          aria-hidden="true"
+          className="invisible absolute inset-x-0 top-0 flex flex-col gap-1.5"
+        >
+          <TagRow tags={MAX_DISCIPLINE_CHIPS} selectedTags={EMPTY_TAG_SET} onToggleTag={noop} />
+          <TagRow
+            tags={universalChips}
+            selectedTags={selectedTags}
+            onToggleTag={noop}
+            chipClassName={universalChipClassName}
+            after={moreTagsButton}
+          />
+        </div>
+      </div>
+      {/* The inside half of the reservation — see the comment above. Zero on
+          every render where the real content already matches the
+          widest-possible state (e.g. all 3 disciplines selected). */}
+      <div aria-hidden="true" style={{ height: chipSlackInside }} />
+    </div>
+  )
+}
+
+/**
+ * Scroll direction, rAF-throttled off a passive listener, with a dead zone.
+ * The dead zone is not tuning — on iOS, momentum scrolling and rubber-banding
+ * at the document ends emit tiny alternating deltas that would otherwise flap
+ * the docked bar in and out several times a second.
+ */
+function useScrollDirection(threshold = 8): 'up' | 'down' {
+  const [dir, setDir] = useState<'up' | 'down'>('up')
+  useEffect(() => {
+    let last = window.scrollY
+    let frame = 0
+    const onScroll = () => {
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        const y = window.scrollY
+        if (Math.abs(y - last) < threshold) return
+        setDir(y > last ? 'down' : 'up')
+        last = y
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (frame) cancelAnimationFrame(frame)
+    }
+  }, [threshold])
+  return dir
+}
+
+/**
+ * Whether `ref`'s element is entirely out of the viewport.
+ *
+ * No `rootMargin`: the nav is translucent, so a panel tucked just under it is
+ * arguably already gone, but compensating for the nav's (variable) height
+ * would mean reading `--nav-h` back out of the DOM to configure an observer.
+ * The untuned version has one harmless consequence — a narrow band where the
+ * panel's last few pixels sit under the nav and the docked bar hasn't
+ * arrived — and nothing is ever duplicated on screen.
+ */
+function useOffscreen(ref: RefObject<HTMLElement | null>): boolean {
+  const [offscreen, setOffscreen] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(([entry]) => setOffscreen(!entry.isIntersecting), {
+      threshold: 0,
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [ref])
+  return offscreen
+}
+
+/** e.g. "Filters, 3 tags selected. Activate to open." */
+function dockedGlyphLabel({ selectedTags, activeCount }: FilterControls): string {
+  if (selectedTags.size > 0) {
+    const n = selectedTags.size
+    return `Filters, ${n} ${n === 1 ? 'tag' : 'tags'} selected. Activate to open.`
+  }
+  return activeCount > 0 ? 'Filters, active. Activate to open.' : 'Filters. Activate to open.'
+}
+
+/**
+ * The slim bar that docks directly beneath the site nav once the in-flow
+ * panel has scrolled out of view: a search field and a filter glyph badged
+ * with the active tag count. Tapping the glyph unfolds the same controls
+ * `FilterPanelContent` renders in the real panel, in place, without losing
+ * scroll position.
+ *
+ * Non-modal disclosure, not a dialog: no focus trap, no scroll lock, no
+ * scrim. The grid behind stays scrollable and clickable; the bar's own
+ * translucent-blurred fill is what dims and blurs whatever sits directly
+ * behind the expansion — the visual effect of a scrim, without the
+ * semantics of one.
+ */
+function DockedFilterBar({
+  controls,
+  revealed,
+  open,
+  onOpenChange,
+}: {
+  controls: FilterControls
+  revealed: boolean
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}): ReactNode {
+  const barRef = useRef<HTMLDivElement>(null)
+  const glyphRef = useRef<HTMLButtonElement>(null)
+  const expansionRef = useRef<HTMLDivElement>(null)
+
+  // Move focus into the expansion the moment it opens, so a keyboard user
+  // who just activated the glyph lands inside it rather than staying on a
+  // button that's about to scroll off-screen under new content.
+  useEffect(() => {
+    if (open) expansionRef.current?.focus()
+  }, [open])
+
+  // Escape closes and returns focus to the glyph. A pointerdown outside the
+  // bar closes without redirecting focus — whatever was clicked already
+  // gets it, which is the browser's own default and correct here. Attached
+  // only while open, and on `pointerdown` rather than `click`, so a drag
+  // that starts inside the bar and ends outside it doesn't close things
+  // mid-drag.
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      onOpenChange(false)
+      glyphRef.current?.focus()
+    }
+    const onPointerDown = (e: PointerEvent) => {
+      if (barRef.current && !barRef.current.contains(e.target as Node)) onOpenChange(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [open, onOpenChange])
+
+  return (
+    <div
+      ref={barRef}
+      // z-40, deliberately under both the nav (z-50) and the gallery
+      // lightbox (`image-lightbox.tsx`'s two `z-50` layers), so a bar that
+      // happened to be revealed when a lightbox opened sits behind the
+      // overlay rather than punching through it.
+      //
+      // Same translucent-blurred treatment as the nav (`site-nav.tsx`),
+      // which is what makes this read as an extension of the header rather
+      // than a floating widget. Unlike the in-flow panel it must have a
+      // fill: it overlays the masonry, so there is no discipline wash to
+      // let through here, only cards to cover.
+      className={cn(
+        'fixed inset-x-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md',
+        'transition-transform duration-200 motion-reduce:transition-none',
+        revealed ? 'translate-y-0' : '-translate-y-full',
+        // Held in the DOM rather than unmounted so it can transition, but
+        // taken out of the a11y tree and out of the tab order while
+        // retracted — the same treatment `ResetButton` gets, for the same
+        // reason.
+        !revealed && 'invisible',
+      )}
+      style={{ top: 'var(--nav-h, 4rem)' }}
+      inert={!revealed || undefined}
+    >
+      <div className="mx-auto max-w-6xl px-3 py-2 xs:px-5 sm:px-8">
+        <div className="flex items-center gap-2">
+          <SearchField
+            value={controls.queryInput}
+            onChange={controls.setQueryInput}
+            label="Search all work (docked)"
+            className="flex-1"
+          />
+          <button
+            ref={glyphRef}
+            type="button"
+            onClick={() => onOpenChange(!open)}
+            aria-expanded={open}
+            aria-controls="docked-filter-panel"
+            aria-label={dockedGlyphLabel(controls)}
+            className={cn(
+              'relative inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors',
+              // Goldenrod whenever anything at all is narrowing the view,
+              // not just when tags are selected: the badge counts tags
+              // only, so a non-default tier selection or an active query
+              // would otherwise leave no trace here. Reuses the panel's own
+              // active idiom rather than inventing a second one.
+              controls.activeCount > 0
+                ? 'border-goldenrod text-goldenrod'
+                : 'border-border text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <SlidersHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+            {controls.selectedTags.size > 0 && (
+              <span
+                aria-hidden="true"
+                className="font-brand absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-goldenrod px-1 text-[0.6rem] font-bold text-[var(--card)]"
+              >
+                {controls.selectedTags.size}
+              </span>
+            )}
+          </button>
+        </div>
+        {open && (
+          <div
+            id="docked-filter-panel"
+            ref={expansionRef}
+            tabIndex={-1}
+            // Capped and scrollable: with every discipline open at phone
+            // widths the chip block alone reserves four lines, and the
+            // toolbar wraps — unbounded, the expansion would run off the
+            // bottom of the screen with no way to reach the last row.
+            // `100dvh`, not `100vh`, so mobile browser chrome collapsing
+            // doesn't leave the last chip row unreachable.
+            className="mt-2 max-h-[calc(100dvh-var(--nav-h,4rem)-7rem)] overflow-y-auto outline-none"
+          >
+            <FilterPanelContent controls={controls} showSearch={false} />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -1013,20 +1703,72 @@ export function WorkGallery() {
     return map
   }, [activeDisciplines])
 
-  // One flat, inline chip list: each discipline immediately followed by its
-  // own subtags (if active), then the universal tags. A selected discipline's
-  // subtags slot in right where they are instead of a separate row, so the
-  // row's reserved two-line height (see className below) absorbs them
-  // without shifting anything beneath it.
-  const filterTags = useMemo(() => {
+  // Chip row 1: each discipline immediately followed by its own subtags (if
+  // active). A selected discipline's subtags slot in right where they are
+  // instead of a separate row, and the row's height reservation (§2.4)
+  // absorbs them without shifting anything beneath it.
+  const disciplineChips = useMemo(() => {
     const tags: string[] = []
     for (const d of DISCIPLINES) {
       tags.push(d)
       if (selectedTags.has(d)) tags.push(...DISCIPLINE_FACETS[d].tags)
     }
-    tags.push(...UNIVERSAL_FACETS.flatMap((f) => f.tags))
     return tags
   }, [selectedTags])
+
+  // Chip row 2: every universal tag, theme facet then format facet. Never
+  // changes, so unlike row 1 this needs no reservation — it is already its
+  // own maximum.
+  const universalChips = useMemo(() => UNIVERSAL_FACETS.flatMap((f) => f.tags), [])
+
+  // The chip-block height measurement (the ghost/real split that keeps
+  // toggling a discipline from ever shifting the count/grid below) now lives
+  // inside `FilterPanelContent` itself, since that component mounts twice —
+  // once in-flow, once in the docked bar's expansion — and each mount has
+  // its own independent layout to measure. Only the *outside* half of the
+  // in-flow mount's reservation (`chipSlackOutside`, rendered as margin
+  // between the panel and the count below) needs to live up here, reported
+  // via the `onChipSlackChange` callback passed to that one mount. The
+  // docked mount doesn't pass the callback — its expansion is a capped,
+  // scrolling overlay with nothing positioned relative to its bottom edge,
+  // so it has no zero-shift guarantee to keep and needs no outside half.
+  const [chipSlackOutside, setChipSlackOutside] = useState(0)
+
+  // The docked filter bar: revealed once the in-flow panel (`panelRef`) is
+  // entirely out of view, and only while scrolling up or already unfolded —
+  // see `useScrollDirection`/`useOffscreen`'s own comments for why each is
+  // measured the way it is. Scrolling back up far enough to see the real
+  // panel again closes the docked copy, so there are never two open panels.
+  const panelRef = useRef<HTMLDivElement>(null)
+  const panelOffscreen = useOffscreen(panelRef)
+  const scrollDir = useScrollDirection()
+  const [dockedOpen, setDockedOpen] = useState(false)
+  useEffect(() => {
+    if (!panelOffscreen) setDockedOpen(false)
+  }, [panelOffscreen])
+  const dockedRevealed = panelOffscreen && (scrollDir === 'up' || dockedOpen)
+
+  // Everything the filter controls need, passed as one object so the two
+  // mounts of `FilterPanelContent` (in-flow panel, docked expansion) and
+  // `DockedFilterBar`'s own compact row share one signature instead of each
+  // needing a growing, independently-drifting prop list.
+  const controls: FilterControls = {
+    queryInput,
+    setQueryInput,
+    selectedTags,
+    toggleTag,
+    subtagTone,
+    disciplineChips,
+    universalChips,
+    tiers,
+    toggleTier,
+    sort,
+    cycleSort,
+    mode,
+    cycleMode,
+    reset,
+    activeCount,
+  }
 
   // Blended page wash: one soft glow per discipline. Each gets its own
   // always-mounted layer with a fixed background and only toggles opacity —
@@ -1067,102 +1809,67 @@ export function WorkGallery() {
         />
       ))}
 
-      <div className="relative z-10">
-      {/* Search — text-sm/py-2/a smaller icon, matching TagChip's own size
-          rather than the larger, separately-chosen scale this had before. */}
-      <div className="relative">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <input
-          type="search"
-          value={queryInput}
-          onChange={(e) => setQueryInput(e.target.value)}
-          placeholder="search titles, descriptions, text, tags…"
-          aria-label="Search all work"
-          className="font-brand w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm lowercase text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-goldenrod"
-        />
-        {queryInput && (
-          <button
-            type="button"
-            onClick={() => setQueryInput('')}
-            aria-label="Clear search"
-            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Filters: one inline, unlabeled chip row. A selected discipline's
-          subtags slot in right after it instead of a separate row; the row
-          reserves two lines' worth of height up front (content-start keeps
-          a short row pinned to the top rather than stretching to fill it),
-          so going from one line to two never shifts the summary or results
-          below. */}
-      <TagRow
-        tags={filterTags}
-        selectedTags={selectedTags}
-        onToggleTag={toggleTag}
-        chipTone={(tag) => subtagTone.get(tag)}
-        className="mt-4 min-h-[4.75rem] content-start"
+      <DockedFilterBar
+        controls={controls}
+        revealed={dockedRevealed}
+        open={dockedOpen}
+        onOpenChange={setDockedOpen}
       />
 
-      {/* Summary + mode + reset */}
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-5">
-        <p className="font-brand text-sm lowercase text-muted-foreground">
-          <span className="font-bold text-foreground">{results.length}</span> of {total}{' '}
-          {total === 1 ? 'entry' : 'entries'}
-          {selectedTags.size > 0 && (
-            <span>
-              {' '}
-              · {selectedTags.size} {selectedTags.size === 1 ? 'tag' : 'tags'}
-              {mode === 'not' ? ' excluded' : ''}
-            </span>
-          )}
-        </p>
-        <div className="flex items-center gap-3">
-          {/* reset sits left of the tier control specifically so its own
-              appear/disappear (driven by `activeCount`, which a tier toggle
-              changes) shifts nothing to its right — TierRow, sort, and the
-              venn stay put relative to each other; only the whole cluster's
-              left edge moves. */}
-          {activeCount > 0 && (
-            <button
-              type="button"
-              onClick={reset}
-              className="font-brand inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm lowercase text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              reset
-            </button>
-          )}
-          <TierRow tiers={tiers} onToggleTier={toggleTier} />
-          <button
-            type="button"
-            onClick={cycleSort}
-            aria-label={`Sort: ${SORT_LABEL[sort]}. Activate to change.`}
-            className="font-brand inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm lowercase text-muted-foreground transition-colors hover:border-goldenrod hover:text-foreground"
-          >
-            <ArrowDownUp className="h-3.5 w-3.5" aria-hidden="true" />
-            {SORT_LABEL[sort]}
-          </button>
-          <VennMode mode={mode} onCycle={cycleMode} />
-        </div>
+      <div className="relative z-10">
+      {/* One bordered panel holds the whole filter apparatus: toolbar, then
+          search, then chips. Everything in here filters, and the border is
+          what says so — before this it read as three unrelated things stacked
+          on each other.
+
+          No fill. The three discipline wash gradients render at z-0 behind
+          this and have to stay visible through it; the search field keeps its
+          own `bg-card`, which is what makes it read as an inset field against
+          an unfilled panel.
+
+          No internal rules either. The panel already groups; a divider inside
+          would re-fragment exactly what it exists to join — `FilterPanelContent`
+          owns its own row-to-row rhythm for that reason, rather than this
+          wrapper supplying it, since the docked bar's expansion below needs
+          the same rhythm with no border/padding of its own to hang it on.
+
+          `panelRef` is how the docked bar knows to appear — `useOffscreen`
+          below watches this exact element. */}
+      <div ref={panelRef} className="rounded-2xl border border-border p-3 sm:p-4">
+        <FilterPanelContent controls={controls} onChipSlackChange={setChipSlackOutside} />
       </div>
+
+      {/* Half the chip block's reservation was spent as the panel's own
+          bottom padding (inside `FilterPanelContent`); this is the other
+          half, spent as ordinary margin before the count instead of blank
+          space inside the panel — see that component's own comment. */}
+      <div aria-hidden="true" style={{ height: chipSlackOutside }} />
+
+      {/* The count is the caption for the grid, not a control — so it sits
+          below the panel and directly above the results. */}
+      <p className="font-brand mt-5 text-sm lowercase text-muted-foreground">
+        <span className="font-bold text-foreground">{results.length}</span> of {total}{' '}
+        {total === 1 ? 'entry' : 'entries'}
+        {selectedTags.size > 0 && (
+          <span>
+            {' '}
+            · {selectedTags.size} {selectedTags.size === 1 ? 'tag' : 'tags'}
+            {mode === 'not' ? ' excluded' : ''}
+          </span>
+        )}
+      </p>
 
       {/* Masonry (reads left-to-right, top-to-bottom) or empty state */}
       {pins.length + rest.length > 0 ? (
         <GalleryLightboxContext.Provider value={lightboxApi}>
-          <MasonryGrid className="mt-6" pinned={pins.map((item) => <WorkCard key={item.slug} item={item} />)}>
+          <MasonryGrid className="mt-3" pinned={pins.map((item) => <WorkCard key={item.slug} item={item} />)}>
             {rest.map((item) => (
               <WorkCard key={item.slug} item={item} />
             ))}
           </MasonryGrid>
         </GalleryLightboxContext.Provider>
       ) : (
-        <div className="mt-6 flex flex-col items-center rounded-2xl border border-dashed border-border px-6 py-16 text-center">
+        <div className="mt-3 flex flex-col items-center rounded-2xl border border-dashed border-border px-6 py-16 text-center">
           <div
             className="flex h-14 w-14 items-center justify-center rounded-full"
             style={{ background: 'color-mix(in srgb, var(--goldenrod) 18%, var(--card))' }}

@@ -586,7 +586,27 @@ export const DISCIPLINE_FACETS: Record<Discipline, Facet> = {
 }
 
 /** Categories that apply to every piece regardless of discipline. */
-export const UNIVERSAL_FACETS: Facet[] = [{ name: 'theme', tags: ['color', 'language'] }]
+export const UNIVERSAL_FACETS: Facet[] = [
+  { name: 'theme', tags: ['animals', 'identity', 'politics', 'heartbreak', 'language'] },
+  // `series` is a *format*, not a theme: a prompt list answered one a day.
+  // Five of the eight collections are one; the other three (eye-studies,
+  // i-think-that-im, love-worth-heartbreak) are not, so this is an authored
+  // distinction rather than something derivable from `isCollection`.
+  { name: 'format', tags: ['series'] },
+]
+
+/**
+ * Every discipline chip plus every discipline-only subtag, in the order the
+ * filter panel lays them out — i.e. exactly what the chip row shows when all
+ * three disciplines are selected at once, which is its widest possible state.
+ * The panel renders this inertly as an invisible height reservation, so the
+ * row never grows or shrinks as disciplines are toggled. Deriving it here
+ * rather than in the component keeps the reservation and the real row from
+ * drifting apart.
+ */
+export const MAX_DISCIPLINE_CHIPS: readonly string[] = DISCIPLINES.flatMap(
+  (d) => [d as string, ...DISCIPLINE_FACETS[d].tags],
+)
 
 export const ALL_TAGS: string[] = [
   ...DISCIPLINES,
@@ -675,7 +695,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'How to Help the Planet Week',
     year: '2020',
     description: 'A five-day series on how to help the planet, posted (very) late, one at a time.',
-    tags: ['art'],
+    tags: ['art', 'animals', 'politics', 'series'],
     image: '/art/hthtpw/01.jpg',
     imageAspect: '1/1',
     stackAccent: '#636b5b',
@@ -742,7 +762,7 @@ const REAL_WORK: WorkItem[] = [
     title: "April Colors '19",
     year: '2019',
     description: 'A month of color-study prompts, painted one a day.',
-    tags: ['art', 'color'],
+    tags: ['art', 'animals', 'series'],
     image: '/art/april-colors-19/01.jpg',
     imageAspect: '1/1',
     tier: 'favorite',
@@ -1056,7 +1076,7 @@ const REAL_WORK: WorkItem[] = [
     title: "April Colors '24",
     year: '2024',
     description: 'A month of watercolor prompts, one a day, prompt list by @faunwood.',
-    tags: ['art', 'watercolor'],
+    tags: ['art', 'watercolor', 'animals', 'identity', 'series'],
     image: '/art/april-colors-24/01.webp',
     imageAspect: '1/1',
     tier: 'favorite',
@@ -1373,7 +1393,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2017',
     description:
       "31 ink drawings for Inktober, finished seven and a half months late — a confidence exercise as much as a daily prompt.",
-    tags: ['art', 'ink'],
+    tags: ['art', 'ink', 'animals', 'heartbreak', 'series'],
     stackAccent: '#c9c2b0',
     writeup:
       "Seven and a half months late, I have completed Inktober. What an accomplishment.\n\nTruly though, it's been a good exercise, even if not as a daily drawing prompt. I have used it as a confidence exercise. If a design was drafted, it was only done in thumbnail form (with ink), and once the design was begun, it was completed completely in ink (with the exception of 4, 7, and 14, which were all redone).",
@@ -1460,7 +1480,7 @@ const REAL_WORK: WorkItem[] = [
     title: "I Think That I'm...",
     year: '2019',
     description: 'A three-part multi-animator project (MAP) piece on cruelty and self-recognition.',
-    tags: ['art', 'digital'],
+    tags: ['art', 'digital', 'identity'],
     image: '/art/2019/01-i-think-that-im-human.jpg',
     imageAspect: '1/1',
     pieces: [
@@ -1504,7 +1524,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'One Flesh',
     year: '2019',
     description: 'We are but made of the same flesh and bones as the other creatures that inhabit this planet.',
-    tags: ['art'],
+    tags: ['art', 'animals'],
     writeup:
       "Traditional collage made out of pictures of meat in grocery store advertisements.\n\nSomething different. I honestly got pretty attached to this piece, though I'm still uncertain as to whether I'd put it in my house. I'd love to hear reactions though, since some sharing in preliminary stages got a stronger response than I expected.",
     image: '/art/2019/one-flesh.jpg',
@@ -1516,7 +1536,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'Rabbit in the Moon',
     year: '2019',
     description: 'Have you heard the story of the rabbit in the moon?',
-    tags: ['art', 'digital'],
+    tags: ['art', 'digital', 'animals'],
     writeup:
       "A new icon. I wanted something that'd minimize nicely. ^ ^ Also, I have opened art commissions! Information can be found in the link in my bio.",
     image: '/art/2019/rabbit-in-the-moon.jpg',
@@ -1541,7 +1561,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2019',
     description:
       'May I not be a transparent eyeball, observer of all and influencer of none? What a shell of flesh that contains me, nay, restrains me so, keeping me chained to this world of give and take.',
-    tags: ['art', 'digital'],
+    tags: ['art', 'digital', 'identity'],
     writeup:
       "For #milesdrawthisinyourstyle ! By @miles_art ! Super cool artist, love the human focus that I often lack in my pieces.\n\nI'm trying to work on a more relaxed digital style still, but I guess if I work with normal colors, I get bogged down with wanting it to be more realistic? I don't know, I feel like I have to do the April colors challenge ask over again, haha",
     image: '/art/2019/transparent-eyeball.jpg',
@@ -1563,7 +1583,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'Honey',
     year: '2019',
     description: 'Three scenes from an animation made for a philosophy class, on adoption and identity.',
-    tags: ['art', 'digital'],
+    tags: ['art', 'digital', 'identity'],
     // Kept, though the gallery card now shows YouTube's thumbnail instead
     // (`animationPosterFor`): it's what `PieceMedia`'s "view still image"
     // trigger opens, and `imageAspect` still describes it truthfully — the
@@ -1655,7 +1675,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2021',
     description:
       "31 days of prompts from @susitse.art, each answered with a rhyming tercet and an ink-and-colored-pencil sticky-note drawing — a companion to Inktober that leans into the diary side of a sketchbook.",
-    tags: ['art', 'ink'],
+    tags: ['art', 'ink', 'series'],
     writeup:
       "Happy October! I have some catching up to do, but I'm going to try to finish within the month. I love @susitse.art's work and am excited to finally make use of one of their prompt lists.\n\nFinally finished, five months late in places — happy to have generated some new ideas and little rhymes to tie it all together.",
     image: '/art/mindtober-21/01.jpg',
@@ -1949,7 +1969,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2022',
     description:
       "Made for Women's History Month, supplies courtesy of a work event, but not posted until now.",
-    tags: ['art'],
+    tags: ['art', 'politics'],
     writeup:
       'This was fun and experimential, particularly the background. Featuring one of my favorite Beauvoir quotes and no off-canvas color mixing.\n\nQuote: "Man is defined as a human being and woman as a female —whenever she behaves as a human being, she is said to imitate the male." —Simone de Beauvoir, "The Second Sex" (1949)',
     image: '/art/portfolio-22/womens-history-month.webp',
@@ -1960,7 +1980,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'Protest Sign',
     year: '2022',
     description: 'Out on the street with this sign I made in the fall.',
-    tags: ['art'],
+    tags: ['art', 'politics'],
     image: '/art/portfolio-22/protest-sign.webp',
     imageAspect: '1440/1723',
   },
@@ -1970,7 +1990,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2022',
     description:
       "Turning a corporate mug into one I actually want to use with paint markers; reflecting on the moon and complexity after reading half of \"Invisible Women: data bias in a world designed for men\" by Caroline Criado Perez.",
-    tags: ['art'],
+    tags: ['art', 'politics'],
     writeup:
       'Used steel wool to scratch off the decals, no harm done to the ceramic.\n\nAlso, treating the white as cream color, based on previous exp baking at 400F for 30min. Might reduce temp.\n\nOil paint @sharpie mug: I\'m happy with this! The colors shifted, but it was slighter than I expected based on previous experience baking at a higher temperature.\n\nblue - warmed lightened somewhat\npink - cooled slightly\nred - cooled to dark magenta\nyellow - negligible\nwhite - negligible\n\nComparison image on the third slide is lq bc different lighting conditions.',
     image: '/art/portfolio-22/painted-mug.webp',
@@ -1982,7 +2002,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'Adoption Minizine',
     year: '2022',
     description: 'Adoption minizine - swipe to read.',
-    tags: ['art', 'writing'],
+    tags: ['art', 'writing', 'identity'],
     writeup:
       'Reflecting on belonging, transracial adoption, and adoption as human trafficking.\n\nInspired by the perspectives of Black in a White Family and @adoptee_thoughts.',
     image: '/art/portfolio-22/adoption-minizine.webp',
@@ -1993,7 +2013,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'Presidential Pardon',
     year: '2022',
     description: 'Thinking about what animals and actions we pardon.',
-    tags: ['art', 'digital'],
+    tags: ['art', 'digital', 'animals', 'politics'],
     image: '/art/portfolio-22/presidential-pardon.webp',
     imageAspect: '4/5',
     speedpaintSrc: '/art/portfolio-22/speedpaint/presidential-pardon.mp4',
@@ -2003,7 +2023,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'Child, Not Adult',
     year: '2022',
     description: 'On being seen as the child, past, dream, and not the adult, present, reality.',
-    tags: ['art', 'digital'],
+    tags: ['art', 'digital', 'identity'],
     writeup:
       "I think the first slide is better for screens but there's a way to maybe make an interesting foil print like the second slide.",
     image: '/art/portfolio-22/child-not-adult.webp',
@@ -2023,7 +2043,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2022',
     description:
       '『 "why be afraid if you have nothing to hide?" – why assume those watching have your best interests at heart? 』',
-    tags: ['art'],
+    tags: ['art', 'politics'],
     writeup: 'Collage inspired by security envelopes and halftone screen printing.\n\n"Security". July 2022.',
     image: '/art/portfolio-22/why-be-afraid.webp',
     imageAspect: '4/5',
@@ -2048,7 +2068,7 @@ const REAL_WORK: WorkItem[] = [
     year: '2023',
     description:
       '【 is this equanimity or apathy? — to stand in a field of strawberries and not want a single sweet bite 】',
-    tags: ['art', 'digital'],
+    tags: ['art', 'digital', 'heartbreak'],
     writeup:
       "Inspired by personal metaphors, @onenhillion's style of digital underpainting, and a pastel from Mona Neuhaus.",
     image: '/art/portfolio-22/equanimity-or-apathy.jpg',
@@ -2059,7 +2079,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'Security Camera',
     year: '2023',
     description: "Finally getting around to this project that's been on my to do list for maybe a year now.",
-    tags: ['art'],
+    tags: ['art', 'politics'],
     image: '/art/portfolio-22/security-camera.webp',
     imageAspect: '1/1',
     unfinished: true,
@@ -2070,7 +2090,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'Desire & Distance',
     year: '2023',
     description: '【 desire & distance 】\nsoft, sweet, fragile, fleeting',
-    tags: ['art', 'digital'],
+    tags: ['art', 'digital', 'heartbreak'],
     image: '/art/portfolio-22/desire-and-distance.webp',
     imageAspect: '4/5',
     process: [
@@ -2086,7 +2106,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'Projection',
     year: '2024',
     description: '✦ projection, show, self, personhood',
-    tags: ['art', 'digital'],
+    tags: ['art', 'digital', 'identity'],
     writeup:
       '#dtyis by @putrid.hound\n\nProjected symmetry and smudged particulars. What we see ourselves as, what we claim to be, what we aspire to be, what we are.',
     image: '/art/portfolio-22/projection.webp',
@@ -2098,7 +2118,7 @@ const REAL_WORK: WorkItem[] = [
     title: 'love worth heartbreak',
     year: '2021',
     description: "A chapbook of poems written for a poetry competition in 2021 — it didn't place.",
-    tags: ['writing', 'poem'],
+    tags: ['writing', 'poem', 'identity', 'heartbreak'],
     pieces: [
       {
         title: 'metaphorical safety blanket',
@@ -2345,7 +2365,7 @@ const REAL_WORK: WorkItem[] = [
     // own illustration made interactive, and the denim tone is honest about
     // that even though it costs the emerald that would flag `science` finally
     // having work in it.
-    tags: ['art', 'science', 'code'],
+    tags: ['art', 'science', 'code', 'animals'],
     // The demo's own coloured layer, doing double duty as the poster — one
     // file, two uses, and it is a true still of the piece at rest.
     image: '/code-demos/delirium/surface.webp',

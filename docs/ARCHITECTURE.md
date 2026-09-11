@@ -34,8 +34,39 @@ while `science` itself was empty, and holding it open was the whole point:
 what remained was headroom for work nobody had imagined rather than for work
 that exists, and eight tags came out: `oil` from `medium`; `neuroscience`,
 `material science`, and `dataviz` from `field`; `nature`, `the body`,
-`memory`, and `food` from `theme`. `theme` is down to `color` and
-`language`, `field` to `biology` and `code`.
+`memory`, and `food` from `theme`. That left `theme` at `color` and
+`language`, `field` at `biology` and `code`.
+
+**`theme` was rebuilt on 2026-09-10 (Beck), which upholds the rule rather
+than reversing it again.** `animals`, `identity`, `politics`, and `heartbreak`
+went in *alongside* the twenty-three items that carry them — exactly "a new
+one goes in when the piece that needs it does". Each matches at least four
+items. The same edit added a second universal facet, `format`, holding one
+tag: `series`, for a project made as a prompt list answered one a day. It is a
+facet of its own rather than a fifth theme because it describes how a project
+was made, not what it is about, and it is authored rather than derived from
+`isCollection` — five of the eight collections are a series, the other three
+are not.
+
+**`color` came out in the same pass, and is the one removal here that is not
+a dead-tag prune.** It matched `april-colors-19`, so the 2026-09-02 rule would
+have kept it. It came out because the question it raised had no good answer:
+`april-colors-24` is a month of watercolour *colour* prompts and did not carry
+it, so `color` was either a one-item tag that should have been two, or a tag
+doing no work. Beck retired it rather than extend it — a tag that has to be
+argued into a second item isn't describing the body of work. Removing it is a
+two-line data edit (the facet entry and `april-colors-19`'s array), because
+`ALL_TAGS` derives from the facet tables.
+
+`theme` is now `animals`, `identity`, `politics`, `heartbreak`, `language`,
+ordered most-populated first so the always-visible chip row reads big-to-small;
+`field` is unchanged. `language` is the one survivor of the original pair and
+still matches a single item (`chinese-emoji-poetry`) — kept, unlike `color`,
+because nothing about it invites a second.
+
+Three further tags — `the body`, `nature`, `faith` — were proposed with item
+lists in the same pass and declined. Don't re-add them without a fresh
+decision.
 
 The pruning is a pure data edit in `lib/work.ts` — `ALL_TAGS` derives from
 the facet tables, and it gates both the filter panel's chip list and the
@@ -61,7 +92,8 @@ them.
 disciplines — art, writing, science — and nothing is required to pick one.
 Facets subdivide them (`medium` for art, `form` for writing, `field` for
 science) and stay hidden in the filter UI until their discipline is selected;
-a `theme` facet applies universally. Filtering combines selected tags with
+the `theme` and `format` facets apply universally and are always visible.
+Filtering combines selected tags with
 and/or/not, plus free text over title, description, and tags — and, for
 collections only, their children's titles, descriptions, `text`, and
 `preview`.
@@ -655,9 +687,22 @@ circle" above) and `app/icon.svg` was added alongside `app/favicon.ico` and
 ## Component layers
 
 - **`work-gallery.tsx`** — the `/work` client island: filter panel, URL state,
+  a docked copy of the filter panel that slides in beneath the nav once the
+  real one scrolls out of view (`DockedFilterBar`, built 2026-09-10 from
+  [history/2026-09-docked-filter-bar.md](history/2026-09-docked-filter-bar.md)),
   and `WorkCard`, which dispatches to `HybridCard` / `TextCard` / `ImageCard`
   / `CollectionTile`. `HybridCard` is currently unreached — no top-level item
-  carries both `text` and `image`.
+  carries both `text` and `image`. The filter controls themselves
+  (`FilterPanelContent`, `SearchField`) are shared components mounted twice —
+  once in-flow, once inside the docked bar's expansion — rather than
+  duplicated, since all filter state is URL state and a second mount has
+  nothing to keep in sync.
+- **`site-nav.tsx` publishes `--nav-h`**, a CSS custom property on
+  `document.documentElement` holding the nav's own measured height (it wraps
+  to two lines below ~363px, so this isn't a constant). The only consumer
+  today is `work-gallery.tsx`'s `DockedFilterBar`, which pins itself directly
+  below the nav using it — a cross-component contract that isn't visible from
+  either file in isolation, which is why it's recorded here.
 - **`work-visuals.tsx`** — the shared pieces those cards (and a collection
   page's own tiles) are built from: `VerseBlock`, placeholders, aspect
   helpers, tag links, prose blocks, the collection stack, chapbook contents,

@@ -148,6 +148,47 @@ like the other two.
 
 **2026-09-03, last: the second column build shipped.** See §1 below.
 
+**2026-09-10: the `/work` filter panel was rebuilt** from
+[history/2026-09-filter-panel.md](history/2026-09-filter-panel.md) — one bordered
+panel around the toolbar, search, and chips; the count moved out to caption
+the grid; a stacked `NEW`/`OLD` sort control; and five tags added to the
+vocabulary (`animals`, `identity`, `politics`, `heartbreak`, `series`) with
+the twenty-three items that carry them. Nothing in this file tracked the
+filter bar, so nothing closes there. The spec's one deliberate leftover became
+§24 below and was closed the same day — Beck retired `color` rather than
+extend it, so `theme` is five tags, not six. The toolbar row was also
+right-aligned after the fact, against the spec's own §2.2; see the divergence
+note at the head of the spec.
+
+**2026-09-10, later the same day: the docked filter bar shipped** from
+[history/2026-09-docked-filter-bar.md](history/2026-09-docked-filter-bar.md).
+A slim bar (search + a tag-count-badged filter glyph) now docks beneath the
+site nav once the in-flow panel scrolls out of view, sliding in on scroll-up
+and retracting on scroll-down; tapping the glyph unfolds the same toolbar and
+chip rows in place, without losing scroll position. Required extracting the
+panel's interior into `FilterPanelContent`/`SearchField` so both the in-flow
+panel and the docked bar's expansion mount the same controls, and
+`site-nav.tsx` now publishes `--nav-h` so the bar can pin itself directly
+below a header whose height isn't constant. Nothing in this file tracked
+this either, so nothing else closes.
+
+**2026-09-10, last: the universal tag row collapses on mobile, ad hoc —
+Beck's request mid-build, no spec.** Below `sm` (640px), row 2 shows only
+whatever's already selected plus a "more tags" chip; tapping it expands the
+full row in place, and scrolling — either direction, past a small dead zone —
+collapses it back to the same selected-plus-more state. Confirmed live: the
+panel is ~36px shorter at 390px wide with nothing selected, so the masonry
+genuinely starts sooner rather than the saved height just becoming margin.
+Selected tags are never hidden, so an active filter is always visible and
+removable regardless of expand state, and the existing chip-block zero-shift
+guarantee holds throughout — verified again after this change, same method
+as [history/2026-09-filter-panel.md](history/2026-09-filter-panel.md)'s own
+checks (a discipline toggle never moves the count/grid, collapsed or not).
+Implemented as pure CSS breakpoint hiding per chip (`TagRow` gained
+`chipClassName`/`after` props) rather than a JS viewport check, so desktop
+is unaffected with no hydration risk. No spec exists for this one; this
+paragraph is the only record.
+
 ---
 
 ## 1. The home page's three discipline cards each show one work — **shipped 2026-09-03 (loose columns, no card)**
@@ -1454,3 +1495,26 @@ not the poems / tercet / collection."
       `/work/mindtober-21/read` renders `piece.text` and nothing else, so it
       would silently drop the ink half of an illustrated work. Spec §7.1 has
       the options.
+
+## 24. `april-colors-24` didn't carry `color` — **closed 2026-09-10: `color` retired**
+
+Opened and closed the same day, alongside the filter-panel build that surfaced
+it.
+
+`april-colors-19` carried `color`. `april-colors-24` — a month of watercolour
+*colour* prompts, whose piece captions are about palettes, neutrals, viridis,
+and least-favourite colours — did not. So `color` read as a one-item tag when
+it was plausibly a two-item one.
+
+[history/2026-09-filter-panel.md](history/2026-09-filter-panel.md) §1.4 flagged
+it and deliberately left it, because Beck approved five specific tags in that
+pass and this was not one of them. Tagging is authorial.
+
+- [x] ~~**Beck: does `april-colors-24` carry `color`?**~~ — **neither.
+      Beck removed `color` from the vocabulary, 2026-09-10.** The third
+      option, and the right one: a tag that has to be argued into its second
+      item isn't describing the work. Two lines in `lib/work.ts` — the
+      `theme` facet entry and `april-colors-19`'s array — since `ALL_TAGS`
+      derives from the facet tables. `theme` is five tags now. Note this is
+      *not* the 2026-09-02 dead-tag prune repeating: `color` matched an item,
+      and came out on editorial grounds rather than for matching nothing.

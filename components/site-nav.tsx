@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BrandMark } from '@/components/brand-mark'
@@ -13,9 +14,30 @@ const LINKS = [
 
 export function SiteNav() {
   const pathname = usePathname()
+  const headerRef = useRef<HTMLElement>(null)
+
+  // The docked filter bar on /work pins itself directly below this header,
+  // and the header's height is not fixed — `work`/`about` wrap to two lines
+  // on narrow screens (see the <ul> comment below). Published as a custom
+  // property on the document element rather than through context, so the
+  // consumer is a plain CSS value with no provider to thread through the
+  // tree.
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const publish = () =>
+      document.documentElement.style.setProperty('--nav-h', `${el.offsetHeight}px`)
+    publish()
+    const ro = new ResizeObserver(publish)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-md">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-md"
+    >
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
         {/* mr-16: ~the width of the "about" pill, so the squeeze between the
             brand and the work/about pills kicks in earlier (a wider
