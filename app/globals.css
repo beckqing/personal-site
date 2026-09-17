@@ -99,15 +99,31 @@
   --ring: #0c3559;
   --radius: 0.75rem;
 
-  /* brand hues — deepened for legibility on a light ground */
+  /* Brand hues. Each discipline is ONE PAIR — a dark member and a light
+     member — and the ground decides which is the word: whichever clears
+     4.5:1 against it. Daylight takes the dark member, night takes the
+     light one (see the dark block below). See the colour-roles spec in
+     docs/specs for the full system and the decisions behind it.
+
+     The previous --writing (#a85e1e) and --science (#2f7d45) were derived
+     during the Next.js rewrite by darkening Beck's mark colours toward no
+     stated target; both landed at ~4.0-4.2:1, just short. Rust and pine
+     are hand-picked replacements that clear the bar. */
   --indigo: #0c3559;
   --denim: #305789;
-  --art: #305789; /* art -> denim */
-  --writing: #a85e1e; /* writing/humanities -> deeper pumpkin */
-  --science: #2f7d45; /* science -> deeper emerald */
+  --art: #305789; /* denim — 6.07:1 */
+  --writing: #994c00; /* rust — 5.10:1 */
+  --science: #007848; /* pine — 4.57:1 */
   --goldenrod: #97671a; /* deeper goldenrod for text */
   --terracotta: #8c3623;
   --moon: #305789;
+
+  /* The light member of each pair: the icon/mark half, and what the word
+     swaps to at night. Nothing consumes these yet — they are here so the
+     pair system is expressible in one place rather than inferred. */
+  --art-mark: #69b6e9; /* cornflower */
+  --writing-mark: #de9b4f; /* macaroni */
+  --science-mark: #aadb6c; /* spring green */
   /* BrandMark's hero crescent, `light-gold` colourway — brighter than
      --goldenrod's text-legible light-mode value, since Beck's own drawn
      colourway (not a derived one) is what's decided for the mark. */
@@ -153,20 +169,30 @@
   --muted-foreground: #a79f99; /* satin nickel */
   --accent: #0c3559; /* indigo */
   --accent-foreground: #ced2cd;
-  --destructive: #8c3623; /* terra cotta */
+  --destructive: #d16147; /* coral — terracotta has no night value */
   --border: rgba(206, 210, 205, 0.14);
   --input: rgba(206, 210, 205, 0.18);
   --ring: #d9aa52;
 
-  /* brand hues — full-saturation night values */
+  /* Brand hues, night: the same pairs read the other way round — the word
+     is now the LIGHT member of each pair, the mark the dark one. --art was
+     previously denim in both themes, which left it at 2.63:1 here; the
+     archived site swapped it, and this restores that. --terracotta was
+     likewise unchanged between themes at 2.46:1 — coral is Beck's
+     hand-picked night counterpart, the one value the danger pair never had. */
   --indigo: #0c3559;
   --denim: #305789;
-  --art: #305789; /* art -> denim */
-  --writing: #bf712c; /* writing/humanities -> pumpkin pie */
-  --science: #4ba661; /* science -> emerald */
+  --art: #69b6e9; /* cornflower — 8.74:1 */
+  --writing: #de9b4f; /* macaroni — 8.22:1 */
+  --science: #aadb6c; /* spring green — 12.05:1 */
   --goldenrod: #d9aa52;
-  --terracotta: #8c3623;
+  --terracotta: #d16147; /* coral — 5.09:1 */
   --moon: #ced2cd;
+
+  /* the dark member of each pair takes the mark half at night */
+  --art-mark: #305789; /* denim */
+  --writing-mark: #994c00; /* rust */
+  --science-mark: #007848; /* pine */
   /* BrandMark's hero crescent, dark mode: denim, not literal white. White
      read as a highlight but sat only ~1.5:1 off pale-slate ink — same hue
      family, barely different lightness — so the moon blurred into the
@@ -182,12 +208,15 @@
   --spring-green: #aadb6c;
 
   /* Dark mode keeps the standard brand hues for the hero icon collage
-     (see the light-mode block above for the full explanation). */
+     (see the light-mode block above for the full explanation). Written as
+     literals, not var(--art) etc: those tokens now carry the NIGHT word
+     colours, which are the bright members. The collage wants the dark
+     ones, exactly as before. */
   --hero-icon-idle: #0c355981; /* indigo @ ~51% — needs more alpha than
      light mode's denim to still read against the midnight background */
-  --hero-icon-art: var(--art);
-  --hero-icon-science: var(--science);
-  --hero-icon-writing: var(--writing);
+  --hero-icon-art: #305789; /* denim */
+  --hero-icon-science: #4ba661; /* emerald */
+  --hero-icon-writing: #bf712c; /* pumpkin */
 
   /* The "art" word swaps to --sky in dark mode. */
   --hero-accent-art: var(--sky);
