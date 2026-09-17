@@ -153,16 +153,15 @@ export type WorkPiece = {
    */
   guess?: Guess
   /**
-   * A rebuilt slide deck — the piece's write-up (via MDX_BODY_SLUGS) is a
-   * `<Deck>` of `<Slide>`s rather than plain prose, and the page renders it
-   * full width with a present-mode button instead of inside `EssayBody`.
-   * Checked *before* the image branch in PieceView, same reason `isCodeDemo`
-   * is: a deck piece carries an MDX body and an `image` and no `text`, so
-   * without an earlier branch it would fall through to the default image
-   * branch and render as a plain picture with an essay under it — silently
-   * wrong. See docs/specs/2026-09-branding-deck.md §6.1.
+   * This piece's MDX body is a sequence of `<Panel>`s that owns its own
+   * width and its own section structure — a rebuilt deck, or a case study.
+   * PieceView must not wrap it in EssayBody's prose measure; the measure
+   * belongs inside each panel. Checked *before* the image branch, same
+   * reason `isCodeDemo` is: such a piece carries an MDX body and an `image`
+   * and no `text`, so a later branch would silently render it as a plain
+   * picture with an essay under it. See docs/specs/2026-09-panels-and-rail.md §3.1.
    */
-  deck?: true
+  bodyLayout?: 'wide'
 }
 
 /**
@@ -413,9 +412,9 @@ export function isCodeDemo(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.codeDemo)
 }
 
-/** A piece whose write-up is a rebuilt slide deck rather than plain prose — see `WorkPiece.deck`. */
-export function isDeck(item: WorkItem): boolean {
-  return !isCollection(item) && Boolean(item.deck)
+/** A piece whose MDX body owns its own width — see `WorkPiece.bodyLayout`. */
+export function isWideBody(item: WorkItem): boolean {
+  return !isCollection(item) && item.bodyLayout === 'wide'
 }
 
 export function tierOf(item: WorkItem): WorkTier {
@@ -2409,7 +2408,7 @@ const REAL_WORK: WorkItem[] = [
     tier: 'favorite',
     image: '/brand/deck/cover.webp',
     imageAspect: '16/9',
-    deck: true,
+    bodyLayout: 'wide',
   },
 ]
 

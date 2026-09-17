@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -15,7 +14,7 @@ import {
   isFavorite,
   isHybrid,
   isCodeDemo,
-  isDeck,
+  isWideBody,
   isTextForward,
   itemTags,
   metaDescription,
@@ -222,17 +221,18 @@ function PieceView({ piece }: { piece: WorkPiece }) {
     </div>
   )
 
-  // A deck piece's write-up is a rebuilt slide deck, not plain prose — see
-  // WorkPiece.deck. Checked first, before the code-demo branch, for the same
-  // reason that one is checked before the image branch: a deck piece carries
-  // an MDX body and an `image` and no `text`, so without this branch it
-  // would fall through to the default image branch and render as a plain
-  // picture with an essay under it — silently wrong. The body is not
-  // wrapped in EssayBody's max-w-2xl (Deck owns its own width) — it only
-  // publishes the piece's accent as --essay-accent, which EssayBody instances
-  // inside individual slides pick up from the cascade with no explicit
-  // `tone` prop. See docs/specs/2026-09-branding-deck.md §6.1.
-  if (isDeck(piece) && Body) {
+  // A wide-body piece's write-up is a sequence of `<Panel>`s, not plain
+  // prose — see WorkPiece.bodyLayout. Checked first, before the code-demo
+  // branch, for the same reason that one is checked before the image
+  // branch: such a piece carries an MDX body and an `image` and no `text`,
+  // so without this branch it would fall through to the default image
+  // branch and render as a plain picture with an essay under it — silently
+  // wrong. The body is not wrapped in EssayBody's max-w-2xl (it owns its
+  // own width) — it only publishes the piece's accent as --essay-accent,
+  // which EssayBody instances inside individual panels pick up from the
+  // cascade with no explicit `tone` prop. See
+  // docs/specs/2026-09-panels-and-rail.md §3.1, §6.3.
+  if (isWideBody(piece) && Body) {
     return (
       <article className="mt-6">
         {statusFlags}
@@ -242,9 +242,7 @@ function PieceView({ piece }: { piece: WorkPiece }) {
           <p className="font-brand-italic mt-4 text-pretty text-lg text-muted-foreground">{piece.description}</p>
         )}
         <div style={{ '--essay-accent': tone } as CSSProperties}>
-          <Suspense fallback={<div className="mt-8 h-32" aria-hidden="true" />}>
-            <Body />
-          </Suspense>
+          <Body />
         </div>
         <ProcessSection piece={piece} />
         <SceneSection piece={piece} />

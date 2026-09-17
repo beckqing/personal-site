@@ -9,7 +9,7 @@
 //   1. Flatten every frame's `text` array in docs/brand/deck-source.json,
 //      in frame order, into one word stream.
 //   2. Read content/decks/personal-branding.mdx, pull verbatim copy out of
-//      the few JSX attributes that carry it (Slide's `title`, ProfilePicture's
+//      the few JSX attributes that carry it (Panel's `title`, ProfilePicture's
 //      `title`/`caption`, TypeSample's `name`/`style`/`use`/`caption`) back
 //      into the word stream, then strip all remaining markup.
 //   3. Normalise whitespace, word-diff, report the first 20 differing runs.
@@ -17,15 +17,22 @@
 //
 // Allowlists (applied as skips, not as text substitutions):
 //   - DECK_ONLY_TEXT: text present in the pull but not transcribed — the
-//     dropped title/closing slides (§6.2), a couple of captions for graphics
-//     that weren't exported (the "alternate palettes" swatches, the colour-
-//     blind simulation), one decorative rotated label, and the palette's own
-//     swatch name/hex pairs, which BrandPalette.tsx renders from a constant
-//     duplicated from app/globals.css rather than from transcribed text
-//     (§8.1) — same reason the alphabet-row samples on the typography slide
-//     are here too: TypeSample renders its own alphabet, not sourced text.
-//   - MDX_ONLY_TEXT: text in the MDX with no counterpart in the pull — just
-//     the "profile pictures" slide title, synthesized from the frame name
+//     palette's own swatch name/hex pairs, which BrandPalette.tsx renders
+//     from a constant in lib/brand-palette.ts rather than from transcribed
+//     text (§8.1); the typography slide's alphabet-row samples, which
+//     TypeSample renders itself, not sourced text; and the profile-pictures
+//     slide's rotated, filename-mimicking decoration, which is genuinely
+//     rendered (docs/specs/2026-09-deck-visual-fidelity.md §6.8) but as an
+//     internal constant in profile-picture-grid.tsx rather than transcribed
+//     MDX text. The "alternate palettes" chip label and the palette slide's
+//     colour-blind caption used to be here too (allowlisted as "un-exported"
+//     graphics); both are now built (§6.4, §8.1) and transcribed like
+//     everything else, so both came out.
+//   - A `<StageReflow>` block (§11's below-640px fallback) is dropped whole
+//     before either side is compared — it's a hand-authored *duplicate* of
+//     the same slide's copy, not new copy to verify.
+//   - MDX_ONLY_TEXT: text in the MDX with no counterpart in the pull — the
+//     "profile pictures" slide title, synthesized from the frame name
 //     since that slide carries no heading text node of its own (§11.2 was a
 //     guess; this slide wasn't anticipated at all — see the branding-deck
 //     session's implementation notes).
@@ -41,15 +48,8 @@ const DECK_SOURCE_PATH = join(REPO_ROOT, 'docs/brand/deck-source.json')
 const MDX_PATH = join(REPO_ROOT, 'content/decks/personal-branding.mdx')
 
 const DECK_ONLY_TEXT = [
-  // Dropped title and closing slides (§6.2) — the page's own header and
-  // footer carry this instead.
-  'personal brand',
-  'beck qing\nartist · scientist · designer',
-  'hello@beckqing.com',
-  // Logo design slide's un-exported "alternate palettes" swatch thumbnails.
-  'alternate palettes',
-  // Palette slide: the swatches are BrandPalette.tsx's own constant, and the
-  // colour-blind simulation graphic wasn't exported.
+  // Palette slide: the swatches are BrandPalette.tsx's own constant
+  // (lib/brand-palette.ts), not text transcribed into the MDX.
   'white\n#FFFFFF',
   'summer storm\n#69635E',
   'midnight\n#080B24',
@@ -61,7 +61,6 @@ const DECK_ONLY_TEXT = [
   'pale slate\n#CED2CD',
   'denim\n#305789',
   'emerald\n#4BA661',
-  'color blind simulation from Adobe Color',
   // Typography slide: TypeSample renders its own alphabet sample, not text
   // pulled from the deck.
   'ABCDEFGHIKLMNOPQRSTUVWXYZ\nABCDEFGHIKLMNOPQRSTUVWXYZ',
@@ -74,6 +73,10 @@ const DECK_ONLY_TEXT = [
 const MDX_ONLY_TEXT = [
   // Synthesized: this slide has no heading text node of its own in the pull.
   'profile pictures',
+  // Synthesized: using the closing slide's own bookended tagline as its
+  // title would double-count that text in the word stream (it's rendered
+  // in the body too) — see docs/specs/2026-09-panels-and-rail.md §5.3.
+  'closing',
 ]
 
 function stripPlaceholders(text, placeholders) {
@@ -93,6 +96,20 @@ function dropAllowlistedNodes(slideTexts, placeholders) {
   return slideTexts.filter((t) => !allowed.has(t))
 }
 
+/**
+ * Drops `<StageReflow>…</StageReflow>` blocks whole, before any other
+ * processing. A `layout="stage"` panel's reflow is a hand-authored
+ * *duplicate* of the same slide's copy for below 640px
+ * (docs/specs/2026-09-deck-visual-fidelity.md §11) — "same content, same
+ * order, same copy" is the rule, on purpose. Diffing it too would just
+ * double-count every stage paragraph against a single occurrence in
+ * deck-source.json. Non-greedy and un-nested (no `<StageReflow>` ever
+ * contains another), so first-open-to-first-close is correct.
+ */
+function dropReflowBlocks(text) {
+  return text.replace(/<StageReflow>[\s\S]*?<\/StageReflow>/g, ' ')
+}
+
 /** Pull verbatim deck text out of the few attributes that carry it, before the generic tag stripper below discards it with the markup. */
 function pullAttributeText(text) {
   return text.replace(/<[A-Za-z][^>]*>/g, (tag) => {
@@ -105,7 +122,8 @@ function pullAttributeText(text) {
 }
 
 function stripMarkup(text) {
-  let out = pullAttributeText(text)
+  let out = dropReflowBlocks(text)
+  out = pullAttributeText(out)
   out = out.replace(/^import .+$/gm, ' ')
   out = out.replace(/<\/?[a-zA-Z][^>]*>/g, '')
   return out

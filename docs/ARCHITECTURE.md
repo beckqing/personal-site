@@ -71,7 +71,7 @@ decision.
 **`design` joined `medium` (art's facet) 2026-09-17**, appended last so
 `mediumFor()`'s first-match order is unchanged for every piece that existed
 before it — the personal branding deck (`design`, plus `art`) is its only
-carrier so far. See "The personal branding deck" below.
+carrier so far. See "Panels and the rail" below.
 
 The pruning is a pure data edit in `lib/work.ts` — `ALL_TAGS` derives from
 the facet tables, and it gates both the filter panel's chip list and the
@@ -211,7 +211,7 @@ its tags and fields rather than set by a `type` column:
 
 | Predicate | Means |
 |---|---|
-| `isDeck` | carries `deck: true` — its write-up is a rebuilt `<Deck>` of `<Slide>`s, not plain prose, so the page renders it full width instead of inside `EssayBody`. Checked *before* `isCodeDemo`, for the same reason: it also carries `image` (the gallery cover) and no `text`, so a later branch would silently render it as a plain image piece. See "The personal branding deck" below |
+| `isWideBody` | `bodyLayout === 'wide'` — its write-up is a `<Panels>` sequence, not plain prose, so the page renders it full width instead of inside `EssayBody`. Checked *before* `isCodeDemo`, for the same reason: it also carries `image` (the gallery cover) and no `text`, so a later branch would silently render it as a plain image piece. See "Panels and the rail" below |
 | `isCodeDemo` | carries `codeDemo` — its subject is a thing that runs, so the page leads with the running thing. Checked *before* the image branch: a code demo also carries `image` (its poster), so a later branch would silently render it as a plain image piece |
 | `isTextForward` | carries `text` and no `image` — renders as a quote card, leads with words |
 | `isHybrid` | carries both `text` and `image` — both load-bearing, neither a caption for the other |
@@ -705,48 +705,72 @@ circle" above) and `app/icon.svg` was added alongside `app/favicon.ico` and
 
 ---
 
-## The personal branding deck
+## Panels and the rail
 
-`/work/personal-branding` (`lib/work.ts`, `deck: true`) rebuilds Beck's
-Figma deck of the same name as real HTML rather than embedding or exporting
-it as slide images — see
-[docs/specs/2026-09-branding-deck.md](specs/2026-09-branding-deck.md) for the
-full reasoning. Three of its slides render from the site's own live code
-(`BrandMark`, the palette tokens, `headingStyles`) rather than a picture of
-them, which is the whole point: they cannot drift from what the site
-actually ships.
+`/work/personal-branding` (`lib/work.ts`, `bodyLayout: 'wide'`) rebuilds
+Beck's Figma deck of the same name as real HTML rather than embedding or
+exporting it as slide images. It reads as **continuous scroll with a dot
+rail**, not a slide-at-a-time fullscreen viewer — see
+[docs/specs/2026-09-panels-and-rail.md](specs/2026-09-panels-and-rail.md) for
+the full reasoning, and
+[docs/history/2026-09-branding-deck.md](history/2026-09-branding-deck.md) for
+the superseded present-mode design this replaced. Three of its panels render
+from the site's own live code (`BrandMark`, the palette tokens,
+`headingStyles`) rather than a picture of them, which is the whole point:
+they cannot drift from what the site actually ships.
 
-**`Deck` / `Slide` / `SlideFigure`** (`components/deck.tsx`) are the
-authoring primitives, imported directly into `content/decks/
-personal-branding.mdx` the same way an essay imports its own components.
-`Deck` reads its slide list straight off `React.Children.toArray(children)`'s
-`id`/`title`/`layout` props — no registry. `Slide.layout` is a closed set
-(`prose` | `figure` | `split` | `full`) describing what kind of composition a
-slide is, not a copy of its original Figma frame's exact pixel layout.
+**A deck and a case study are the same primitive.** Both are "a sequence of
+titled panels that owns its own width," so there is one field
+(`WorkPiece.bodyLayout`, a string union whose only member today is `'wide'`),
+one predicate (`isWideBody()`), one `PieceView` branch, and one component
+family: **`Panels` / `Panel` / `PanelFigure`** (`components/panels.tsx`).
+Not `Slide`/`Deck` — a technical report has no slides — and not `Section`,
+which already names a different primitive (a foldable essay heading, see
+[docs/specs/2026-09-sections-folding-logs.md](specs/2026-09-sections-folding-logs.md)).
 
-**Two renders, one content tree.** Scroll mode renders each `<Slide>` as a
-plain `<section>`. Present mode (a button in the piece header) opens a
-`@base-ui/react` `Dialog`, then requests fullscreen on the popup
-(`.catch(() => {})` — iOS Safari has no `requestFullscreen`, and the Dialog
-overlay alone is the fallback experience there), and renders a *second* copy
-of the current slide inside it via a `presenting` React context. That
-context is also why a `Slide`'s DOM `id` is omitted on the presenting copy:
-two elements sharing an id while the dialog is open breaks anchors and
-`aria-labelledby` both. `?slide=<id>` is the single source of truth for which
-slide (if any) present mode is open on — the same `useSearchParams` +
-`router.replace(..., { scroll: false })` pattern `WorkGallery` uses for
-`?view=`, so the header's present button and `Deck` agree on state with no
-context passed between them, and the page needs a `<Suspense>` boundary
-around the MDX body for the same reason `/work` wraps `WorkGallery` in one.
+**All three are Server Components, and that is the actual repair for a defect
+that shipped in the first build.** The old `components/deck.tsx` was
+`'use client'`, so its slide list was derived by comparing `c.type === Slide`
+across the RSC boundary between the client `Deck` and the server `content/
+decks/personal-branding.mdx` — a comparison that is *always false*, because
+Flight serializes a Server Component's `<Slide>` as a client-reference
+element, never as the function `deck.tsx` holds in its own scope. The deck
+rendered nothing. Moving derivation to `panels.tsx` — no `'use client'` —
+puts `Panels` and the MDX body in the same module graph, where
+`c.type === Panel` is trivially true. `Panels` reads its list straight off
+`React.Children.toArray(children)`'s `id`/`title`/`layout` props — no
+registry — and hands the one client module in the tree, `PanelRail`
+(`components/panel-rail.tsx`, `'use client'`), a plain serializable
+`{id,title}[]`. `Panel.layout` is a closed set (`prose` | `figure` | `split` |
+`full` | `cover`) describing what kind of composition a panel is, never a
+copy of its original Figma frame's exact pixel layout.
+
+**Present mode is gone, deliberately.** The `@base-ui/react` `Dialog`,
+`?slide=<id>` URL state, the idle-fade timer, the swipe handler, and the
+duplicate-DOM-id `PresentingContext` it all required are deleted, not
+adapted — every one of those existed only because something had to index
+into a slide list, and the list itself never worked. A link to one panel is
+now a plain `#id` anchor.
+
+**Both navs are server-rendered from the one derived list**, so they cannot
+disagree and neither pops in after hydration: `PanelContents` (under the
+piece header, every breakpoint) and `PanelRail` (fixed dots, `xl` and up
+only — `<main>` is exactly `max-w-5xl`, so anything narrower puts the rail on
+top of the text). The rail's active dot comes from one `IntersectionObserver`
+watching every panel with a `-45% 0px -45% 0px` root margin.
 
 **Content is transcribed verbatim** from `docs/brand/deck-source.json`
 (committed, pulled by `scripts/pull-brand-deck.mjs` from the Figma REST API —
 never the source images; OCR-off-pixels is exactly what choosing the token
 route was for) and checked by `scripts/check-deck-fidelity.mjs`, which
-word-diffs the MDX against the pull and allowlists only the deliberate
-omissions (the dropped title/closing slides — the page's own header and
-footer already carry that — and a couple of captions for graphics that
-weren't exported).
+word-diffs the MDX against the pull. **The deck now transcribes all nine of
+the pull's frames**, including the title and closing frames a first pass
+dropped on the theory that the page's own header and footer already carried
+that framing — Beck's call was that they didn't: those are the *site's*
+framing of the piece, not the deck's own opening and closing. The bookended
+tagline (`beck qing` / `artist · scientist · designer`, on both the cover and
+closing panels) is real duplicated content in the pull, not a mistake, so it
+is transcribed twice on purpose.
 
 **The palette slide is the site's actual brand palette, not the monogram's
 five-colour breakdown.** The build spec guessed the latter from an illegible
@@ -768,14 +792,14 @@ piece doesn't make a discipline, and `design` would otherwise have touched
 `DISCIPLINE_TONE` (a new brand colour), the home page's three columns, and
 the hero collage to stand up a discipline holding exactly one item.
 
-**Two slides exist that the build spec didn't anticipate.** It was written
-from a guess off that same illegible thumbnail; the real pull added a
-"logo drafting" slide (distinct from "logo design" — sketches and a rejected
-draft, not the final geometry) and a "profile pictures" slide (a grid of six
+**Two slides exist that the first build spec didn't anticipate.** It was
+written from a guess off an illegible thumbnail; the real pull added a
+"logo drafting" panel (distinct from "logo design" — sketches and a rejected
+draft, not the final geometry) and a "profile pictures" panel (a grid of six
 alternate self-presentation options, one of which — "your friendly
 neighborhood artist" — is confirmed the same photo as `public/about/
-beck-friendly-neighborhood-artist.webp`). Neither needed a new `Slide.layout`
-variant; both use `full` with their own content component
+beck-friendly-neighborhood-artist.webp`). Neither needed a new `Panel.layout`
+variant beyond `full`; both use their own content component
 (`components/profile-picture-grid.tsx` for the grid).
 
 - **`work-gallery.tsx`** — the `/work` client island: filter panel, URL state,
@@ -799,10 +823,14 @@ variant; both use `full` with their own content component
   mount it's in.
 - **`site-nav.tsx` publishes `--nav-h`**, a CSS custom property on
   `document.documentElement` holding the nav's own measured height (it wraps
-  to two lines below ~363px, so this isn't a constant). The only consumer
-  today is `work-gallery.tsx`'s `DockedFilterBar`, which pins itself directly
-  below the nav using it — a cross-component contract that isn't visible from
-  either file in isolation, which is why it's recorded here.
+  to two lines below ~363px, so this isn't a constant). Consumers:
+  `work-gallery.tsx`'s `DockedFilterBar`, which pins itself directly below
+  the nav using it, and — since the panels-and-rail spec — every `<Panel>`'s
+  `scroll-margin-top` (`.panel` in `app/globals.css`) and `PanelRail`'s
+  `scrollIntoView` target, both of which need a deep-linked or scrolled-to
+  panel heading to land clear of the sticky nav. A cross-component contract
+  that isn't visible from any one file in isolation, which is why it's
+  recorded here.
 - **`work-visuals.tsx`** — the shared pieces those cards (and a collection
   page's own tiles) are built from: `VerseBlock`, placeholders, aspect
   helpers, tag links, prose blocks, the collection stack, chapbook contents,

@@ -1,152 +1,400 @@
 import Image from 'next/image'
-import { Deck, Slide, SlideFigure } from '@/components/deck'
-import { EssayBody } from '@/components/essay'
+import { Panels, Panel, StageItem, StageReflow } from '@/components/panels'
 import { BrandMark } from '@/components/brand-mark'
 import { BrandPalette } from '@/components/brand-palette'
 import { TypeSpecimen, TypeSample } from '@/components/type-specimen'
-import { MarkConstruction } from '@/components/mark-construction'
 import { ProfilePictureGrid, ProfilePicture } from '@/components/profile-picture-grid'
+import { InstagramIcon } from '@/components/instagram-icon'
 
-<Deck>
-  <Slide id="about-me" title="Hi, I’m Beck." layout="split">
-    <SlideFigure
-      src="/about/beck-friendly-neighborhood-artist.webp"
-      aspect="4/5"
-      alt="Beck sitting on the floor beside a fiddle-leaf fig, looking over a small painted canvas"
+<Panels>
+  <Panel
+    id="cover"
+    title="personal brand"
+    layout="stage"
+    bg="#0C3559"
+    titleBox={{ x: 72, y: 26, w: 924, h: 97 }}
+    titleClassName="font-brand-italic lowercase"
+    titleStyle={{ fontSize: 64, lineHeight: '77px', color: '#305789' }}
+  >
+    <StageItem x={-39} y={145} w={334} h={4} ariaHidden style={{ backgroundColor: '#305789' }} />
+    <StageItem x={1020} y={198} w={732} h={714} rotate={0.3} ariaHidden style={{ backgroundColor: '#080B24' }} />
+    <StageItem x={1024} y={193} w={710} h={695} ariaHidden style={{ backgroundColor: '#CED2CD' }} />
+    <StageItem x={1118} y={263} w={500} h={500}>
+      <BrandMark detail="filled" ink="#080B24" crescentColor="#D9AA52" className="h-full w-full" />
+    </StageItem>
+    <StageItem x={36} y={350} w={944} h={363} className="font-brand font-bold text-center" style={{ fontSize: 40, lineHeight: '48px', color: '#080B24', whiteSpace: 'nowrap' }}>
+      <p>beck qing</p>
+      <p>artist · scientist · designer</p>
+    </StageItem>
+
+    <StageReflow>
+      <div className="flex flex-col items-center gap-6 py-6 text-center">
+        <BrandMark detail="filled" ink="#CED2CD" crescentColor="#D9AA52" className="h-16 w-16" />
+        <p className="font-brand-italic lowercase" style={{ color: '#305789', fontSize: 22 }}>personal brand</p>
+        <div className="font-brand font-bold" style={{ color: '#CED2CD', fontSize: 16 }}>
+          <p>beck qing</p>
+          <p>artist · scientist · designer</p>
+        </div>
+      </div>
+    </StageReflow>
+
+  </Panel>
+
+  <Panel
+    id="about-me"
+    title="Hi, I’m Beck."
+    layout="stage"
+    bg="#080B24"
+    titleBox={{ x: 800, y: 378, w: 863, h: 129 }}
+    titleClassName="font-brand font-bold"
+    titleStyle={{ fontSize: 64, lineHeight: '77px', color: '#CED2CD' }}
+  >
+    <StageItem x={-67} y={-325} w={778} h={1405}>
+      <Image
+        src="/about/beck-friendly-neighborhood-artist.webp"
+        alt="Beck sitting on the floor beside a fiddle-leaf fig, looking over a small painted canvas"
+        fill
+        sizes="778px"
+        className="object-cover"
+      />
+    </StageItem>
+    <StageItem x={867} y={490} w={730} h={229} className="font-sans" style={{ fontSize: 32, lineHeight: '44px', color: '#CED2CD' }}>I’m an interdisciplinary designer, scientist, and serial hobbyist. In designing my personal brand, I was aiming for something versatile enough to fit all of my interests while also providing a link between them.</StageItem>
+
+    <StageReflow>
+      <div className="flex flex-col gap-6 py-6" style={{ color: '#CED2CD' }}>
+        <p className="font-brand font-bold text-xl">Hi, I’m Beck.</p>
+        <div className="relative aspect-[4/5] w-full max-w-xs overflow-hidden rounded-xl">
+          <Image
+            src="/about/beck-friendly-neighborhood-artist.webp"
+            alt="Beck sitting on the floor beside a fiddle-leaf fig, looking over a small painted canvas"
+            fill
+            sizes="320px"
+            className="object-cover"
+          />
+        </div>
+        <p className="text-base leading-relaxed">I’m an interdisciplinary designer, scientist, and serial hobbyist. In designing my personal brand, I was aiming for something versatile enough to fit all of my interests while also providing a link between them.</p>
+      </div>
+    </StageReflow>
+
+  </Panel>
+
+  <Panel
+    id="logo-drafting"
+    title="logo drafting"
+    layout="stage"
+    bg="#305789"
+    titleBox={{ x: 1218, y: 82, w: 499, h: 77 }}
+    titleClassName="font-brand font-bold"
+    titleStyle={{ fontSize: 64, lineHeight: '77px', color: '#FFFFFF' }}
+  >
+    <StageItem
+      x={0}
+      y={0}
+      w={1920}
+      h={979}
+      ariaHidden
+      style={{ background: 'linear-gradient(100deg, rgba(48,87,137,0.75) 0%, rgba(48,87,137,0) 48%)' }}
     />
-
-    I’m an interdisciplinary designer, scientist, and serial hobbyist. In designing my personal brand, I was aiming for something versatile enough to fit all of my interests while also providing a link between them.
-
-  </Slide>
-
-  <Slide id="logo-drafting" title="logo drafting" layout="split">
-    <SlideFigure
-      src="/brand/deck/logo-drafting-sketches.webp"
-      aspect="1600/1427"
-      alt="A page of Beck's handwritten sketches exploring 'b' and 'q' letterforms, English and Chinese characters, and full-name lockups"
-    />
-
-    When I imagined a logo that could represent me across disciplines, only a design that centered my name felt appropriate.
-
-    I began by writing my name and initials, aiming for a logomark that fit equally on a digital flyer or signed by hand on a traditional painting.
-
-    Inspired by Xu Bing’s square word calligraphy and Yongsheng Zhao’s vertical English characters, I attempted to incorporate a part of my Chinese name, 清 (qíng), into the logo, but it involved too much compromise for my taste.
-
-    <div className="mt-6 flex items-center gap-3 rounded-xl border border-border bg-card/40 p-3">
+    <StageItem x={1264} y={185} w={575} h={530} className="font-sans" style={{ fontSize: 32, lineHeight: '44px', color: '#FFFFFF' }}>
+      <p>When I imagined a logo that could represent me across disciplines, only a design that centered my name felt appropriate.</p>
+      <p className="mt-6">I began by writing my name and initials, aiming for a logomark that fit equally on a digital flyer or signed by hand on a traditional painting.</p>
+    </StageItem>
+    <StageItem x={1453} y={633} w={200} h={200}>
       <Image
         src="/brand/deck/logo-drafting-rejected.webp"
         alt="A rejected logo draft: a square icon with a blue wedge, a moon, and overlapping letterforms in a different palette"
-        width={72}
-        height={72}
-        className="shrink-0 rounded-lg border border-border"
+        fill
+        sizes="200px"
+        className="object-cover"
       />
-      <p className="text-sm text-muted-foreground">
-        Rejected design: While I initially liked this, I found that it’s too inorganic to be representative of me and
-        my work.
-      </p>
-    </div>
+    </StageItem>
+    <StageItem x={46} y={736} w={425} h={230} className="font-sans text-center" style={{ fontSize: 24, lineHeight: '33px', color: '#CED2CD' }}>Inspired by Xu Bing’s square word calligraphy and Yongsheng Zhao’s vertical English characters, I attempted to incorporate a part of my Chinese name, 清 (qíng), into the logo, but it involved too much compromise for my taste.</StageItem>
+    <StageItem x={1284} y={868} w={538} h={114} className="font-sans text-center" style={{ fontSize: 24, lineHeight: '33px', color: '#CED2CD' }}>Rejected design: While I initially liked this, I found that it’s too inorganic to be representative of me and my work.</StageItem>
+    <StageItem x={0} y={1017} w={1920} h={4} ariaHidden style={{ backgroundColor: '#CED2CD' }} />
 
-  </Slide>
+    <StageReflow>
+      <div className="flex flex-col gap-6 py-6" style={{ color: '#FFFFFF' }}>
+        <p className="font-brand font-bold text-xl">logo drafting</p>
+        <div className="relative aspect-[1600/1427] w-full overflow-hidden rounded-xl">
+          <Image
+            src="/brand/deck/logo-drafting-sketches.webp"
+            alt="A page of Beck's handwritten sketches exploring 'b' and 'q' letterforms, English and Chinese characters, and full-name lockups"
+            fill
+            sizes="(max-width: 640px) 100vw, 480px"
+            className="object-cover"
+          />
+        </div>
+        <p className="text-base leading-relaxed">When I imagined a logo that could represent me across disciplines, only a design that centered my name felt appropriate.</p>
+        <p className="text-base leading-relaxed">I began by writing my name and initials, aiming for a logomark that fit equally on a digital flyer or signed by hand on a traditional painting.</p>
+        <p className="text-sm" style={{ color: '#CED2CD' }}>Inspired by Xu Bing’s square word calligraphy and Yongsheng Zhao’s vertical English characters, I attempted to incorporate a part of my Chinese name, 清 (qíng), into the logo, but it involved too much compromise for my taste.</p>
+        <div className="flex items-center gap-3 rounded-xl border border-white/20 p-3">
+          <Image
+            src="/brand/deck/logo-drafting-rejected.webp"
+            alt="A rejected logo draft: a square icon with a blue wedge, a moon, and overlapping letterforms in a different palette"
+            width={64}
+            height={64}
+            className="shrink-0 rounded-lg"
+          />
+          <p className="text-sm" style={{ color: '#CED2CD' }}>Rejected design: While I initially liked this, I found that it’s too inorganic to be representative of me and my work.</p>
+        </div>
+      </div>
+    </StageReflow>
 
-  <Slide id="logo-design" title="logo design" layout="full">
-    <MarkConstruction />
+  </Panel>
 
-    <EssayBody className="mx-auto mt-10">
-      <p>
-        I settled on two lowercase initials, with overlapping counters. The letters are balanced, and there is
-        potential to play with relevant concepts, like the intersection between art and science.
-      </p>
-      <p>
-        Although I appreciate a radially symmetrical logo, giving the letters distinct shapes looked more natural in
-        my handwriting and provided more shapes made by the letterforms.
-      </p>
-      <p>
-        It also enabled me to include a crescent moon, a symbol I have used for some time in my online presence
-        since I’m something of a night owl.
-      </p>
-    </EssayBody>
+  <Panel
+    id="logo-design"
+    title="logo design"
+    layout="stage"
+    bg="#CED2CD"
+    titleBox={{ x: 748, y: 82, w: 423, h: 77 }}
+    titleClassName="font-brand font-bold"
+    titleStyle={{ fontSize: 64, lineHeight: '77px', color: '#0C3559' }}
+  >
+    <StageItem x={146} y={185} w={500} h={500}>
+      <BrandMark detail="filled" ink="#080B24" crescentColor="#D9AA52" className="h-full w-full" />
+    </StageItem>
+    <StageItem x={796} y={185} w={575} h={778} className="font-sans" style={{ fontSize: 32, lineHeight: '44px', color: '#080B24' }}>
+      <p>I settled on two lowercase initials, with overlapping counters. The letters are balanced, and there is potential to play with relevant concepts, like the intersection between art and science.</p>
+      <p className="mt-6">Although I appreciate a radially symmetrical logo, giving the letters distinct shapes looked more natural in my handwriting and provided more shapes made by the letterforms.</p>
+      <p className="mt-6">It also enabled me to include a crescent moon, a symbol I have used for some time in my online presence since I’m something of a night owl.</p>
+    </StageItem>
+    <StageItem x={111} y={769} w={309} h={45} className="font-brand lowercase" style={{ fontSize: 32, lineHeight: '38px', color: '#0C3559', whiteSpace: 'nowrap' }}>alternate palettes</StageItem>
+    <StageItem x={111} y={799} w={486} h={4} ariaHidden style={{ backgroundColor: '#69635E' }} />
+    <StageItem x={111} y={814} w={170} h={170} ariaHidden style={{ backgroundColor: '#A79F99' }}>
+      <BrandMark detail="filled" ink="#0C3559" crescentColor="#D9AA52" wedgeColor="#8C3623" className="h-full w-full" />
+    </StageItem>
+    <StageItem x={311} y={814} w={170} h={170} ariaHidden style={{ backgroundColor: '#0C3559' }}>
+      <BrandMark detail="filled" ink="#0C3559" crescentColor="#0C3559" wedgeColor="#0C3559" className="h-full w-full" />
+    </StageItem>
+    <StageItem x={511} y={817} w={170} h={170} ariaHidden style={{ backgroundColor: '#080B24' }}>
+      <BrandMark detail="filled" ink="#080B24" crescentColor="#FFFFFF" wedgeColor="#0C3559" className="h-full w-full" />
+    </StageItem>
 
-  </Slide>
+    <StageReflow>
+      <div className="flex flex-col gap-6 py-6" style={{ color: '#080B24' }}>
+        <p className="font-brand font-bold text-xl" style={{ color: '#0C3559' }}>logo design</p>
+        <BrandMark detail="filled" ink="#080B24" crescentColor="#D9AA52" className="h-20 w-20 self-center" />
+        <p className="text-base leading-relaxed">I settled on two lowercase initials, with overlapping counters. The letters are balanced, and there is potential to play with relevant concepts, like the intersection between art and science.</p>
+        <p className="text-base leading-relaxed">Although I appreciate a radially symmetrical logo, giving the letters distinct shapes looked more natural in my handwriting and provided more shapes made by the letterforms.</p>
+        <p className="text-base leading-relaxed">It also enabled me to include a crescent moon, a symbol I have used for some time in my online presence since I’m something of a night owl.</p>
+        <div>
+          <p className="font-brand lowercase text-sm" style={{ color: '#0C3559' }}>alternate palettes</p>
+          <div className="mt-3 flex gap-3">
+            <div className="h-16 w-16" style={{ backgroundColor: '#A79F99' }}>
+              <BrandMark detail="filled" ink="#0C3559" crescentColor="#D9AA52" wedgeColor="#8C3623" className="h-full w-full" />
+            </div>
+            <div className="h-16 w-16" style={{ backgroundColor: '#0C3559' }}>
+              <BrandMark detail="filled" ink="#0C3559" crescentColor="#0C3559" wedgeColor="#0C3559" className="h-full w-full" />
+            </div>
+            <div className="h-16 w-16" style={{ backgroundColor: '#080B24' }}>
+              <BrandMark detail="filled" ink="#080B24" crescentColor="#FFFFFF" wedgeColor="#0C3559" className="h-full w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </StageReflow>
 
-  <Slide id="typography" title="typography" layout="full">
-    <EssayBody className="mx-auto">
-      <p>
-        I wanted a beautiful mono typeface that didn’t scream code. There are several out there, such as Operator,
-        Cartograph, Dank Mono, and Victor Mono, but ultimately I fell in love with the variable properties of
-        Recursive.
-      </p>
-      <p>
-        I paired it with Noto Sans, another incredibly versatile typeface with an astounding capacity for displaying
-        different writing systems (needed for the occasional linguistics blog post).
-      </p>
-    </EssayBody>
+  </Panel>
 
-    <div className="mt-10">
-      <TypeSpecimen>
-        <TypeSample
-          name="Recursive"
-          style="Mono Casual Bold"
-          use="headings"
-          caption="for showing another side to mono typefaces"
-          className="font-brand"
-        />
-        <TypeSample name="Noto Sans" use="body" caption="for writing in any language" className="font-sans" />
-        <TypeSample
-          name="Recursive"
-          style="Mono Casual Italic"
-          use="mono"
-          caption="for displaying ukelele tabs, poetry, code, and other beautiful things"
-          className="font-brand-italic"
-        />
-      </TypeSpecimen>
-    </div>
+  <Panel
+    id="typography"
+    title="typography"
+    layout="stage"
+    bg="#0C3559"
+    titleBox={{ x: 1218, y: 82, w: 384, h: 77 }}
+    titleClassName="font-brand font-bold lowercase"
+    titleStyle={{ fontSize: 64, lineHeight: '77px', color: '#A79F99' }}
+  >
+    <StageItem x={1264} y={185} w={575} h={731} className="font-sans" style={{ fontSize: 32, lineHeight: '44px', color: '#FFFFFF' }}>
+      <p>I wanted a beautiful mono typeface that didn’t scream code. There are several out there, such as Operator, Cartograph, Dank Mono, and Victor Mono, but ultimately I fell in love with the variable properties of Recursive.</p>
+      <p className="mt-6">I paired it with Noto Sans, another incredibly versatile typeface with an astounding capacity for displaying different writing systems (needed for the occasional linguistics blog post).</p>
+    </StageItem>
 
-  </Slide>
+    <TypeSpecimen>
+      <TypeSample
+        name="Recursive"
+        style="Mono Casual Bold"
+        use="headings"
+        caption="for showing another side to mono typefaces"
+        className="font-brand"
+      />
+      <TypeSample name="Noto Sans" use="body" caption="for writing in any language" className="font-sans" />
+      <TypeSample
+        name="Recursive"
+        style="Mono Casual Italic"
+        use="mono"
+        caption="for displaying ukelele tabs, poetry, code, and other beautiful things"
+        className="font-brand-italic"
+      />
+    </TypeSpecimen>
 
-  <Slide id="palette" title="palette" layout="full">
-    <EssayBody className="mx-auto">
-      <p>
-        I designed a palette that could be subdivided to make other themes and make color-blind friendly data
-        visualizations.
-      </p>
-      <p>
-        The main colors are warm neutrals, along with a warm indigo, my favorite color due to its usefulness in
-        painting shadows.
-      </p>
-    </EssayBody>
+    <StageReflow>
+      <div className="flex flex-col gap-8 py-6" style={{ color: '#FFFFFF' }}>
+        <p className="font-brand font-bold text-xl lowercase" style={{ color: '#A79F99' }}>typography</p>
+        <p className="text-base leading-relaxed">I wanted a beautiful mono typeface that didn’t scream code. There are several out there, such as Operator, Cartograph, Dank Mono, and Victor Mono, but ultimately I fell in love with the variable properties of Recursive.</p>
+        <p className="text-base leading-relaxed">I paired it with Noto Sans, another incredibly versatile typeface with an astounding capacity for displaying different writing systems (needed for the occasional linguistics blog post).</p>
+        <div className="flex flex-col gap-6">
+          <div className="border-t pt-4" style={{ borderColor: '#305789' }}>
+            <p className="font-brand-sans-italic text-sm" style={{ color: '#A79F99' }}>headings</p>
+            <p className="font-brand mt-1 text-2xl lowercase">Recursive Mono Casual Bold</p>
+            <p className="text-sm" style={{ color: '#CED2CD' }}>for showing another side to mono typefaces</p>
+          </div>
+          <div className="border-t pt-4" style={{ borderColor: '#305789' }}>
+            <p className="font-brand-sans-italic text-sm" style={{ color: '#A79F99' }}>body</p>
+            <p className="font-sans mt-1 text-2xl lowercase">Noto Sans</p>
+            <p className="text-sm" style={{ color: '#CED2CD' }}>for writing in any language</p>
+          </div>
+          <div className="border-t pt-4" style={{ borderColor: '#305789' }}>
+            <p className="font-brand-sans-italic text-sm" style={{ color: '#A79F99' }}>mono</p>
+            <p className="font-brand-italic mt-1 text-2xl lowercase">Recursive Mono Casual Italic</p>
+            <p className="text-sm" style={{ color: '#CED2CD' }}>for displaying ukelele tabs, poetry, code, and other beautiful things</p>
+          </div>
+        </div>
+      </div>
+    </StageReflow>
 
-    <div className="mt-8">
-      <BrandPalette />
-    </div>
+  </Panel>
 
-  </Slide>
+  <Panel
+    id="palette"
+    title="palette"
+    layout="stage"
+    bg="#CED2CD"
+    titleBox={{ x: 1218, y: 82, w: 269, h: 77 }}
+    titleClassName="font-brand font-bold lowercase"
+    titleStyle={{ fontSize: 64, lineHeight: '77px', color: '#0C3559' }}
+  >
+    <StageItem x={1264} y={185} w={575} h={525} className="font-sans" style={{ fontSize: 32, lineHeight: '44px', color: '#080B24' }}>
+      <p>I designed a palette that could be subdivided to make other themes and make color-blind friendly data visualizations.</p>
+      <p className="mt-6">The main colors are warm neutrals, along with a warm indigo, my favorite color due to its usefulness in painting shadows.</p>
+    </StageItem>
 
-  <Slide id="palette-uses" title="palette uses" layout="split">
-    <SlideFigure
-      src="/brand/deck/sparks-and-tendrils.webp"
-      aspect="1251/2176"
-      alt="Sparks and Tendrils — a painting of a woman with an anatomical heart visible in her chest, night-blue tones with gold accents"
-    />
+    <BrandPalette caption="color blind simulation from Adobe Color" />
 
-    The broad palette allows for diverse illustrations using only brand colors.
+    <StageReflow>
+      <div className="flex flex-col gap-6 py-6" style={{ color: '#080B24' }}>
+        <p className="font-brand font-bold text-xl" style={{ color: '#0C3559' }}>palette</p>
+        <p className="text-base leading-relaxed">I designed a palette that could be subdivided to make other themes and make color-blind friendly data visualizations.</p>
+        <p className="text-base leading-relaxed">The main colors are warm neutrals, along with a warm indigo, my favorite color due to its usefulness in painting shadows.</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#69635E' }}>
+            <p className="font-brand-italic text-right text-xs text-white">summer storm</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#A79F99' }}>
+            <p className="font-brand-italic text-right text-xs text-white">satin nickel</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#080B24' }}>
+            <p className="font-brand-italic text-right text-xs text-white">midnight</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#0C3559' }}>
+            <p className="font-brand-italic text-right text-xs text-white">indigo</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#305789' }}>
+            <p className="font-brand-italic text-right text-xs text-white">denim</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#CED2CD' }}>
+            <p className="font-brand-italic text-right text-xs" style={{ color: '#69635E' }}>pale slate</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end border border-border p-2" style={{ backgroundColor: '#FFFFFF' }}>
+            <p className="font-brand-italic text-right text-xs" style={{ color: '#69635E' }}>white</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#8C3623' }}>
+            <p className="font-brand-italic text-right text-xs text-white">terra cotta</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#BF712C' }}>
+            <p className="font-brand-italic text-right text-xs text-white">pumpkin pie</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#D9AA52' }}>
+            <p className="font-brand-italic text-right text-xs" style={{ color: '#8C3623' }}>goldenrod</p>
+          </div>
+          <div className="flex aspect-square flex-col justify-end p-2" style={{ backgroundColor: '#4BA661' }}>
+            <p className="font-brand-italic text-right text-xs text-white">emerald</p>
+          </div>
+        </div>
+      </div>
+    </StageReflow>
 
-    The palette was also designed so I could label blog topics based on my personal associations relating colors with academic subjects.
+  </Panel>
 
-    <div className="mt-6 flex flex-wrap gap-3">
-      <span className="font-brand rounded-full px-4 py-2 text-sm lowercase text-white" style={{ backgroundColor: '#305789' }}>
-        art
-      </span>
-      <span className="font-brand rounded-full px-4 py-2 text-sm lowercase text-white" style={{ backgroundColor: '#bf712c' }}>
-        humanities
-      </span>
-      <span className="font-brand rounded-full px-4 py-2 text-sm lowercase text-white" style={{ backgroundColor: '#4ba661' }}>
-        science
-      </span>
-    </div>
+  <Panel
+    id="palette-uses"
+    title="palette uses"
+    layout="stage"
+    bg="#080B24"
+    titleBox={{ x: 125, y: 285, w: 461, h: 77 }}
+    titleClassName="font-brand font-bold"
+    titleStyle={{ fontSize: 64, lineHeight: '77px', color: '#CED2CD' }}
+  >
+    <StageItem x={1320} y={0} w={617} h={1080}>
+      <Image
+        src="/brand/deck/sparks-and-tendrils.webp"
+        alt="Sparks and Tendrils — a painting of a woman with an anatomical heart visible in her chest, night-blue tones with gold accents"
+        fill
+        sizes="617px"
+        className="object-cover"
+      />
+    </StageItem>
+    <StageItem x={183} y={388} w={685} h={397} className="font-sans" style={{ fontSize: 32, lineHeight: '44px', color: '#CED2CD' }}>
+      <p>The broad palette allows for diverse illustrations using only brand colors.</p>
+      <p className="mt-6">The palette was also designed so I could label blog topics based on my personal associations relating colors with academic subjects.</p>
+    </StageItem>
+    <StageItem
+      x={125}
+      y={881}
+      w={340}
+      h={90}
+      className="font-brand flex items-center justify-center font-bold lowercase text-white"
+      style={{ borderRadius: 45, backgroundColor: '#305789', fontSize: 32, lineHeight: '38px' }}
+    >
+      art
+    </StageItem>
+    <StageItem
+      x={490}
+      y={881}
+      w={340}
+      h={90}
+      className="font-brand flex items-center justify-center font-bold lowercase text-white"
+      style={{ borderRadius: 45, backgroundColor: '#BF712C', fontSize: 32, lineHeight: '38px' }}
+    >
+      humanities
+    </StageItem>
+    <StageItem
+      x={855}
+      y={881}
+      w={340}
+      h={90}
+      className="font-brand flex items-center justify-center font-bold lowercase text-white"
+      style={{ borderRadius: 45, backgroundColor: '#4BA661', fontSize: 32, lineHeight: '38px' }}
+    >
+      science
+    </StageItem>
 
-  </Slide>
+    <StageReflow>
+      <div className="flex flex-col gap-6 py-6" style={{ color: '#CED2CD' }}>
+        <p className="font-brand font-bold text-xl">palette uses</p>
+        <div className="relative aspect-[1251/2176] w-full max-w-xs self-center overflow-hidden rounded-xl">
+          <Image
+            src="/brand/deck/sparks-and-tendrils.webp"
+            alt="Sparks and Tendrils — a painting of a woman with an anatomical heart visible in her chest, night-blue tones with gold accents"
+            fill
+            sizes="320px"
+            className="object-cover"
+          />
+        </div>
+        <p className="text-base leading-relaxed">The broad palette allows for diverse illustrations using only brand colors.</p>
+        <p className="text-base leading-relaxed">The palette was also designed so I could label blog topics based on my personal associations relating colors with academic subjects.</p>
+        <div className="flex flex-wrap gap-3">
+          <span className="font-brand rounded-full px-4 py-2 text-sm lowercase text-white" style={{ backgroundColor: '#305789' }}>art</span>
+          <span className="font-brand rounded-full px-4 py-2 text-sm lowercase text-white" style={{ backgroundColor: '#BF712C' }}>humanities</span>
+          <span className="font-brand rounded-full px-4 py-2 text-sm lowercase text-white" style={{ backgroundColor: '#4BA661' }}>science</span>
+        </div>
+      </div>
+    </StageReflow>
 
-  <Slide id="profile-pictures" title="profile pictures" layout="full">
+  </Panel>
+
+  <Panel id="profile-pictures" title="profile pictures" layout="stage" bg="#CED2CD">
     <ProfilePictureGrid>
       <ProfilePicture
         title="The Professional"
@@ -168,7 +416,7 @@ import { ProfilePictureGrid, ProfilePicture } from '@/components/profile-picture
         title="the logo"
         caption="modern. possibly too impersonal. will probably replace the classic at some point."
       >
-        <BrandMark detail="filled" className="h-16 w-16" />
+        <BrandMark detail="filled" ink="#080B24" crescentColor="#D9AA52" className="h-2/3 w-2/3" />
       </ProfilePicture>
       <ProfilePicture
         title="the classic"
@@ -182,5 +430,101 @@ import { ProfilePictureGrid, ProfilePicture } from '@/components/profile-picture
       />
     </ProfilePictureGrid>
 
-  </Slide>
-</Deck>
+    <StageReflow>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-8 py-6 sm:grid-cols-3">
+        <figure className="flex flex-col items-center gap-3 text-center">
+          <div className="relative aspect-square w-full max-w-[180px] overflow-hidden rounded-full border border-border bg-card">
+            <Image src="/brand/deck/profile-professional.webp" alt="The Professional" fill sizes="180px" className="object-cover" />
+          </div>
+          <figcaption>
+            <p className="font-brand-linear text-sm">The Professional</p>
+            <p className="mt-1 text-xs text-muted-foreground">LinkedIn. It’s time to cave in to the world’s demands and put your best --or really, a smiling, squinching-- face forward.</p>
+          </figcaption>
+        </figure>
+        <figure className="flex flex-col items-center gap-3 text-center">
+          <div className="relative aspect-square w-full max-w-[180px] overflow-hidden border border-border bg-card">
+            <Image src="/about/beck-friendly-neighborhood-artist.webp" alt="your friendly neighborhood artist" fill sizes="180px" className="object-cover" />
+          </div>
+          <figcaption>
+            <p className="font-brand-linear text-sm">your friendly neighborhood artist</p>
+            <p className="mt-1 text-xs text-muted-foreground">the go-to if you’ve seen my face before. let’s find a time if you wanna see it again :)</p>
+          </figcaption>
+        </figure>
+        <figure className="flex flex-col items-center gap-3 text-center">
+          <div className="relative aspect-square w-full max-w-[180px] overflow-hidden border border-border bg-card">
+            <Image src="/brand/deck/profile-tired-internet-persona.webp" alt="your tired internet persona" fill sizes="180px" className="object-cover" />
+          </div>
+          <figcaption>
+            <p className="font-brand-linear text-sm">your tired internet persona</p>
+            <p className="mt-1 text-xs text-muted-foreground">hiding behind art, subtle logo... this is more recognizable than a face, or is that just me?</p>
+          </figcaption>
+        </figure>
+        <figure className="flex flex-col items-center gap-3 text-center">
+          <div className="relative flex aspect-square w-full max-w-[180px] items-center justify-center overflow-hidden border border-border bg-card">
+            <BrandMark detail="filled" ink="#080B24" crescentColor="#D9AA52" className="h-16 w-16" />
+          </div>
+          <figcaption>
+            <p className="font-brand-linear text-sm">the logo</p>
+            <p className="mt-1 text-xs text-muted-foreground">modern. possibly too impersonal. will probably replace the classic at some point.</p>
+          </figcaption>
+        </figure>
+        <figure className="flex flex-col items-center gap-3 text-center">
+          <div className="relative aspect-square w-full max-w-[180px] overflow-hidden border border-border bg-card">
+            <Image src="/art/2019/rabbit-in-the-moon.jpg" alt="the classic" fill sizes="180px" className="object-cover" />
+          </div>
+          <figcaption>
+            <p className="font-brand-linear text-sm">the classic</p>
+            <p className="mt-1 text-xs text-muted-foreground">somewhat arbitrary but long-standing. will probably be discontinued eventually.</p>
+          </figcaption>
+        </figure>
+        <figure className="flex flex-col items-center gap-3 text-center">
+          <div className="relative aspect-square w-full max-w-[180px] overflow-hidden border border-border bg-card">
+            <Image src="/brand/deck/abstract-profile-picture.webp" alt="the abstract" fill sizes="180px" className="object-cover" />
+          </div>
+          <figcaption>
+            <p className="font-brand-linear text-sm">the abstract</p>
+            <p className="mt-1 text-xs text-muted-foreground">fractionally more than a default image. relative anonymity, geometrically derived.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </StageReflow>
+
+  </Panel>
+
+  <Panel id="closing" title="closing" layout="stage" bg="#0C3559">
+    <StageItem x={610} y={496} w={699} h={434} ariaHidden style={{ backgroundColor: '#CED2CD' }} />
+    <StageItem x={760} y={150} w={400} h={400}>
+      <Image src="/brand/deck/profile-professional.webp" alt="" fill sizes="400px" className="object-cover" />
+    </StageItem>
+    <StageItem x={736} y={550} w={448} h={154} className="font-brand font-bold text-center" style={{ fontSize: 40, lineHeight: '48px', color: '#080B24', whiteSpace: 'nowrap' }}>
+      <p>beck qing</p>
+      <p>artist · scientist · designer</p>
+    </StageItem>
+    <StageItem x={935} y={731} w={50} h={50} ariaHidden style={{ color: '#080B24' }}>
+      <InstagramIcon className="h-full w-full" />
+    </StageItem>
+    <StageItem x={798} y={788} w={344} h={50} className="font-sans font-medium text-center" style={{ fontSize: 32, lineHeight: '44px' }}>
+      <a href="mailto:hello@beckqing.com" style={{ color: '#305789' }}>hello@beckqing.com</a>
+    </StageItem>
+    <StageItem x={921} y={834} w={211} h={4} ariaHidden style={{ backgroundColor: '#FFFFFF' }} />
+
+    <StageReflow>
+      <div className="flex flex-col items-center gap-4 py-6 text-center" style={{ color: '#CED2CD' }}>
+        <div className="relative h-32 w-32 overflow-hidden rounded-full">
+          <Image src="/brand/deck/profile-professional.webp" alt="" fill sizes="128px" className="object-cover" />
+        </div>
+        <p className="font-brand font-bold">beck qing</p>
+        <p className="font-brand font-bold">artist · scientist · designer</p>
+        <a
+          href="mailto:hello@beckqing.com"
+          className="font-brand mt-2 inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm lowercase"
+          style={{ borderColor: '#305789', color: '#305789' }}
+        >
+          <InstagramIcon className="h-4 w-4" />
+          hello@beckqing.com
+        </a>
+      </div>
+    </StageReflow>
+
+  </Panel>
+</Panels>

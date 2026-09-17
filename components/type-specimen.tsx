@@ -1,57 +1,105 @@
-import type { ReactNode } from 'react'
-import { headingStyles } from '@/lib/heading-styles'
+import { Children, isValidElement, type ReactElement, type ReactNode } from 'react'
+import { StageItem } from '@/components/panels'
 import { cn } from '@/lib/utils'
 
 /**
- * One typeface sample on the typography slide — verbatim deck copy passed
- * in as props (not hardcoded here) so it stays inside `content/decks/
- * personal-branding.mdx`, where `check-deck-fidelity.mjs` can audit it. See
- * docs/specs/2026-09-branding-deck.md §8.2.
+ * One typeface row's data for the typography slide — verbatim deck copy
+ * passed in as props (so it stays inside `content/decks/personal-
+ * branding.mdx`, where `check-deck-fidelity.mjs` can audit it), not
+ * rendered directly. `TypeSpecimen` reads these off its children and places
+ * them per §8.2's measured row geometry
+ * (docs/specs/2026-09-deck-visual-fidelity.md).
  */
-export function TypeSample({
-  name,
-  style,
-  use,
-  caption,
-  className,
-}: {
+export type TypeSampleProps = {
   name: string
   style?: string
   use: string
   caption: string
   className: string
-}) {
-  return (
-    <div>
-      <p className="font-brand text-xs uppercase tracking-[0.3em] text-muted-foreground">{use}</p>
-      <p className="mt-1 text-xs text-muted-foreground/80">{caption}</p>
-      <p className={cn('mt-4 text-xl lowercase text-foreground', className)}>{name}</p>
-      {style && <p className="text-xs text-muted-foreground">{style}</p>}
-      <p className={cn('mt-3 text-lg uppercase text-foreground/80', className)}>ABCDEFGHIKLMNOPQRSTUVWXYZ</p>
-    </div>
-  )
 }
 
+export function TypeSample(_props: TypeSampleProps) {
+  return null
+}
+
+const ALPHABET = 'ABCDEFGHIKLMNOPQRSTUVWXYZ'
+
+const ROWS = [
+  {
+    label: { x: 111, y: 403 },
+    hairline: { x: 111, y: 443, w: 339, h: 4 },
+    caption: { x: 109, y: 441, w: 292, h: 80 },
+    name: { x: 478, y: 395 },
+    alphabet: { x: 519, y: 443, w: 480, h: 76 },
+    alphabetColor: '#CED2CD',
+    alphabetLines: [ALPHABET, ALPHABET],
+  },
+  {
+    label: { x: 111, y: 571 },
+    hairline: { x: 111, y: 612, w: 339, h: 4 },
+    caption: { x: 110, y: 611, w: 257, h: 90 },
+    name: { x: 478, y: 558 },
+    alphabet: { x: 519, y: 612, w: 520, h: 88 },
+    alphabetColor: '#CED2CD',
+    alphabetLines: [ALPHABET, ALPHABET],
+  },
+  {
+    label: { x: 111, y: 747 },
+    hairline: { x: 111, y: 787, w: 339, h: 4 },
+    caption: { x: 110, y: 787, w: 291, h: 146 },
+    name: { x: 478, y: 739 },
+    alphabet: { x: 519, y: 787, w: 480, h: 114 },
+    alphabetColor: '#305789',
+    alphabetLines: [ALPHABET, ALPHABET, '1234567890'],
+  },
+] as const
+
 /**
- * Wraps a row of `TypeSample`s, then renders the site's actual `h1`–`h5`
- * ladder by applying `headingStyles` directly — this slide literally *is*
- * the site's type scale rather than a picture of one, so it moves with the
- * scale instead of drifting from it (§8.2).
+ * The typography slide's three-row specimen table — a label → hairline →
+ * caption column on the left, typeface name → alphabet on the right, ruled
+ * by three 4px hairlines. Hand-formatted, not a responsive grid (§8.2).
+ * Expects exactly three `TypeSample` children, in `headings`/`body`/`mono`
+ * order, and renders as a set of `StageItem`s — only makes sense inside a
+ * `layout="stage"` panel.
  */
 export function TypeSpecimen({ children }: { children: ReactNode }) {
+  const samples = Children.toArray(children).filter(
+    (c): c is ReactElement<TypeSampleProps> => isValidElement(c) && c.type === TypeSample,
+  )
+
   return (
-    <div>
-      <div className="grid gap-8 sm:grid-cols-3">{children}</div>
-      <div className="mt-10 border-t border-border pt-6">
-        <p className="font-brand text-xs uppercase tracking-[0.3em] text-muted-foreground">the heading ladder</p>
-        <div className="mt-3 space-y-1">
-          <p className={headingStyles.h1}>heading one</p>
-          <p className={cn(headingStyles.h2, 'mt-0')}>heading two</p>
-          <p className={cn(headingStyles.h3, 'mt-0')}>heading three</p>
-          <p className={cn(headingStyles.h4, 'mt-0')}>heading four</p>
-          <p className={cn(headingStyles.h5, 'mt-0')}>heading five</p>
-        </div>
-      </div>
-    </div>
+    <>
+      {samples.map((sample, i) => {
+        const row = ROWS[i]
+        const { name, style: faceStyle, use, caption, className } = sample.props
+        return (
+          <div key={use}>
+            <StageItem x={row.label.x} y={row.label.y} className="font-brand-sans-italic" style={{ fontSize: 32, lineHeight: '38px', color: '#A79F99' }}>
+              {use}
+            </StageItem>
+            <StageItem x={row.hairline.x} y={row.hairline.y} w={row.hairline.w} h={row.hairline.h} ariaHidden style={{ backgroundColor: '#305789' }} />
+            <StageItem x={row.caption.x} y={row.caption.y} w={row.caption.w} h={row.caption.h} className="font-sans" style={{ fontSize: 24, lineHeight: '33px', color: '#CED2CD' }}>
+              {caption}
+            </StageItem>
+            <StageItem x={row.name.x} y={row.name.y} className={cn(className, 'lowercase', 'whitespace-nowrap')} style={{ fontSize: 40, lineHeight: '48px', color: '#FFFFFF' }}>
+              {faceStyle ? `${name} ${faceStyle}` : name}
+            </StageItem>
+            <StageItem
+              x={row.alphabet.x}
+              y={row.alphabet.y}
+              w={row.alphabet.w}
+              h={row.alphabet.h}
+              ariaHidden
+              className="font-brand"
+              style={{ fontSize: 32, lineHeight: '38px', color: row.alphabetColor }}
+            >
+              {row.alphabetLines.map((line, j) => (
+                <p key={j}>{line}</p>
+              ))}
+            </StageItem>
+          </div>
+        )
+      })}
+    </>
   )
 }

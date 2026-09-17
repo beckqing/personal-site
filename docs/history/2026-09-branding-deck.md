@@ -1,8 +1,14 @@
-> **Status: built 2026-09-17.** `/work/personal-branding` shipped as
-> specced — real HTML, scroll mode + present mode, three live payoff slides,
-> a Figma-token pull, and a fidelity checker. See "The personal branding
-> deck" in [ARCHITECTURE.md](../ARCHITECTURE.md) for how it works today; this
-> file is now historical. Where the build diverged from what's written
+> **Status: built 2026-09-17, §6–§7 (scroll mode / present mode) superseded
+> the same day by
+> [2026-09-panels-and-rail.md](../specs/2026-09-panels-and-rail.md).** That
+> spec found the shipped `components/deck.tsx` never actually rendered its
+> slides (a client/server identity bug across the RSC boundary — its §1) and
+> replaced the scroll-mode/present-mode split with continuous scroll and a
+> dot rail, present mode cut entirely. `/work/personal-branding` shipped as
+> specced below at first — real HTML, scroll mode + present mode, three live
+> payoff slides, a Figma-token pull, and a fidelity checker. See "Panels and
+> the rail" in [ARCHITECTURE.md](../ARCHITECTURE.md) for how it works today;
+> this file is now historical. Where the build diverged from what's written
 > below:
 >
 > - **§1's slide table was a guess off a 178×900 thumbnail, and it was

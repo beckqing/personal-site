@@ -230,6 +230,19 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
   }
+  /* The panel contents list (§8 of docs/specs/2026-09-panels-and-rail.md) is
+     a plain server-rendered `<a href="#id">` with no JS — smoothing its
+     native fragment jump is a CSS-only concern, unlike the rail's
+     programmatic `scrollIntoView`, whose explicit `behavior` argument
+     ignores this property entirely and is handled in JS instead (§7.4). */
+  html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
 }
 
 /* Dark/light toggle cross-fade, via the View Transitions API (triggered in
@@ -259,6 +272,16 @@
   .font-brand-italic {
     font-family: var(--font-recursive), ui-monospace, monospace;
     font-variation-settings: 'MONO' 1, 'CASL' 1, 'slnt' -14;
+  }
+  /* Recursive Sans Casual BoldItalic — typography slide's row labels */
+  .font-brand-sans-italic {
+    font-family: var(--font-recursive), ui-sans-serif, sans-serif;
+    font-variation-settings: 'MONO' 0, 'CASL' 1, 'slnt' -14;
+  }
+  /* Recursive Mono Linear Bold — profile-picture captions */
+  .font-brand-linear {
+    font-family: var(--font-recursive), ui-monospace, monospace;
+    font-variation-settings: 'MONO' 1, 'CASL' 0, 'slnt' 0;
   }
   /* The art-fair essay's emoji markers. `font-variant-emoji: text` is a
      fallback for the case the subset font fails to load — it asks the
@@ -558,5 +581,57 @@
   .speedpaint-timeline:focus-visible::-moz-range-thumb {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
+  }
+
+  /* A `<Panel>`'s geometry (docs/specs/2026-09-panels-and-rail.md §6.1).
+     `orientation: landscape` + `min-height: 35rem` is deliberately not a
+     width breakpoint: a deck is landscape, and this excludes a phone held
+     sideways (~390px tall) from getting a "full screen" that's really a
+     squeeze. `min-height`, never `height` — a panel taller than the
+     viewport (a big grid, say) simply grows rather than clipping. `svh`,
+     not `dvh`: mobile chrome collapsing mid-scroll must not resize every
+     panel underneath the reader. */
+  .panel {
+    scroll-margin-top: calc(var(--nav-h, 4rem) + 1rem);
+  }
+  /* `.stage-panel` (docs/specs/2026-09-deck-visual-fidelity.md §11) opts out:
+     a deck slide has its own aspect ratio and is meant to sit flush against
+     its neighbours, not centre inside a viewport-tall well of empty space
+     the way a prose/split/full panel does. Beck's call, 2026-09-17. */
+  @media (orientation: landscape) and (min-height: 35rem) {
+    .panel:not(.stage-panel) {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: calc(100svh - var(--nav-h, 4rem));
+    }
+  }
+
+  /* A `<Panel layout="stage">`'s scaling container — a fixed 1920×1080
+     deck composition scaled to fit, not a responsive re-interpretation of
+     it (docs/specs/2026-09-deck-visual-fidelity.md §3.2). `cqw`, not a
+     viewport unit, so the scale factor is correct inside <main>'s
+     max-w-5xl, inside the mobile reflow's sibling breakpoint, and in any
+     future container. */
+  .stage-outer {
+    aspect-ratio: 16 / 9;
+    container-type: inline-size;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    outline-style: solid;
+    outline-width: 1px;
+    outline-offset: -1px;
+  }
+  .stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    transform: scale(calc(100cqw / 1920px));
+    transform-origin: top left;
+  }
+  /* §3.3: `.font-brand`'s letter-spacing is a site convention the deck's
+     own type does not carry. */
+  .stage .font-brand {
+    letter-spacing: 0;
   }
 }

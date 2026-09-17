@@ -1618,15 +1618,15 @@ pass and this was not one of them. Tagging is authorial.
       *not* the 2026-09-02 dead-tag prune repeating: `color` matched an item,
       and came out on editorial grounds rather than for matching nothing.
 
-## 25. The personal branding deck — **shipped 2026-09-17, two loose ends**
+## 25. The personal branding deck — **shipped 2026-09-17, rebuilt 2026-09-17, two loose ends**
 
-[docs/specs/2026-09-branding-deck.md](specs/2026-09-branding-deck.md) is
-built: `/work/personal-branding`, taxonomy (`design` on `art`),
-`components/deck.tsx` and the three live payoff slides, the Figma pull, and
-`scripts/check-deck-fidelity.mjs` (passing). See "The personal branding
-deck" in [ARCHITECTURE.md](ARCHITECTURE.md) for what shipped and how the
-two-Figma-sources hazard resolved (no conflict — mark and typography both
-match). The spec's §11 blockers are answered except:
+[docs/history/2026-09-branding-deck.md](history/2026-09-branding-deck.md)
+(moved there once built) is what first shipped: `/work/personal-branding`,
+taxonomy (`design` on `art`), the three live payoff slides, the Figma pull,
+and `scripts/check-deck-fidelity.mjs` (passing). See "Panels and the rail" in
+[ARCHITECTURE.md](ARCHITECTURE.md) for how the two-Figma-sources hazard
+resolved (no conflict — mark and typography both match). The spec's §11
+blockers are answered except:
 
 - [ ] **The filter panel's resting height at 375px/500px/1024px** (spec §3,
       §12) was never actually checked in a browser — this session had no
@@ -1646,3 +1646,14 @@ match). The spec's §11 blockers are answered except:
       the Figma file's own `lastModified` is from this session
       (2026-09-11→17) and dates nothing about when the brand system itself
       was designed.
+
+**Rebuilt the same day**, per
+[docs/specs/2026-09-panels-and-rail.md](specs/2026-09-panels-and-rail.md):
+the shipped `components/deck.tsx` never actually rendered its slides (a
+client/server identity bug, that spec's §1) and was replaced with
+`components/panels.tsx`'s `Panels`/`Panel`/`PanelFigure` — server
+components, continuous scroll with a dot rail, present mode cut entirely.
+The deck also gained back its title and closing panels (nine panels now, not
+seven — §5.3), which had been dropped and allowlisted out of
+`check-deck-fidelity.mjs`; that allowlist is stricter now, not looser. The
+three loose ends above are untouched by the rebuild and stay open.

@@ -79,6 +79,18 @@ the tail of an entry that most readers will skip.
 
 ## 2. `<Section>` — the heading owns the fold
 
+> **Not the same primitive as `<Panel>`
+> ([2026-09-panels-and-rail.md](2026-09-panels-and-rail.md) §3.2), despite
+> both having been called `Section` at different points.** This `Section`
+> derives its heading level from nesting depth (see "No `level` prop" below)
+> and may fold — it's a device for a long *essay's* internal structure. The
+> MQP case-study spec's own (now-renamed) `Section` was a flat, always-`h2`,
+> never-folding top-level document division with an anchor, and that one *did*
+> merge into `Panel`, alongside the branding deck's `Slide`. If this spec
+> ever ships, do not rename its `Section` to `Panel` or fold the two
+> together — they solve different problems and only share history, not a
+> heading model.
+
 ```tsx
 <Section title="+ good" fold="open">…</Section>
 <Section title="Current setup as of January 2023" fold="closed">…</Section>
