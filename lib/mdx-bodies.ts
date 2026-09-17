@@ -2,14 +2,16 @@
 // runtime into the browser bundle. Only app/work/[slug]/page.tsx and
 // app/work/[slug]/[pieceSlug]/page.tsx may import it.
 //
-// Two content directories resolve through this one map: content/essays/ for
-// essays, content/code-demos/ for a code demo's write-up. They stay
-// separate on disk (an essay is an essay; a code demo's write-up is not) and share
-// one map, one slug list, and one build-time assertion.
+// Three content directories resolve through this one map: content/essays/
+// for essays, content/code-demos/ for a code demo's write-up, content/decks/
+// for a rebuilt slide deck's slides. They stay separate on disk (an essay is
+// an essay; a code demo's write-up is not; a deck's slides are not) and
+// share one map, one slug list, and one build-time assertion.
 import type { ComponentType } from 'react'
 import ChineseEmojiPoetry from '@/content/essays/chinese-emoji-poetry.mdx'
 import FirstArtFair from '@/content/essays/first-art-fair.mdx'
 import NoteSystems from '@/content/essays/note-systems.mdx'
+import PersonalBranding from '@/content/decks/personal-branding.mdx'
 import Transformation from '@/content/essays/transformation.mdx'
 import { MDX_BODY_SLUGS, WORK } from '@/lib/work'
 
@@ -17,6 +19,7 @@ const BODIES: Record<string, ComponentType> = {
   'chinese-emoji-poetry': ChineseEmojiPoetry,
   'first-art-fair': FirstArtFair,
   'note-systems': NoteSystems,
+  'personal-branding': PersonalBranding,
   transformation: Transformation,
 }
 

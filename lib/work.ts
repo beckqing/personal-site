@@ -152,6 +152,17 @@ export type WorkPiece = {
    * docs/specs/2026-09-guessing-game.md.
    */
   guess?: Guess
+  /**
+   * A rebuilt slide deck — the piece's write-up (via MDX_BODY_SLUGS) is a
+   * `<Deck>` of `<Slide>`s rather than plain prose, and the page renders it
+   * full width with a present-mode button instead of inside `EssayBody`.
+   * Checked *before* the image branch in PieceView, same reason `isCodeDemo`
+   * is: a deck piece carries an MDX body and an `image` and no `text`, so
+   * without an earlier branch it would fall through to the default image
+   * branch and render as a plain picture with an essay under it — silently
+   * wrong. See docs/specs/2026-09-branding-deck.md §6.1.
+   */
+  deck?: true
 }
 
 /**
@@ -348,7 +359,13 @@ export function isCollection(item: WorkItem): item is WorkCollection {
  * components and must not import the MDX map. The keys of lib/mdx-bodies.ts
  * must match this list exactly.
  */
-export const MDX_BODY_SLUGS = ['chinese-emoji-poetry', 'first-art-fair', 'note-systems', 'transformation'] as const
+export const MDX_BODY_SLUGS = [
+  'chinese-emoji-poetry',
+  'first-art-fair',
+  'note-systems',
+  'personal-branding',
+  'transformation',
+] as const
 
 export function hasWriteup(item: WorkPiece): boolean {
   return Boolean(item.writeup) || (MDX_BODY_SLUGS as readonly string[]).includes(item.slug)
@@ -394,6 +411,11 @@ export function isTextForward(item: WorkItem): boolean {
  */
 export function isCodeDemo(item: WorkItem): boolean {
   return !isCollection(item) && Boolean(item.codeDemo)
+}
+
+/** A piece whose write-up is a rebuilt slide deck rather than plain prose — see `WorkPiece.deck`. */
+export function isDeck(item: WorkItem): boolean {
+  return !isCollection(item) && Boolean(item.deck)
 }
 
 export function tierOf(item: WorkItem): WorkTier {
@@ -574,7 +596,7 @@ export type Facet = { name: string; tags: readonly string[] }
  * than erroring.
  */
 export const DISCIPLINE_FACETS: Record<Discipline, Facet> = {
-  art: { name: 'medium', tags: ['watercolor', 'digital', 'ink'] },
+  art: { name: 'medium', tags: ['watercolor', 'digital', 'ink', 'design'] },
   // Form is poem | essay. `blog` was removed 2026-09-03: every item that
   // carried it also carried `essay`, and since formFor() takes the first
   // match in this array's order, `blog` never won on any piece — it rendered
@@ -2375,6 +2397,19 @@ const REAL_WORK: WorkItem[] = [
       aspect: '1/1',
       repo: 'https://github.com/beckqing/whims',
     },
+  },
+  {
+    slug: 'personal-branding',
+    title: 'personal branding',
+    // Beck's estimate (2026-09-17) — the Figma file itself has no created-at
+    // Beck could point to, only a lastModified from whenever it was last
+    // touched, which doesn't date the brand system it documents.
+    year: '2024',
+    tags: ['art', 'design'],
+    tier: 'favorite',
+    image: '/brand/deck/cover.webp',
+    imageAspect: '16/9',
+    deck: true,
   },
 ]
 

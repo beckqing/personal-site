@@ -1,3 +1,48 @@
+> **Status: built 2026-09-17.** `/work/personal-branding` shipped as
+> specced — real HTML, scroll mode + present mode, three live payoff slides,
+> a Figma-token pull, and a fidelity checker. See "The personal branding
+> deck" in [ARCHITECTURE.md](../ARCHITECTURE.md) for how it works today; this
+> file is now historical. Where the build diverged from what's written
+> below:
+>
+> - **§1's slide table was a guess off a 178×900 thumbnail, and it was
+>   wrong in most of the ways a guess like that can be wrong.** The real
+>   pull found **9 slides, not 10** (one frame in the file is hidden/unused
+>   scratch, excluded by the pull script). "Logo meaning" and "logo design"
+>   are two *different* real slides — "logo drafting" (sketches, a rejected
+>   design) and "logo design" (the final geometry) — not one guessed slide
+>   split into two. "Color palette" turned out to be the site's actual
+>   11-colour hand-picked brand palette (see [[palette-provenance]] in
+>   memory), not the "monogram" table's 5-colour pixel breakdown §8.1
+>   assumed — §8.1 below is superseded on content, not on its three render
+>   rules, which still hold. "Palette in use" has **one** artwork, not a
+>   grid. And a whole slide — "profile pictures", a 6-image grid of
+>   alternate self-presentation options — existed that no line below
+>   anticipated at all. See ARCHITECTURE's new section for the corrected
+>   list.
+> - **§11's blockers resolved as:** FIGMA_TOKEN supplied (§11.1); the real
+>   slide list is the pull itself, above (§11.2); typography and mark both
+>   match what ships, no disagreement (§11.3, §11.4 — see ARCHITECTURE's "A
+>   second Figma file" note); the palette-uses artwork and one
+>   profile-pictures image had no discoverable filename — Beck named them
+>   "sparks and tendrils" and "abstract profile picture" on the spot, and
+>   they're exported but not registered as their own `WorkPiece`s (§11.5);
+>   `year: '2024'` is Beck's estimate, tier `favorite`, no `description`
+>   (§11.6); title and closing slides dropped as designed (§11.7); the
+>   "hi it's beck" portrait is confirmed the same file as
+>   `public/about/beck-friendly-neighborhood-artist.webp` (§11.8).
+> - **The "profile pictures" slide needed a decision §5/§6 didn't
+>   anticipate** — asked and answered (Beck: include it). It uses the
+>   existing `full` layout with a new content component
+>   (`components/profile-picture-grid.tsx`), not a new `Slide.layout`
+>   variant — §6.3's closed set is unchanged.
+> - **§3's filter-panel check (375px/500px/1024px) was never actually run**
+>   — no browser tool was available this session. Open in
+>   [TODO.md](../TODO.md) §25.
+> - Everything else — the taxonomy change, the file list, present mode's
+>   controls and URL state, the fidelity-checker convention — shipped as
+>   written.
+
 # Spec — the personal branding deck as a work piece
 
 Beck has a finished Figma deck, `personal branding slides`, that documents the

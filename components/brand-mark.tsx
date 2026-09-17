@@ -4,11 +4,15 @@ import { cn } from '@/lib/utils'
 // Geometry lifted verbatim from docs/brand/variants/ (Beck's own artboard,
 // docs/brand/bq-logo-artboard.svg) — one drawing, reused at every detail
 // level. See "The brand mark" in docs/ARCHITECTURE.md.
-const B_ASCENDER = 'M31.1806 15C30.8667 75.9223 32.6191 98.4807 36.8125 132.291'
-const Q_STEM = 'M121.769 28.3859C116.444 73.0819 115.31 115.719 117.712 131.807'
-const BOWL =
+//
+// Exported so components/mark-construction.tsx can build a construction
+// diagram from the same paths rather than re-pasting the path data — see
+// docs/specs/2026-09-branding-deck.md §8.3.
+export const B_ASCENDER = 'M31.1806 15C30.8667 75.9223 32.6191 98.4807 36.8125 132.291'
+export const Q_STEM = 'M121.769 28.3859C116.444 73.0819 115.31 115.719 117.712 131.807'
+export const BOWL =
   'M95.79 102.469C94.9327 125.453 80.2802 133.913 62.6194 133.254C44.9586 132.595 33.6739 117.838 34.3327 100.177C34.9915 82.5159 47.5492 63.1436 65.21 63.8023C82.8708 64.4611 96.4487 84.8082 95.79 102.469Z'
-const WEDGE =
+export const WEDGE =
   'M102.475 84.2056C95.1815 97.5274 84.518 109.554 71.5271 109.069C57.2192 108.536 56.5038 96.0002 61.0042 82.6587C65.5046 69.3172 97.3067 34.9787 121.57 28.3785C118.825 48.29 106.234 77.3409 102.475 84.2056Z'
 
 /**

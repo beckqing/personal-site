@@ -1,0 +1,118 @@
+[
+  {
+    "index": 0,
+    "name": "0 Title: personal branding",
+    "id": "1:2",
+    "text": [
+      "personal brand",
+      "beck qing\nartist · scientist · designer"
+    ]
+  },
+  {
+    "index": 1,
+    "name": "1 About Me",
+    "id": "2:6",
+    "text": [
+      "Hi, I’m Beck.",
+      "I’m an interdisciplinary designer, scientist, and serial hobbyist. In designing my personal brand, I was aiming for something versatile enough to fit all of my interests while also providing a link between them."
+    ]
+  },
+  {
+    "index": 2,
+    "name": "2 Logo Drafting",
+    "id": "2:19",
+    "text": [
+      "logo drafting",
+      "When I imagined a logo that could represent me across disciplines, only a design that centered my name felt appropriate. \n\nI began by writing my name and initials, aiming for a logomark that fit equally on a digital flyer or signed by hand on a traditional painting.\n",
+      "Inspired by Xu Bing’s square word calligraphy and Yongsheng Zhao’s vertical English characters, I attempted to incorporate a part of my Chinese name, 清 (qíng), into the logo, but it involved too much compromise for my taste.",
+      "Rejected design: While I initially liked this, I found that it’s too inorganic to be representative of me and my work."
+    ]
+  },
+  {
+    "index": 3,
+    "name": "3 Logo Design",
+    "id": "2:20",
+    "text": [
+      "logo design",
+      "I settled on two lowercase initials, with overlapping counters. The letters are balanced, and there is potential to play with relevant concepts, like the intersection between art and science.\n\nAlthough I appreciate a radially symmetrical logo, giving the letters distinct shapes looked more natural in my handwriting and provided more shapes made by the letterforms.\n\nIt also enabled me to include a crescent moon, a symbol I have used for some time in my online presence since I’m something of a night owl.",
+      "alternate palettes"
+    ]
+  },
+  {
+    "index": 4,
+    "name": "4 Typography",
+    "id": "8:38",
+    "text": [
+      "typography",
+      "I wanted a beautiful mono typeface that didn’t scream code. There are several out there, such as Operator, Cartograph, Dank Mono, and Victor Mono, but ultimately I fell in love with the variable properties of Recursive.\n\nI paired it with Noto Sans, another incredibly versatile typeface with an astounding capacity for displaying different writing systems (needed for the occasional linguistics blog post).",
+      "Recursive Mono Casual Bold ",
+      "headings",
+      "for showing another side to mono typefaces",
+      "ABCDEFGHIKLMNOPQRSTUVWXYZ\nABCDEFGHIKLMNOPQRSTUVWXYZ",
+      "Noto Sans",
+      "body",
+      "for writing in any language",
+      "ABCDEFGHIKLMNOPQRSTUVWXYZ\nABCDEFGHIKLMNOPQRSTUVWXYZ",
+      "Recursive Mono Casual Italic",
+      "mono",
+      "for displaying ukelele tabs, poetry, code, and other beautiful things",
+      "ABCDEFGHIKLMNOPQRSTUVWXYZ\nABCDEFGHIKLMNOPQRSTUVWXYZ\n1234567890"
+    ]
+  },
+  {
+    "index": 5,
+    "name": "5 Palette",
+    "id": "8:39",
+    "text": [
+      "palette",
+      "I designed a palette that could be subdivided to make other themes and make color-blind friendly data visualizations.\n\nThe main colors are warm neutrals, along with a warm indigo, my favorite color due to its usefulness in painting shadows.",
+      "white\n#FFFFFF",
+      "summer storm\n#69635E",
+      "midnight\n#080B24",
+      "terra cotta\n#8C3623",
+      "pumpkin pie\n#BF712C",
+      "satin nickel\n#A79F99",
+      "indigo\n#0C3559",
+      "goldenrod\n#D9AA52",
+      "pale slate\n#CED2CD",
+      "denim\n#305789",
+      "emerald\n#4BA661",
+      "color blind simulation from Adobe Color"
+    ]
+  },
+  {
+    "index": 6,
+    "name": "6 Palette Uses",
+    "id": "8:40",
+    "text": [
+      "palette uses",
+      "The broad palette allows for diverse illustrations using only brand colors. \n\nThe palette was also designed so I could label blog topics based on my personal associations relating colors with academic subjects.",
+      "art",
+      "humanities",
+      "science"
+    ]
+  },
+  {
+    "index": 7,
+    "name": "7 Profile Pictures",
+    "id": "2:21",
+    "text": [
+      "profile_picture.jpg_picture.jpg profil ",
+      "The Professional\nLinkedIn. It’s time to cave in to the world’s demands and put your best --or really, a smiling, squinching-- face forward.",
+      "your friendly neighborhood artist\nthe go-to if you’ve seen my face before. let’s find a time if you wanna see it again :)",
+      "your tired internet persona\nhiding behind art, subtle logo... this is more recognizable than a face, or is that just me?",
+      "the logo\nmodern. possibly too impersonal. will probably replace the classic at some point.",
+      "the classic\nsomewhat arbitrary but long-standing. will probably be discontinued eventually.",
+      "the abstract\nfractionally more than a default image. relative anonymity, geometrically derived."
+    ]
+  },
+  {
+    "index": 8,
+    "name": "8 Conclusion Bio",
+    "id": "2:22",
+    "text": [
+      "beck qing\nartist · scientist · designer",
+      "hello@beckqing.com"
+    ]
+  }
+]

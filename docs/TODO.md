@@ -1617,3 +1617,32 @@ pass and this was not one of them. Tagging is authorial.
       derives from the facet tables. `theme` is five tags now. Note this is
       *not* the 2026-09-02 dead-tag prune repeating: `color` matched an item,
       and came out on editorial grounds rather than for matching nothing.
+
+## 25. The personal branding deck — **shipped 2026-09-17, two loose ends**
+
+[docs/specs/2026-09-branding-deck.md](specs/2026-09-branding-deck.md) is
+built: `/work/personal-branding`, taxonomy (`design` on `art`),
+`components/deck.tsx` and the three live payoff slides, the Figma pull, and
+`scripts/check-deck-fidelity.mjs` (passing). See "The personal branding
+deck" in [ARCHITECTURE.md](ARCHITECTURE.md) for what shipped and how the
+two-Figma-sources hazard resolved (no conflict — mark and typography both
+match). The spec's §11 blockers are answered except:
+
+- [ ] **The filter panel's resting height at 375px/500px/1024px** (spec §3,
+      §12) was never actually checked in a browser — this session had no
+      browser tool available. `design` is a fourth `art` medium, which widens
+      `MAX_DISCIPLINE_CHIPS`' invisible reservation by one chip; if it wraps
+      to an extra line at any of those widths, that's a real filter-panel
+      finding to record here, not a reason to drop the tag.
+- [ ] **"Sparks and tendrils" and "the abstract"** — the two artworks on the
+      palette-uses and profile-pictures slides Beck couldn't place a filename
+      for. Exported once, live only at `public/brand/deck/
+      sparks-and-tendrils.webp` and `public/brand/deck/
+      abstract-profile-picture.webp` — not registered as `WorkPiece`s
+      anywhere else on the site. If either belongs in the gallery properly
+      (own slug, own page), that's a separate, deliberate addition, not
+      something to fold into this deck.
+- [ ] The piece's `year` (`'2024'`) is Beck's estimate, not a verified date —
+      the Figma file's own `lastModified` is from this session
+      (2026-09-11→17) and dates nothing about when the brand system itself
+      was designed.

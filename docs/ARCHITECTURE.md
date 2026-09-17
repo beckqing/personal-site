@@ -68,6 +68,11 @@ Three further tags — `the body`, `nature`, `faith` — were proposed with item
 lists in the same pass and declined. Don't re-add them without a fresh
 decision.
 
+**`design` joined `medium` (art's facet) 2026-09-17**, appended last so
+`mediumFor()`'s first-match order is unchanged for every piece that existed
+before it — the personal branding deck (`design`, plus `art`) is its only
+carrier so far. See "The personal branding deck" below.
+
 The pruning is a pure data edit in `lib/work.ts` — `ALL_TAGS` derives from
 the facet tables, and it gates both the filter panel's chip list and the
 `?tags=` URL parser, so nothing else needed touching. Only the three
@@ -161,10 +166,13 @@ blockquotes, centred verse blocks, and external links. Rather than grow
 `components/essay.tsx`. A code demo's write-up takes the same rung of that
 ladder from `content/code-demos/<slug>.mdx` — a path the map already resolves,
 though **no demo has an MDX body yet, so that directory does not exist**; the
-first one to need code excerpts creates it. `lib/mdx-bodies.ts` is the one map
-behind both. `components/essay.tsx` and `EssayBody`
-keep their names — they are the essay *typography*, and a demo's write-up
-wants exactly that typography.
+first one to need code excerpts creates it. `content/decks/<slug>.mdx` is the
+third such directory — a rebuilt slide deck's slides (see "The personal
+branding deck") — and unlike the other two, one exists today
+(`personal-branding.mdx`). `lib/mdx-bodies.ts` is the one map behind all
+three, asserted at build time against `MDX_BODY_SLUGS`. `components/essay.tsx`
+and `EssayBody` keep their names — they are the essay *typography*, and both
+a demo's write-up and a deck's own slide prose want exactly that typography.
 
 **Why MDX and not a richer string or a typed block union:** the source of
 truth for all three is Markdown in the archived 11ty site, so MDX keeps the
@@ -203,6 +211,7 @@ its tags and fields rather than set by a `type` column:
 
 | Predicate | Means |
 |---|---|
+| `isDeck` | carries `deck: true` — its write-up is a rebuilt `<Deck>` of `<Slide>`s, not plain prose, so the page renders it full width instead of inside `EssayBody`. Checked *before* `isCodeDemo`, for the same reason: it also carries `image` (the gallery cover) and no `text`, so a later branch would silently render it as a plain image piece. See "The personal branding deck" below |
 | `isCodeDemo` | carries `codeDemo` — its subject is a thing that runs, so the page leads with the running thing. Checked *before* the image branch: a code demo also carries `image` (its poster), so a later branch would silently render it as a plain image piece |
 | `isTextForward` | carries `text` and no `image` — renders as a quote card, leads with words |
 | `isHybrid` | carries both `text` and `image` — both load-bearing, neither a caption for the other |
@@ -411,6 +420,18 @@ tree is one `rm` from being gone — as `COLLECTION-FORMATS.md` demonstrated.
 
 The archive's raster (`static/img/bq-logo.png`, root `favicon.ico`) is now
 superseded by these and needed only as a historical reference.
+
+**A second Figma file now describes the same identity.** The personal
+branding deck (`/work/personal-branding` — see "The personal branding deck"
+below) is a *different* Figma file from this artboard's
+(`nSrYPqfF0aNuJSPrwxE3Lk`), pulled 2026-09-17. Checked against each other on
+import: the deck's logo-design slide draws the same geometry, the same
+palette, and the same crescent-via-mask construction as this artboard — no
+disagreement found. The deck's typography slide also names Recursive and Noto
+Sans, matching what `app/layout.tsx` actually loads. Both were real risks
+(two sources drifting silently is the whole hazard), not formalities, and
+both cleared. If a future edit to either file ever disagrees with the other,
+that's a finding to record here, not something to quietly redraw away.
 
 ### The geometry
 
@@ -684,7 +705,78 @@ circle" above) and `app/icon.svg` was added alongside `app/favicon.ico` and
 
 ---
 
-## Component layers
+## The personal branding deck
+
+`/work/personal-branding` (`lib/work.ts`, `deck: true`) rebuilds Beck's
+Figma deck of the same name as real HTML rather than embedding or exporting
+it as slide images — see
+[docs/specs/2026-09-branding-deck.md](specs/2026-09-branding-deck.md) for the
+full reasoning. Three of its slides render from the site's own live code
+(`BrandMark`, the palette tokens, `headingStyles`) rather than a picture of
+them, which is the whole point: they cannot drift from what the site
+actually ships.
+
+**`Deck` / `Slide` / `SlideFigure`** (`components/deck.tsx`) are the
+authoring primitives, imported directly into `content/decks/
+personal-branding.mdx` the same way an essay imports its own components.
+`Deck` reads its slide list straight off `React.Children.toArray(children)`'s
+`id`/`title`/`layout` props — no registry. `Slide.layout` is a closed set
+(`prose` | `figure` | `split` | `full`) describing what kind of composition a
+slide is, not a copy of its original Figma frame's exact pixel layout.
+
+**Two renders, one content tree.** Scroll mode renders each `<Slide>` as a
+plain `<section>`. Present mode (a button in the piece header) opens a
+`@base-ui/react` `Dialog`, then requests fullscreen on the popup
+(`.catch(() => {})` — iOS Safari has no `requestFullscreen`, and the Dialog
+overlay alone is the fallback experience there), and renders a *second* copy
+of the current slide inside it via a `presenting` React context. That
+context is also why a `Slide`'s DOM `id` is omitted on the presenting copy:
+two elements sharing an id while the dialog is open breaks anchors and
+`aria-labelledby` both. `?slide=<id>` is the single source of truth for which
+slide (if any) present mode is open on — the same `useSearchParams` +
+`router.replace(..., { scroll: false })` pattern `WorkGallery` uses for
+`?view=`, so the header's present button and `Deck` agree on state with no
+context passed between them, and the page needs a `<Suspense>` boundary
+around the MDX body for the same reason `/work` wraps `WorkGallery` in one.
+
+**Content is transcribed verbatim** from `docs/brand/deck-source.json`
+(committed, pulled by `scripts/pull-brand-deck.mjs` from the Figma REST API —
+never the source images; OCR-off-pixels is exactly what choosing the token
+route was for) and checked by `scripts/check-deck-fidelity.mjs`, which
+word-diffs the MDX against the pull and allowlists only the deliberate
+omissions (the dropped title/closing slides — the page's own header and
+footer already carry that — and a couple of captions for graphics that
+weren't exported).
+
+**The palette slide is the site's actual brand palette, not the monogram's
+five-colour breakdown.** The build spec guessed the latter from an illegible
+178×900 thumbnail; the real pull showed 11 named, hand-picked colours (white,
+summer storm, midnight, terra cotta, pumpkin pie, satin nickel, indigo,
+goldenrod, pale slate, denim, emerald) that `app/globals.css`'s "warm
+pale-slate base from the brand slides" tokens are themselves drawn from — see
+[[palette-provenance]] in memory. `BrandPalette` (`components/
+brand-palette.tsx`) renders those 11, each labelled with its closest live
+token, not the "The monogram" table above (which is a different, narrower
+fact: the pixel composition of the mark itself, not the brand's colour
+system).
+
+**One tag, no new discipline.** `personal-branding` carries `art` +
+`design` — `design` appended to `DISCIPLINE_FACETS.art.tags` (`lib/work.ts`),
+last in the array so `mediumFor()`'s first-match behaviour is unchanged for
+every existing piece. A fourth discipline was considered and rejected: one
+piece doesn't make a discipline, and `design` would otherwise have touched
+`DISCIPLINE_TONE` (a new brand colour), the home page's three columns, and
+the hero collage to stand up a discipline holding exactly one item.
+
+**Two slides exist that the build spec didn't anticipate.** It was written
+from a guess off that same illegible thumbnail; the real pull added a
+"logo drafting" slide (distinct from "logo design" — sketches and a rejected
+draft, not the final geometry) and a "profile pictures" slide (a grid of six
+alternate self-presentation options, one of which — "your friendly
+neighborhood artist" — is confirmed the same photo as `public/about/
+beck-friendly-neighborhood-artist.webp`). Neither needed a new `Slide.layout`
+variant; both use `full` with their own content component
+(`components/profile-picture-grid.tsx` for the grid).
 
 - **`work-gallery.tsx`** — the `/work` client island: filter panel, URL state,
   a docked copy of the filter panel beneath the nav once the real one scrolls
